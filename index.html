@@ -2,76 +2,125 @@
 <html lang="sk">
 <head>
 <meta charset="utf-8" />
-<meta name="viewport" content="width=device-width,initial-scale=1" />
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
 <title>Počasie</title>
+
 <link rel="preconnect" href="https://fonts.googleapis.com" />
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
 <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;600;700&display=swap" rel="stylesheet" />
 <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.3/dist/chart.umd.min.js"></script>
+
 <style>
   :root{
-    --bg1:#0f1e2f; --bg2:#091523;
-    --card:#12243a; --stroke:#1f3a58;
-    --txt:#eaf2ff; --muted:#a9bad9; --brand:#5fb0ff;
-    --r:14px; --shadow:0 10px 26px rgba(0,0,0,.28);
+    --bg0:#0b0f14; --bg1:#0e1620; --panel:#121e2a; --stroke:#233448;
+    --txt:#eaf3ff; --muted:#a8bed5; --accent:#3ad0e6; --accent-2:#ffb756;
+    --r:14px; --shadow:0 10px 28px rgba(0,0,0,.28);
+    --gap:10px;       /* jednotná medzera medzi kartami v karuseloch */
   }
   *{box-sizing:border-box}
+  html,body{height:100%}
   body{
     margin:0; color:var(--txt);
     font-family:Poppins,system-ui,-apple-system,Segoe UI,Roboto,Arial;
-    background: radial-gradient(1100px 700px at 50% -12%, #163152 0%, #0d223a 45%, #091523 100%),
-               linear-gradient(180deg,var(--bg1),var(--bg2));
-    min-height:100vh;
+    background:
+      radial-gradient(1200px 800px at 50% -10%, #102538 0%, #0f1a26 45%, #0b0f14 100%),
+      linear-gradient(180deg,var(--bg1),var(--bg0));
+    min-height:100dvh; display:flex; flex-direction:column;
+    -webkit-text-size-adjust:100%; -ms-text-size-adjust:100%;
+    -webkit-tap-highlight-color:transparent;
+    overflow-x:hidden;
   }
-  .wrap{max-width:1160px;margin:auto;padding:20px 14px 40px}
-  header h1{margin:0 0 10px;text-align:center;font-size:28px}
 
-  /* toolbar */
-  .toolbar{display:grid;grid-template-columns:1fr auto auto auto;gap:10px;margin:12px 0}
-  .searchCol{display:flex;flex-direction:column;gap:8px;position:relative}
-  .search{width:100%;background:#1a2f4b;border:1px solid var(--stroke);color:#fff;border-radius:12px;padding:12px 14px;outline:none}
-  #suggestions{display:none;position:absolute;top:100%;left:0;right:0;background:#0f2136;border:1px solid var(--stroke);border-radius:12px;padding:8px;margin-top:6px;z-index:20}
-  .sugg{padding:8px 10px;border-radius:8px;cursor:pointer}
-  .sugg:hover{background:#162c49}
-  .pill{background:#23436c;border:1px solid var(--stroke);color:#e9f0ff;border-radius:12px;padding:12px 14px;font-weight:600;cursor:pointer}
-  .pill.active{background:var(--brand);border-color:#3b7ec9;color:#062343}
+  .wrap{width:100%; max-width:1120px; margin-inline:auto; padding:16px 12px 28px; flex:1}
+  header h1{margin:0 0 10px; text-align:center; font-size:28px; letter-spacing:.3px}
 
-  /* cards */
-  .row{display:grid;grid-template-columns:1.05fr 1fr;gap:14px}
-  @media (max-width:900px){.row{grid-template-columns:1fr}}
-  .card{background:linear-gradient(180deg,rgba(255,255,255,.06),rgba(255,255,255,.03));border:1px solid var(--stroke);border-radius:var(--r);box-shadow:var(--shadow);padding:14px}
-  .card h3{margin:0 0 10px;text-align:center}
-  .meta{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:8px;color:var(--muted)}
+  /* Toolbar */
+  .toolbar{display:grid; grid-template-columns:1fr; gap:10px; margin:10px 0 12px}
+  .searchCol{display:flex; flex-direction:column; gap:6px; position:relative}
+  .search{
+    width:100%; background:#152535; border:1px solid var(--stroke); color:#fff;
+    border-radius:12px; padding:12px 14px; outline:none; font-size:16px; min-height:46px;
+  }
+  .search:focus{border-color:#2e4a67}
+  input.search:-webkit-autofill,
+  input.search:-webkit-autofill:hover,
+  input.search:-webkit-autofill:focus{
+    -webkit-text-fill-color:#fff; -webkit-box-shadow:0 0 0 1000px #152535 inset; box-shadow:0 0 0 1000px #152535 inset; caret-color:#fff;
+  }
+  #suggestions{
+    display:none; gap:6px; position:absolute; top:calc(100% + 6px); left:0; right:0; z-index:40;
+    background:#0f1c2a; border:1px solid var(--stroke); border-radius:12px; padding:8px; max-height:55vh; overflow:auto;
+  }
+  .sugg{background:#13263a; border:1px solid var(--stroke); border-radius:10px; padding:10px 12px; cursor:pointer}
+  .btnRow{display:grid; grid-template-columns:repeat(3,1fr); gap:10px}
+  .pill{
+    background:#1b2c3d; border:1px solid var(--stroke); color:#dfeaff; border-radius:12px;
+    padding:12px; font-weight:600; cursor:pointer; min-height:46px; font-size:16px; text-align:center
+  }
+  .pill.active{background:var(--accent); border-color:#2abbd0; color:#002a32}
+
+  /* Karty */
+  .card{
+    background:linear-gradient(180deg, rgba(255,255,255,.06), rgba(255,255,255,.03));
+    border:1px solid var(--stroke); border-radius:var(--r); box-shadow:var(--shadow); padding:14px;
+  }
+  .card h3{margin:0 0 10px; text-align:center; font-size:18px}
+  .meta{display:grid; grid-template-columns:1fr; gap:8px; color:var(--muted); font-size:14px}
   .meta strong{color:#fff}
-  .tempNow{font-size:44px;font-weight:700;margin:8px 0}
-  .icon{width:70px;height:70px;display:flex;align-items:center;justify-content:center;font-size:52px}
+  .chip{display:inline-flex; gap:8px; align-items:center; background:#143344; border:1px solid var(--stroke); color:#d8f7ff; border-radius:999px; padding:6px 10px; font-size:12px; margin-right:6px}
+  .tempNow{font-size:44px; font-weight:700; line-height:1; margin:6px 0}
+  .icon{width:64px; height:64px; display:flex; align-items:center; justify-content:center; font-size:48px}
+  .row{display:grid; grid-template-columns:1fr; gap:12px; margin-top:4px}
 
-  /* SUMMARY – center */
-  .summaryRow{margin-top:14px}
-  .summaryBox{max-width:820px;margin:0 auto;text-align:center;padding:12px 14px;border:1px solid var(--stroke);background:#11233a;border-radius:12px}
-
-  /* parts of day – no leftover gap */
-  .partsWrap{margin-top:14px}
-  .partsGrid{
-    display:grid;
-    grid-template-columns:repeat(auto-fit,minmax(180px,1fr));
-    gap:12px;
+  /* POSUVNÍK – vyplní šírku bez prázdneho chvosta */
+  .hscroll{
+    display:grid; grid-auto-flow:column; gap:var(--gap);
+    overflow-x:auto; padding:6px 2px 10px; scroll-snap-type:x mandatory; -webkit-overflow-scrolling:touch;
   }
-  .part{background:#142a45;border:1px solid var(--stroke);border-radius:12px;padding:12px;text-align:center}
-  .part .em{font-size:20px}
-  .part .tt{font-weight:700;margin-top:6px}
-  .part .sub{color:#bcd0f3;font-size:12px;margin-top:4px}
+  .hscroll > .snap{scroll-snap-align:start}
 
-  .chartWrap{height:260px}
-  canvas{background:#0f2340;border:1px solid var(--stroke);border-radius:12px}
+  .hscroll::-webkit-scrollbar{height:8px}
+  .hscroll::-webkit-scrollbar-track{background:#0f1c2a; border-radius:10px}
+  .hscroll::-webkit-scrollbar-thumb{background:#1e3c54; border-radius:10px}
 
-  /* 7-day forecast (models) */
-  .modelsGrid{display:grid;grid-template-columns:repeat(7,minmax(0,1fr));gap:12px}
-  @media (max-width:1024px){.modelsGrid{grid-template-columns:repeat(5,1fr)}}
-  @media (max-width:720px){.modelsGrid{grid-template-columns:repeat(3,1fr)}}
-  @media (max-width:520px){.modelsGrid{grid-template-columns:repeat(2,1fr)}}
-  .mcol{background:#142a45;border:1px solid var(--stroke);border-radius:12px;padding:12px;text-align:center}
-  .mcol .em{font-size:20px} .mcol .hi{font-weight:700} .mcol .lo{opacity:.85}
+  /* Karty v posuvníku */
+  .part,.day,.slot15{
+    background:#152433; border:1px solid var(--stroke); border-radius:12px; padding:10px; text-align:center;
+  }
+  .part .lbl{opacity:.9; margin-bottom:4px}
+  .part .emoji{font-size:22px}
+  .part .val{font-weight:700; font-size:22px; margin-top:6px}
+  .part .sub{color:#bcd1e5; font-size:12px; margin-top:4px}
+
+  .day{padding:12px}
+  .day .top{opacity:.9; margin-bottom:6px}
+  .day .em{font-size:22px}
+  .day .max{font-weight:700; font-size:22px; margin:6px 0 2px}
+  .day .min{opacity:.85}
+  .day .pp{color:#bcd1e5; font-size:12px; margin-top:6px}
+
+  .chartWrap{height:200px}
+  canvas{background:#0f1c2a; border:1px solid var(--stroke); border-radius:12px}
+
+  /* História */
+  .histRow{display:flex; align-items:center; justify-content:center; gap:10px; flex-wrap:wrap}
+  .badge{display:inline-block; padding:6px 10px; border-radius:10px; font-weight:700}
+  .badge.max{background:#ff5e5e; color:#fff}
+  .badge.min{background:#ffd265; color:#2b2300}
+  .histSub{color:var(--muted); font-size:12px; margin-top:6px; text-align:center}
+
+  footer{padding:14px 10px; text-align:center; color:#cfe8ff; font-size:14px; border-top:1px solid rgba(255,255,255,.12)}
+
+  /* Väčšie obrazovky */
+  @media (min-width:780px){
+    .wrap{padding:22px 16px 36px}
+    .toolbar{grid-template-columns:1fr auto auto auto}
+    .btnRow{display:contents}
+    .row{grid-template-columns:1.05fr 1fr; gap:16px}
+    .meta{grid-template-columns:repeat(2,minmax(0,1fr))}
+    .chartWrap{height:240px}
+  }
+  @media (min-width:1100px){ .chartWrap{height:280px} }
 </style>
 </head>
 <body>
@@ -80,21 +129,26 @@
 
     <div class="toolbar">
       <div class="searchCol">
-        <input id="q" class="search" type="text" placeholder="Hľadaj mesto (napr. Bratislava, Košice)">
+        <input id="q" class="search" type="text" placeholder="Hľadaj mesto (napr. Bratislava, Košice)" />
         <div id="suggestions"></div>
       </div>
-      <button id="geoBtn" class="pill">📍 Moja poloha</button>
-      <button id="cBtn" class="pill active">°C</button>
-      <button id="fBtn" class="pill">°F</button>
+      <div class="btnRow">
+        <button id="geoBtn" class="pill">📍 Moja poloha</button>
+        <button id="cBtn" class="pill active">°C</button>
+        <button id="fBtn" class="pill">°F</button>
+      </div>
     </div>
 
     <div class="row">
+      <!-- Aktuálne -->
       <section class="card">
         <div style="display:grid;grid-template-columns:1fr auto;gap:14px;align-items:start">
           <div>
             <h3 id="place">—</h3>
-            <div id="time" style="color:#a9bad9;font-size:14px">—</div>
+            <div id="time" style="color:var(--muted);font-size:14px">—</div>
             <div class="tempNow" id="temp">—°</div>
+            <div><span class="chip" id="uv">UV —</span></div>
+
             <div class="meta" style="margin-top:8px">
               <div>Pocitová teplota: <strong id="apparent">—</strong></div>
               <div>Vietor: <strong id="wind">—</strong></div>
@@ -103,198 +157,369 @@
               <div>Východ slnka: <strong id="sunrise">—</strong></div>
               <div>Západ slnka: <strong id="sunset">—</strong></div>
             </div>
+
+            <h3 style="margin:12px 0 6px">Dnešný súhrn</h3>
+            <!-- zarovnanie na stred + jednotný box -->
+            <p id="summary" style="margin:0;color:#dbeeff;background:#0f1c2a;border:1px solid var(--stroke);border-radius:10px;padding:12px;text-align:center"></p>
           </div>
           <div id="icon" class="icon">—</div>
         </div>
       </section>
 
+      <!-- Graf 24h -->
       <section class="card">
         <h3>Teplota počas 24 hodín</h3>
         <div class="chartWrap"><canvas id="hourly"></canvas></div>
       </section>
     </div>
 
-    <!-- SUMMARY centered -->
-    <section class="summaryRow">
-      <div class="summaryBox" id="summary">—</div>
+    <!-- Dnes po častiach -->
+    <section class="card" style="margin-top:12px">
+      <h3>Dnes po častiach</h3>
+      <div id="parts" class="hscroll"></div>
     </section>
 
-    <!-- Parts of day -->
-    <section class="partsWrap">
-      <h3 style="text-align:center;margin:14px 0 10px">Dnes po častiach</h3>
-      <div id="partsGrid" class="partsGrid"></div>
+    <!-- 7-dňová predpoveď -->
+    <section class="card" style="margin-top:12px">
+      <div style="display:flex;justify-content:center;align-items:center;gap:8px;flex-wrap:wrap">
+        <h3 style="margin:0">7-dňová predpoveď</h3>
+        <div style="display:flex;gap:6px">
+          <button class="pill" id="tab-ecmwf">ECMWF IFS</button>
+          <button class="pill" id="tab-icon">ICON (DWD)</button>
+          <button class="pill" id="tab-gfs">GFS (NOAA)</button>
+        </div>
+      </div>
+      <div id="days" class="hscroll" style="margin-top:8px"></div>
     </section>
 
-    <!-- 7-day simple forecast from ECMWF -->
-    <section class="card" style="margin-top:16px">
-      <h3>7-dňová predpoveď</h3>
-      <div id="modelsGrid" class="modelsGrid"></div>
+    <!-- 15 min -->
+    <section class="card" style="margin-top:12px">
+      <h3>15-minútová predpoveď (6 h)</h3>
+      <div id="min15" class="hscroll"></div>
+    </section>
+
+    <!-- História -->
+    <section class="card" style="margin-top:12px">
+      <div class="head" style="text-align:center">
+        <h3>Počasie presne pred rokom</h3>
+        <div id="hist-date" style="color:var(--muted);font-size:12px">—</div>
+      </div>
+      <div class="histRow" style="margin-top:6px">
+        <div id="hist-emoji" style="font-size:26px">—</div>
+        <div style="font-weight:700" id="hist-text">—</div>
+        <span class="badge max" id="hist-max">—</span>
+        <span class="badge min" id="hist-min">—</span>
+      </div>
+      <div class="histSub" id="hist-extra">—</div>
     </section>
   </div>
 
+  <footer>&copy; <span id="year"></span> Richard / Počasie</footer>
+
 <script>
-  // ===== helpers
-  const $=s=>document.querySelector(s);
-  const fmt0=(v,u='')=>(v==null||Number.isNaN(v))?'—':`${Math.round(v)}${u}`;
-  const fmt1=(v,u='')=>(v==null||Number.isNaN(v))?'—':`${(Math.round(v*10)/10).toFixed(1)}${u}`;
-  const toF=c=>(c*9/5)+32;
+  const $ = s => document.querySelector(s);
+  const fmt0 = (v,u='') => (v==null||Number.isNaN(v)) ? '—' : `${Math.round(v)}${u}`;
+  const fmt1 = (v,u='') => (v==null||Number.isNaN(v)) ? '—' : `${(Math.round(v*10)/10).toFixed(1)}${u}`;
+  const toF = c => (c*9/5)+32;
+
   const WMO={0:['Jasno'],1:['Prevažne jasno'],2:['Polojasno'],3:['Zamračené'],45:['Hmla'],48:['Mrznúca hmla'],51:['Slabé mrholenie'],53:['Mrholenie'],55:['Silné mrholenie'],61:['Slabý dážď'],63:['Dážď'],65:['Lejak'],66:['Mrznúci dážď'],67:['Mrznúci dážď'],71:['Slabé sneženie'],73:['Sneženie'],75:['Silné sneženie'],77:['Snehové zrná'],80:['Prehánky'],81:['Prehánky'],82:['Silné prehánky'],85:['Snehové prehánky'],86:['Silné snehové prehánky'],95:['Búrky'],96:['Búrky s krúpami'],99:['Silné búrky s krúpami']};
-  const emoji=(code)=>{const k=Number(code); if([0,1].includes(k))return'☀️'; if([2].includes(k))return'⛅'; if([3].includes(k))return'☁️'; if([45,48].includes(k))return'🌫️'; if([51,53,55].includes(k))return'🌦️'; if([61,63,65,80,81,82].includes(k))return'🌧️'; if([71,73,75,77,85,86].includes(k))return'❄️'; if([95,96,99].includes(k))return'⛈️'; return'🌤️';};
   const uvCat=u=>u<3?'nízky':u<6?'mierny':u<8?'vysoký':u<11?'veľmi vysoký':'extrémny';
+  const wmoEmoji=(code)=>{const k=Number(code); if([0,1].includes(k))return'☀️'; if([2].includes(k))return'⛅'; if([3].includes(k))return'☁️'; if([45,48].includes(k))return'🌫️'; if([51,53,55].includes(k))return'🌦️'; if([61,63,65,80,81,82].includes(k))return'🌧️'; if([71,73,75,77,85,86].includes(k))return'❄️'; if([95,96,99].includes(k))return'⛈️'; return'🌤️';};
 
   let state={units:'c',place:'Bratislava, SK',lat:48.1486,lon:17.1077,last:null};
-  let hourlyChart=null;
+  let hourlyChart=null; let activeModel='ecmwf';
+  const LS_KEY='wx_prefs_v2';
 
-  // ===== fetch + render
+  /* ---------- HELPERS: posuvník bez prázdneho miesta ---------- */
+  function fillSnap(container, colsMobile=2, colsTablet=3, colsDesktop=4){
+    const w = container.clientWidth;
+    const gap = parseFloat(getComputedStyle(container).gap || '10');
+    let cols = colsMobile;
+    if (w >= 720) cols = colsTablet;
+    if (w >= 1024) cols = colsDesktop;
+    // výpočet šírky položky tak, aby presne vyšiel počet stĺpcov
+    const itemW = (w - gap*(cols-1)) / cols;
+    Array.from(container.children).forEach(ch=>{
+      ch.style.width = `${itemW}px`;
+    });
+  }
+  function applyAllFill(){
+    ['#parts','#days','#min15'].forEach(id=>{
+      const el=$(id); if(el) fillSnap(el, 2, 3, 4);
+    });
+  }
+
+  /* ---------- Uloženie preferencií ---------- */
+  (()=>{try{
+    const raw=localStorage.getItem(LS_KEY);
+    if(raw){const p=JSON.parse(raw);
+      if(typeof p.lat==='number'&&typeof p.lon==='number'&&typeof p.place==='string'){state.lat=p.lat;state.lon=p.lon;state.place=p.place}
+      if(p.units==='c'||p.units==='f'){state.units=p.units}
+    }
+  }catch(e){}})();
+  const savePrefs=()=>{try{localStorage.setItem(LS_KEY,JSON.stringify({lat:state.lat,lon:state.lon,place:state.place,units:state.units}))}catch(e){}};
+
+  /* ---------- Načítanie počasia ---------- */
   async function fetchWeather(){
     const tz=Intl.DateTimeFormat().resolvedOptions().timeZone;
     const p=new URLSearchParams({
       latitude:state.lat, longitude:state.lon, timezone:tz,
       current:'temperature_2m,apparent_temperature,relative_humidity_2m,pressure_msl,wind_speed_10m,weather_code,uv_index',
       hourly:'temperature_2m,precipitation,weather_code,wind_speed_10m',
-      daily:'weather_code,temperature_2m_max,temperature_2m_min,precipitation_sum,precipitation_probability_max,wind_speed_10m_max,uv_index_max,sunrise,sunset',
-      forecast_days:'7'
+      daily:'weather_code,temperature_2m_max,temperature_2m_min,precipitation_probability_max,precipitation_sum,uv_index_max,wind_speed_10m_max,sunrise,sunset',
+      forecast_days:'3'
     });
     const r=await fetch(`https://api.open-meteo.com/v1/forecast?${p}`);
     if(!r.ok) throw new Error('Načítanie zlyhalo');
     state.last=await r.json();
-    renderHeader(); drawHourly(); renderSummary(); renderPartsOfDay(); renderModelGrid();
+    renderAll(); drawHourly(); fetchModels(activeModel); fetchHistory().catch(()=>{});
   }
 
-  function renderHeader(){
-    const d=state.last, cur=d.current, tz=d.timezone;
+  function renderAll(){
+    const d=state.last,cur=d.current,tz=d.timezone;
     $('#place').textContent=state.place;
+    $('#q').value=state.place==='Moja poloha'?'':state.place;
     $('#time').textContent=new Intl.DateTimeFormat('sk-SK',{dateStyle:'medium',timeStyle:'short',timeZone:tz}).format(new Date(cur.time));
     const t=state.units==='c'?cur.temperature_2m:toF(cur.temperature_2m);
     const app=state.units==='c'?cur.apparent_temperature:toF(cur.apparent_temperature);
-    $('#temp').textContent=fmt0(t,'°');
-    $('#apparent').textContent=fmt0(app,'°');
+    $('#temp').textContent=fmt0(t,'°'); $('#apparent').textContent=fmt0(app,'°');
     $('#wind').textContent=fmt1(cur.wind_speed_10m,' km/h');
     $('#hum').textContent=fmt0(cur.relative_humidity_2m,'%');
     $('#press').textContent=fmt0(cur.pressure_msl,' hPa');
-    $('#icon').textContent=emoji(cur.weather_code);
+    $('#icon').textContent=wmoEmoji(cur.weather_code);
 
-    const sr=d.daily.sunrise?.[0]?new Date(d.daily.sunrise[0]):null;
-    const ss=d.daily.sunset?.[0]?new Date(d.daily.sunset[0]):null;
+    const uvi=cur.uv_index??d.daily?.uv_index_max?.[0]??null;
+    $('#uv').textContent=`UV ${uvi!=null?fmt1(uvi):'—'} • ${uvi!=null?uvCat(uvi):'—'}`;
+
+    const dd=d.daily;
+    const tmax=state.units==='c'?dd.temperature_2m_max[0]:toF(dd.temperature_2m_max[0]);
+    const tmin=state.units==='c'?dd.temperature_2m_min[0]:toF(dd.temperature_2m_min[0]);
+    const ps=dd.precipitation_sum[0],pp=dd.precipitation_probability_max?.[0],wmax=dd.wind_speed_10m_max[0];
+    const condToday=(WMO[dd.weather_code?.[0]]?.[0])||'—';
+    const rainTxt=ps<0.1?(pp&&pp>20?`bez výrazných zrážok (pravdepodobnosť ${pp}%)`:'bez zrážok'):`zrážky do ${fmt1(ps,' mm')}`;
+    const uvTxt=dd.uv_index_max?.[0]!=null?`UV ${uvCat(dd.uv_index_max[0])} (max ${fmt1(dd.uv_index_max[0])})`:'UV údaj nedostupný';
+    $('#summary').innerHTML=`Dnes <strong>${condToday.toLowerCase()}</strong>, max <strong>${fmt0(tmax,'°')}</strong>, min <strong>${fmt0(tmin,'°')}</strong>, ${rainTxt}, vietor do <strong>${fmt1(wmax,' km/h')}</strong>, ${uvTxt}.`;
+
+    const sr=dd.sunrise?.[0]?new Date(dd.sunrise[0]):null;
+    const ss=dd.sunset?.[0]?new Date(dd.sunset[0]):null;
     $('#sunrise').textContent=sr?sr.toLocaleTimeString('sk-SK',{hour:'2-digit',minute:'2-digit'}):'—';
     $('#sunset').textContent=ss?ss.toLocaleTimeString('sk-SK',{hour:'2-digit',minute:'2-digit'}):'—';
+
+    $('#cBtn').classList.toggle('active',state.units==='c');
+    $('#fBtn').classList.toggle('active',state.units==='f');
+
+    renderParts(); renderMin15(); applyAllFill();
   }
 
   function drawHourly(){
-    const d=state.last, cur=d.current; const hours=d.hourly.time;
-    let i=hours.findIndex(h=>h.slice(0,13)===(cur.time||'').slice(0,13)); if(i<0)i=0;
+    const d=state.last,cur=d.current,hours=d.hourly.time,key=(cur.time||'').slice(0,13);
+    let i=hours.findIndex(h=>h.slice(0,13)===key); if(i<0) i=0;
     const labels=hours.slice(i,i+24).map(h=>h.split('T')[1]);
-    const t24c=d.hourly.temperature_2m.slice(i,i+24), data=state.units==='c'?t24c:t24c.map(toF);
+    const t24c=d.hourly.temperature_2m.slice(i,i+24), t24=state.units==='c'?t24c:t24c.map(toF);
     if(hourlyChart) hourlyChart.destroy();
     hourlyChart=new Chart($('#hourly'),{
       type:'line',
-      data:{labels,datasets:[{label:state.units==='c'?'Teplota (°C)':'Teplota (°F)',data,borderWidth:2,pointRadius:2,tension:.35}]},
-      options:{responsive:true,maintainAspectRatio:false,scales:{x:{grid:{color:'rgba(255,255,255,.08)'}},y:{grid:{color:'rgba(255,255,255,.08)'}}},plugins:{legend:{labels:{color:'#fff'},onClick:(e)=>{},onHover:(e)=>{if(e?.native)e.native.target.style.cursor='default';}}}}
+      data:{labels,datasets:[{label:state.units==='c'?'Teplota (°C)':'Teplota (°F)',data:t24,borderWidth:2,pointRadius:2,tension:.35}]},
+      options:{
+        responsive:true,maintainAspectRatio:false,
+        interaction:{mode:'nearest',intersect:false},
+        scales:{x:{grid:{color:'rgba(255,255,255,.08)'}},y:{grid:{color:'rgba(255,255,255,.08)'}}},
+        plugins:{legend:{labels:{color:'#fff'},onClick:(e,li)=>{},onHover:(e)=>{if(e&&e.native)e.native.target.style.cursor='default';}}}
+      }
     });
   }
 
-  function renderSummary(){
-    const d=state.last, dd=d.daily;
-    const tmax=state.units==='c'?dd.temperature_2m_max[0]:toF(dd.temperature_2m_max[0]);
-    const tmin=state.units==='c'?dd.temperature_2m_min[0]:toF(dd.temperature_2m_min[0]);
-    const ps=dd.precipitation_sum[0], pp=dd.precipitation_probability_max?.[0], wmax=dd.wind_speed_10m_max[0];
-    const cond=(WMO[dd.weather_code?.[0]]?.[0])||'—';
-    const rainTxt=ps<0.1?(pp&&pp>20?`bez výrazných zrážok (pravdepodobnosť ${pp}%)`:'bez zrážok'):`zrážky do ${fmt1(ps,' mm')}`;
-    const uvTxt=dd.uv_index_max?.[0]!=null?`UV ${uvCat(dd.uv_index_max[0])} (max ${fmt1(dd.uv_index_max[0])})`:'UV údaj nedostupný';
-    $('#summary').innerHTML=`Dnes <strong>${cond.toLowerCase()}</strong>, max <strong>${fmt0(tmax,'°')}</strong>, min <strong>${fmt0(tmin,'°')}</strong>, ${rainTxt}, vietor do <strong>${fmt1(wmax,' km/h')}</strong>, ${uvTxt}.`;
+  // Dnes po častiach (doobeda/poobede/večer/noc)
+  function valueAtHour(timesISO, arr, target){
+    const idx = timesISO.findIndex(t=>t.slice(0,13)===target.slice(0,13));
+    if(idx>=0) return arr[idx];
+    let best=0, bestDiff=1e18;
+    timesISO.forEach((t,i)=>{ const diff=Math.abs(new Date(t)-new Date(target)); if(diff<bestDiff){best=i;bestDiff=diff;} });
+    return arr[best];
   }
-
-  // parts of day – pick 09:00, 15:00, 21:00, 03:00
-  function atHour(targetHour){
-    const d=state.last.hourly;
-    for(let i=0;i<d.time.length;i++){
-      const hh=parseInt(d.time[i].split('T')[1].slice(0,2),10);
-      if(hh===targetHour) return i;
-    }
-    return 0;
-  }
-  function renderPartsOfDay(){
-    const h=state.last.hourly;
-    const idx = {
-      morning: atHour(9),
-      afternoon: atHour(15),
-      evening: atHour(21),
-      night: atHour(3)
-    };
-    const parts = [
-      ['Doobeda', idx.morning],
-      ['Poobede', idx.afternoon],
-      ['Večer',   idx.evening],
-      ['Noc',     idx.night]
-    ];
-    const g=$('#partsGrid'); g.innerHTML='';
-    parts.forEach(([label,i])=>{
-      const tC=h.temperature_2m[i], t=state.units==='c'?tC:toF(tC);
-      const w=h.weather_code[i], p=h.precipitation[i], wind=h.wind_speed_10m[i];
-      const el=document.createElement('div'); el.className='part';
+  function renderParts(){
+    const box = $('#parts'); box.innerHTML='';
+    const d=state.last; const base = new Date(d.current.time);
+    const make = (h,label)=>{
+      const dt=new Date(base); dt.setHours(h,0,0,0);
+      const temp = valueAtHour(d.hourly.time, d.hourly.temperature_2m, dt.toISOString());
+      const pr = valueAtHour(d.hourly.time, d.hourly.precipitation, dt.toISOString());
+      const wind = valueAtHour(d.hourly.time, d.hourly.wind_speed_10m, dt.toISOString());
+      const code = valueAtHour(d.hourly.time, d.hourly.weather_code, dt.toISOString());
+      const tDisp = state.units==='c'?temp:toF(temp);
+      const el=document.createElement('div'); el.className='part snap';
       el.innerHTML = `
-        <div class="sub" style="opacity:.85">${label}</div>
-        <div class="em" style="font-size:22px;margin:6px 0">${emoji(w)}</div>
-        <div class="tt">${fmt0(t,'°')}</div>
-        <div class="sub">${fmt1(p,' mm/h')} • vietor ${fmt1(wind,' km/h')}</div>
+        <div class="lbl">${label}</div>
+        <div class="emoji">${wmoEmoji(code)}</div>
+        <div class="val">${fmt0(tDisp,'°')}</div>
+        <div class="sub">${fmt1(pr,' mm/h')} • vietor ${fmt1(wind,' km/h')}</div>
       `;
-      g.appendChild(el);
-    });
+      box.appendChild(el);
+    };
+    make(10,'Doobeda'); make(15,'Poobede'); make(20,'Večer');
+
+    const next = new Date(base); next.setDate(base.getDate()+1); next.setHours(2,0,0,0);
+    const tempN = valueAtHour(d.hourly.time, d.hourly.temperature_2m, next.toISOString());
+    const prN   = valueAtHour(d.hourly.time, d.hourly.precipitation, next.toISOString());
+    const windN = valueAtHour(d.hourly.time, d.hourly.wind_speed_10m, next.toISOString());
+    const codeN = valueAtHour(d.hourly.time, d.hourly.weather_code, next.toISOString());
+    const el=document.createElement('div'); el.className='part snap';
+    el.innerHTML = `
+      <div class="lbl">Noc</div>
+      <div class="emoji">${wmoEmoji(codeN)}</div>
+      <div class="val">${fmt0(state.units==='c'?tempN:toF(tempN),'°')}</div>
+      <div class="sub">${fmt1(prN,' mm/h')} • vietor ${fmt1(windN,' km/h')}</div>
+    `;
+    box.appendChild(el);
   }
 
-  async function renderModelGrid(){
-    const tz=Intl.DateTimeFormat().resolvedOptions().timeZone;
-    const p=new URLSearchParams({latitude:state.lat,longitude:state.lon,timezone:tz,
-      daily:'weather_code,temperature_2m_max,temperature_2m_min,precipitation_probability_max',forecast_days:'7'});
-    const r=await fetch(`https://api.open-meteo.com/v1/ecmwf?${p}`).catch(()=>null);
-    const j=await r.json().catch(()=>null);
-    const box=$('#modelsGrid'); box.innerHTML='';
-    if(!j || !j.daily){ box.innerHTML='<div style="grid-column:1/-1;text-align:center;color:#ffd6d6">Dáta sa nepodarilo načítať.</div>'; return; }
-    const d=j.daily, n=Math.min(7,d.time.length);
-    for(let i=0;i<n;i++){
-      const lab=new Date(d.time[i]+'T00:00:00').toLocaleDateString('sk-SK',{weekday:'short',day:'2-digit',month:'2-digit'});
-      const max=state.units==='c'?d.temperature_2m_max[i]:toF(d.temperature_2m_max[i]);
-      const min=state.units==='c'?d.temperature_2m_min[i]:toF(d.temperature_2m_min[i]);
-      const el=document.createElement('div'); el.className='mcol';
+  // 15-minútový pás
+  const lerp=(a,b,t)=>a+(b-a)*t;
+  function valueAt15min(timesISO,arr,date){
+    const ts=timesISO.map(t=>new Date(t));
+    for(let i=0;i<ts.length-1;i++){
+      const t0=ts[i],t1=ts[i+1];
+      if(date>=t0&&date<=t1){
+        const r=(date-t0)/(t1-t0),v0=arr[i],v1=arr[i+1];
+        if(v0==null||v1==null)return null;
+        return lerp(v0,v1,r);
+      }
+    } return null
+  }
+  function codeAt15min(timesISO,codes,date){
+    const ts=timesISO.map(t=>new Date(t));
+    for(let i=0;i<ts.length-1;i++){
+      const t0=ts[i],t1=ts[i+1];
+      if(date>=t0&&date<=t1){
+        const mid=new Date((t0.getTime()+t1.getTime())/2);
+        return date<mid?codes[i]:codes[i+1]
+      }
+    } return codes[codes.length-1]??0
+  }
+  function renderMin15(){
+    const d=state.last; const box=$('#min15'); box.innerHTML='';
+    const start=new Date(d.current.time);
+    const m=start.getMinutes(); const add=(15-(m%15))%15; if(add>0) start.setMinutes(m+add,0,0);
+    for(let k=0;k<24;k++){
+      const t=new Date(start.getTime()+k*15*60*1000);
+      const tmp=valueAt15min(d.hourly.time,d.hourly.temperature_2m,t);
+      const prep=valueAt15min(d.hourly.time,d.hourly.precipitation,t);
+      const code=codeAt15min(d.hourly.time,d.hourly.weather_code,t);
+      const wind=valueAt15min(d.hourly.time,d.hourly.wind_speed_10m,t);
+      const tempDisplay=state.units==='c'?tmp:(tmp!=null?toF(tmp):null);
+      const el=document.createElement('div'); el.className='slot15 snap';
       el.innerHTML = `
-        <div style="opacity:.85">${lab}</div>
-        <div style="font-size:20px;margin:6px 0">${emoji(d.weather_code?.[i])}</div>
-        <div class="hi">${fmt0(max,'°')}</div>
-        <div class="lo">${fmt0(min,'°')}</div>
-        <div class="pp" style="color:#bcd0f3;margin-top:4px">Zrážky: ${d.precipitation_probability_max?.[i]??'—'}%</div>
+        <div class="lbl">${t.toLocaleTimeString('sk-SK',{hour:'2-digit',minute:'2-digit'})}</div>
+        <div class="emoji">${wmoEmoji(code)}</div>
+        <div class="val">${fmt0(tempDisplay,'°')}</div>
+        <div class="sub">${prep!=null?fmt1(prep,' mm/h'):'—'} • vietor ${wind!=null?fmt1(wind,' km/h'):'—'}</div>
       `;
       box.appendChild(el);
     }
   }
 
-  // search & controls (rýchle)
+  // 7-dňové modely
+  async function fetchModels(which){
+    activeModel=which;
+    ['ecmwf','icon','gfs'].forEach(id=>{
+      const btn=$(`#tab-${id}`); if(!btn) return;
+      btn.classList.toggle('active', id===which);
+    });
+    const tz=Intl.DateTimeFormat().resolvedOptions().timeZone;
+    const daily='weather_code,temperature_2m_max,temperature_2m_min,precipitation_probability_max';
+    let base=''; if(which==='ecmwf') base='https://api.open-meteo.com/v1/ecmwf';
+    if(which==='icon') base='https://api.open-meteo.com/v1/dwd-icon';
+    if(which==='gfs') base='https://api.open-meteo.com/v1/gfs';
+    const p=new URLSearchParams({latitude:state.lat,longitude:state.lon,timezone:tz,daily,forecast_days:'7'});
+    try{
+      const r=await fetch(`${base}?${p}`); if(!r.ok) throw 0;
+      const j=await r.json(); renderDays(j);
+    }catch(e){
+      $('#days').innerHTML='<div style="color:#ffd4d4">Model sa nepodarilo načítať.</div>';
+    }
+  }
+  function renderDays(d){
+    const box=$('#days'); box.innerHTML='';
+    const days=d.daily; const n=Math.min(7, days.time.length);
+    for(let i=0;i<n;i++){
+      const lab=new Date(days.time[i]+'T00:00:00').toLocaleDateString('sk-SK',{weekday:'short',day:'2-digit',month:'2-digit'});
+      const code=days.weather_code?.[i];
+      const maxC=days.temperature_2m_max[i], minC=days.temperature_2m_min[i];
+      const max=state.units==='c'?maxC:toF(maxC), min=state.units==='c'?minC:toF(minC);
+      const pp=days.precipitation_probability_max?.[i];
+      const el=document.createElement('div'); el.className='day snap';
+      el.innerHTML = `
+        <div class="top">${lab}</div>
+        <div class="em">${wmoEmoji(code)}</div>
+        <div class="max">${fmt0(max,'°')}</div>
+        <div class="min">${fmt0(min,'°')}</div>
+        <div class="pp">Zrážky: ${pp!=null?pp+'%':'—'}</div>
+      `;
+      box.appendChild(el);
+    }
+    applyAllFill();
+  }
+
+  // História
+  async function fetchHistory(){
+    const tz=Intl.DateTimeFormat().resolvedOptions().timeZone;
+    const now=new Date(); const lastYear=new Date(now); lastYear.setFullYear(now.getFullYear()-1);
+    const y=lastYear.getFullYear(),m=String(lastYear.getMonth()+1).padStart(2,'0'),d=String(lastYear.getDate()).padStart(2,'0');
+    const day=`${y}-${m}-${d}`;
+    $('#hist-date').textContent=new Intl.DateTimeFormat('sk-SK',{dateStyle:'full'}).format(lastYear);
+    const daily='weather_code,temperature_2m_max,temperature_2m_min,precipitation_sum';
+    const p=new URLSearchParams({latitude:state.lat,longitude:state.lon,timezone:tz,start_date:day,end_date:day,daily});
+    const r=await fetch(`https://archive-api.open-meteo.com/v1/archive?${p}`); if(!r.ok) throw new Error('História sa nepodarila načítať');
+    const j=await r.json(); const dd=j.daily; if(!dd||!dd.time?.length) throw new Error('Bez dát');
+    const code=dd.weather_code[0]; const tmax=dd.temperature_2m_max[0]; const tmin=dd.temperature_2m_min[0]; const pr=dd.precipitation_sum?.[0]??0;
+    $('#hist-emoji').textContent=wmoEmoji(code); $('#hist-text').textContent=(WMO[code]?.[0])||'—';
+    const max=state.units==='c'?tmax:toF(tmax); const min=state.units==='c'?tmin:toF(tmin);
+    $('#hist-max').textContent=`${fmt1(max)}°${state.units==='c'?'C':'F'}`;
+    $('#hist-min').textContent=`${fmt1(min)}°${state.units==='c'?'C':'F'}`;
+    $('#hist-extra').textContent=pr>0?`Zrážky: ${fmt1(pr,' mm')}`:'Bez zrážok.';
+  }
+
+  // Rok v pätičke
+  document.getElementById('year').textContent=new Date().getFullYear();
+
+  // Vyhľadávanie
   let timer;
   $('#q').addEventListener('input',e=>{
     const q=e.target.value.trim(); clearTimeout(timer);
-    if(q.length<2){$('#suggestions').style.display='none'; return;}
+    if(q.length<2){$('#suggestions').style.display='none';return;}
     timer=setTimeout(async ()=>{
-      const res=await fetch(`https://geocoding-api.open-meteo.com/v1/search?name=${encodeURIComponent(q)}&count=6&language=sk&format=json`).then(r=>r.json()).catch(()=>({}));
-      const arr=res.results||[]; const box=$('#suggestions'); box.innerHTML=''; box.style.display='block';
-      if(!arr.length){ box.innerHTML='<div class="sugg">Nič sa nenašlo</div>'; return; }
+      const url=`https://geocoding-api.open-meteo.com/v1/search?name=${encodeURIComponent(q)}&count=6&language=sk&format=json`;
+      const res=await fetch(url).then(r=>r.json()).catch(()=>({}));
+      const arr=res.results||[]; const box=$('#suggestions'); box.innerHTML=''; box.style.display='grid';
+      if(!arr.length){box.innerHTML='<div class="sugg">Nič sa nenašlo</div>';return;}
       arr.forEach(p=>{
         const b=document.createElement('div'); b.className='sugg';
         b.textContent=`${p.name}${p.admin1?`, ${p.admin1}`:''}, ${p.country_code}`;
-        b.onclick=()=>{ state.lat=p.latitude; state.lon=p.longitude; state.place=b.textContent; box.style.display='none'; fetchWeather(); };
+        b.addEventListener('click',()=>{state.lat=p.latitude;state.lon=p.longitude;state.place=b.textContent;box.style.display='none';savePrefs();fetchWeather();});
         box.appendChild(b);
       });
     },250);
   });
   document.addEventListener('click',e=>{const box=$('#suggestions'); if(!box.contains(e.target)&&e.target!==$('#q')) box.style.display='none';});
 
+  // Ovládanie
   $('#geoBtn').addEventListener('click',()=>{
     if(!navigator.geolocation) return alert('Geolokácia nie je podporovaná.');
-    navigator.geolocation.getCurrentPosition(pos=>{ state.lat=pos.coords.latitude; state.lon=pos.coords.longitude; state.place='Moja poloha'; fetchWeather(); });
+    navigator.geolocation.getCurrentPosition(pos=>{
+      state.lat=pos.coords.latitude; state.lon=pos.coords.longitude; state.place='Moja poloha';
+      $('#suggestions').style.display='none'; savePrefs(); fetchWeather();
+    });
   });
-  $('#cBtn').addEventListener('click',()=>{state.units='c'; $('#cBtn').classList.add('active'); $('#fBtn').classList.remove('active'); renderHeader(); drawHourly(); renderSummary(); renderPartsOfDay();});
-  $('#fBtn').addEventListener('click',()=>{state.units='f'; $('#fBtn').classList.add('active'); $('#cBtn').classList.remove('active'); renderHeader(); drawHourly(); renderSummary(); renderPartsOfDay();});
+  $('#cBtn').addEventListener('click',()=>{state.units='c';$('#cBtn').classList.add('active');$('#fBtn').classList.remove('active');savePrefs();renderAll();drawHourly();fetchModels(activeModel);fetchHistory().catch(()=>{});});
+  $('#fBtn').addEventListener('click',()=>{state.units='f';$('#fBtn').classList.add('active');$('#cBtn').classList.remove('active');savePrefs();renderAll();drawHourly();fetchModels(activeModel);fetchHistory().catch(()=>{});});
 
+  $('#tab-ecmwf').addEventListener('click',()=>fetchModels('ecmwf'));
+  $('#tab-icon').addEventListener('click',()=>fetchModels('icon'));
+  $('#tab-gfs').addEventListener('click',()=>fetchModels('gfs'));
+
+  // Init
   fetchWeather().catch(e=>alert(e.message));
-  window.addEventListener('resize',()=>{ if(state.last){ drawHourly(); }});
+  window.addEventListener('resize',()=>{ if(state.last){ drawHourly(); applyAllFill(); }});
 </script>
 </body>
 </html>
