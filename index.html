@@ -14,7 +14,6 @@
   :root{
     --bg0:#0b0f14;
     --bg1:#0e1620;
-    --panel:#121e2a;
     --stroke:#233448;
     --txt:#eaf3ff;
     --muted:#a8bed5;
@@ -38,7 +37,7 @@
   .wrap{width:100%; max-width:1120px; margin-inline:auto; padding:16px 12px 28px; flex:1}
   header h1{margin:0 0 10px; text-align:center; font-size:28px; letter-spacing:.3px}
 
-  /* Toolbar (mobile first) */
+  /* Toolbar */
   .toolbar{display:grid; grid-template-columns:1fr; gap:10px; margin:10px 0 12px}
   .searchCol{display:flex; flex-direction:column; gap:6px; position:relative}
   .search{
@@ -46,11 +45,6 @@
     border-radius:12px; padding:12px 14px; outline:none; font-size:16px; min-height:46px;
   }
   .search:focus{border-color:#2e4a67}
-  input.search:-webkit-autofill,
-  input.search:-webkit-autofill:hover,
-  input.search:-webkit-autofill:focus{
-    -webkit-text-fill-color:#fff; -webkit-box-shadow:0 0 0 1000px #152535 inset; box-shadow:0 0 0 1000px #152535 inset; caret-color:#fff;
-  }
   #suggestions{
     display:none; gap:6px; position:absolute; top:calc(100% + 6px); left:0; right:0; z-index:40;
     background:#0f1c2a; border:1px solid var(--stroke); border-radius:12px; padding:8px; max-height:55vh; overflow:auto;
@@ -68,21 +62,22 @@
     border:1px solid var(--stroke); border-radius:var(--r); box-shadow:var(--shadow); padding:14px;
   }
   .card h3{margin:0 0 10px; text-align:center; font-size:18px}
+
+  .row{display:grid; grid-template-columns:1fr; gap:12px; margin-top:4px}
   .meta{display:grid; grid-template-columns:1fr; gap:8px; color:var(--muted); font-size:14px}
   .meta strong{color:#fff}
   .chip{display:inline-flex; gap:8px; align-items:center; background:#143344; border:1px solid var(--stroke); color:#d8f7ff; border-radius:999px; padding:6px 10px; font-size:12px; margin-right:6px}
   .tempNow{font-size:44px; font-weight:700; line-height:1; margin:6px 0}
   .icon{width:64px; height:64px; display:flex; align-items:center; justify-content:center; font-size:48px}
 
-  .row{display:grid; grid-template-columns:1fr; gap:12px; margin-top:4px}
+  .gridInfo{display:grid; grid-template-columns:1fr auto; gap:14px; align-items:start}
 
-  /* horizontálne pásy (carousely) */
+  /* horizontálne pásy */
   .hscroll{display:flex; gap:10px; overflow-x:auto; padding:6px 2px 8px; scroll-snap-type:x mandatory; -webkit-overflow-scrolling:touch}
   .hscroll::-webkit-scrollbar{height:8px}
   .hscroll::-webkit-scrollbar-track{background:#0f1c2a; border-radius:10px}
   .hscroll::-webkit-scrollbar-thumb{background:#1e3c54; border-radius:10px}
 
-  /* Karty v pásoch */
   .part{min-width:150px; background:#152433; border:1px solid var(--stroke); border-radius:12px; padding:10px; text-align:center; scroll-snap-align:start}
   .part .lbl{opacity:.9; margin-bottom:4px}
   .part .emoji{font-size:22px}
@@ -99,23 +94,28 @@
   .chartWrap{height:200px}
   canvas{background:#0f1c2a; border:1px solid var(--stroke); border-radius:12px}
 
-  /* súhrn – vycentrovaný */
-  #summary{margin:0; color:#dbeeff; background:#0f1c2a; border:1px solid var(--stroke); border-radius:10px; padding:10px; text-align:center}
-  #summaryWrap{display:flex; justify-content:center}
+  /* skutočne centrovaný súhrn pod gridom */
+  .summarySection{margin-top:12px}
+  .summarySection h3{margin-bottom:8px}
+  #summary{
+    margin:0 auto;
+    max-width:720px;
+    color:#dbeeff; background:#0f1c2a; border:1px solid var(--stroke);
+    border-radius:10px; padding:12px; text-align:center
+  }
 
   /* História */
   .histRow{display:flex; align-items:center; justify-content:center; gap:10px; flex-wrap:wrap}
   .badge{display:inline-block; padding:6px 10px; border-radius:10px; font-weight:700}
   .badge.max{background:#ff5e5e; color:#fff}
   .badge.min{background:#ffd265; color:#2b2300}
-  .histSub{color:var(--muted); font-size:12px; margin-top:6px; text-align:center}
+  .histSub{color:#a8bed5; font-size:12px; margin-top:6px; text-align:center}
 
   footer{padding:14px 10px; text-align:center; color:#cfe8ff; font-size:14px; border-top:1px solid rgba(255,255,255,.12)}
 
-  /* väčšie obrazovky */
   @media (min-width:780px){
     .wrap{padding:22px 16px 36px}
-    .toolbar{grid-template-columns:1fr auto} /* len 2 tlačidlá (geo, °C) */
+    .toolbar{grid-template-columns:1fr auto}
     .btnRow{grid-template-columns:repeat(2,auto); justify-content:end}
     .row{grid-template-columns:1.05fr 1fr; gap:16px}
     .meta{grid-template-columns:repeat(2,minmax(0,1fr))}
@@ -134,7 +134,7 @@
         <div id="suggestions"></div>
       </div>
       <div class="btnRow">
-        <button id="geoBtn" class="pill">📍 Moja poloha</button>
+        <button id="geoBtn" class="pill">📍 Zistiť polohu</button>
         <button id="cBtn" class="pill active">°C</button>
       </div>
     </div>
@@ -142,7 +142,7 @@
     <div class="row">
       <!-- Aktuálne -->
       <section class="card">
-        <div style="display:grid;grid-template-columns:1fr auto;gap:14px;align-items:start">
+        <div class="gridInfo">
           <div>
             <h3 id="place">—</h3>
             <div id="time" style="color:var(--muted);font-size:14px">—</div>
@@ -157,13 +157,14 @@
               <div>Východ slnka: <strong id="sunrise">—</strong></div>
               <div>Západ slnka: <strong id="sunset">—</strong></div>
             </div>
-
-            <h3 style="margin:12px 0 6px; text-align:center">Dnešný súhrn</h3>
-            <div id="summaryWrap">
-              <p id="summary">—</p>
-            </div>
           </div>
           <div id="icon" class="icon">—</div>
+        </div>
+
+        <!-- Skutočne centrovaný súhrn -->
+        <div class="summarySection">
+          <h3>Dnešný súhrn</h3>
+          <p id="summary">—</p>
         </div>
       </section>
 
@@ -180,9 +181,9 @@
       <div id="parts" class="hscroll"></div>
     </section>
 
-    <!-- 7-dňová predpoveď + tlačidlá modelov POD nadpisom -->
+    <!-- 7-dňová predpoveď + tlačidlá modelov pod nadpisom -->
     <section class="card" style="margin-top:12px">
-      <h3 style="margin-bottom:6px">7-dňová predpoveď</h3>
+      <h3 style="margin-bottom:8px">7-dňová predpoveď</h3>
       <div style="display:flex;justify-content:center;gap:8px;flex-wrap:wrap;margin-bottom:8px">
         <button class="pill" id="tab-ecmwf">ECMWF IFS</button>
         <button class="pill" id="tab-icon">ICON (DWD)</button>
@@ -219,17 +220,15 @@
   const $ = s => document.querySelector(s);
   const fmt0 = (v,u='') => (v==null||Number.isNaN(v)) ? '—' : `${Math.round(v)}${u}`;
   const fmt1 = (v,u='') => (v==null||Number.isNaN(v)) ? '—' : `${(Math.round(v*10)/10).toFixed(1)}${u}`;
-  const toF = c => (c*9/5)+32; // nechávam pre prípad, ale nepoužívame
 
-  const WMO={0:['Jasno','sun'],1:['Prevažne jasno','sun'],2:['Polojasno','cloud-sun'],3:['Zamračené','cloud'],
-    45:['Hmla','fog'],48:['Mrznúca hmla','fog'],51:['Slabé mrholenie','drizzle'],53:['Mrholenie','drizzle'],55:['Silné mrholenie','drizzle'],
-    61:['Slabý dážď','rain'],63:['Dážď','rain'],65:['Lejak','rain'],66:['Mrznúci dážď','sleet'],67:['Mrznúci dážď','sleet'],
-    71:['Slabé sneženie','snow'],73:['Sneženie','snow'],75:['Silné sneženie','snow'],77:['Snehové zrná','snow'],
-    80:['Prehánky','rain'],81:['Prehánky','rain'],82:['Silné prehánky','rain'],85:['Snehové prehánky','snow'],86:['Silné snehové prehánky','snow'],
-    95:['Búrky','storm'],96:['Búrky s krúpami','storm'],99:['Silné búrky s krúpami','storm']
-  };
+  const WMO={0:['Jasno'],1:['Prevažne jasno'],2:['Polojasno'],3:['Zamračené'],
+    45:['Hmla'],48:['Mrznúca hmla'],51:['Slabé mrholenie'],53:['Mrholenie'],55:['Silné mrholenie'],
+    61:['Slabý dážď'],63:['Dážď'],65:['Lejak'],66:['Mrznúci dážď'],67:['Mrznúci dážď'],
+    71:['Slabé sneženie'],73:['Sneženie'],75:['Silné sneženie'],77:['Snehové zrná'],
+    80:['Prehánky'],81:['Prehánky'],82:['Silné prehánky'],85:['Snehové prehánky'],86:['Silné snehové prehánky'],
+    95:['Búrky'],96:['Búrky s krúpami'],99:['Silné búrky s krúpami']};
   const uvCat=u=>u<3?'nízky':u<6?'mierny':u<8?'vysoký':u<11?'veľmi vysoký':'extrémny';
-  const wmoEmoji=(code)=>{const k=Number(code);
+  const wmoEmoji=code=>{const k=Number(code);
     if([0,1].includes(k))return'☀️'; if([2].includes(k))return'⛅'; if([3].includes(k))return'☁️';
     if([45,48].includes(k))return'🌫️'; if([51,53,55].includes(k))return'🌦️';
     if([61,63,65,80,81,82].includes(k))return'🌧️';
@@ -237,7 +236,7 @@
     if([95,96,99].includes(k))return'⛈️'; return'🌤️';
   };
 
-  let state={units:'c',place:'Bratislava, SK',lat:48.1486,lon:17.1077,last:null};
+  let state={units:'c',place:'—',lat:48.1486,lon:17.1077,last:null};
   let hourlyChart=null; let activeModel='ecmwf';
   const LS_KEY='wx_prefs_v2';
 
@@ -246,12 +245,10 @@
     const raw=localStorage.getItem(LS_KEY);
     if(raw){const p=JSON.parse(raw);
       if(typeof p.lat==='number'&&typeof p.lon==='number'&&typeof p.place==='string'){state.lat=p.lat;state.lon=p.lon;state.place=p.place}
-      // units zamknuté na °C, preto nepovoľujeme prepnúť
     }
   }catch(e){}})();
   const savePrefs=()=>{try{localStorage.setItem(LS_KEY,JSON.stringify({lat:state.lat,lon:state.lon,place:state.place,units:'c'}))}catch(e){}};
 
-  // Fetch
   async function fetchWeather(){
     const tz=Intl.DateTimeFormat().resolvedOptions().timeZone;
     const p=new URLSearchParams({
@@ -270,16 +267,14 @@
   function renderAll(){
     const d=state.last,cur=d.current,tz=d.timezone;
     $('#place').textContent=state.place;
-    $('#q').value=state.place==='Moja poloha'?'':state.place;
+    $('#q').value=state.place.includes('Zistená poloha')?'':state.place;
     $('#time').textContent=new Intl.DateTimeFormat('sk-SK',{dateStyle:'medium',timeStyle:'short',timeZone:tz}).format(new Date(cur.time));
-    const t=cur.temperature_2m;
-    const app=cur.apparent_temperature;
-    $('#temp').textContent=fmt0(t,'°'); $('#apparent').textContent=fmt0(app,'°');
+    $('#temp').textContent=fmt0(cur.temperature_2m,'°');
+    $('#apparent').textContent=fmt0(cur.apparent_temperature,'°');
     $('#wind').textContent=fmt1(cur.wind_speed_10m,' km/h');
     $('#hum').textContent=fmt0(cur.relative_humidity_2m,'%');
     $('#press').textContent=fmt0(cur.pressure_msl,' hPa');
     $('#icon').textContent=wmoEmoji(cur.weather_code);
-
     const uvi=cur.uv_index??d.daily?.uv_index_max?.[0]??null;
     $('#uv').textContent=`UV ${uvi!=null?fmt1(uvi):'—'} • ${uvi!=null?uvCat(uvi):'—'}`;
 
@@ -296,9 +291,6 @@
     const ss=dd.sunset?.[0]?new Date(dd.sunset[0]):null;
     $('#sunrise').textContent=sr?sr.toLocaleTimeString('sk-SK',{hour:'2-digit',minute:'2-digit'}):'—';
     $('#sunset').textContent=ss?ss.toLocaleTimeString('sk-SK',{hour:'2-digit',minute:'2-digit'}):'—';
-
-    $('#cBtn').classList.add('active'); // iba dekoratívne
-    renderParts(); renderMin15();
   }
 
   function drawHourly(){
@@ -319,7 +311,7 @@
     });
   }
 
-  // Dnes po častiach
+  /* pomocné na hodinové a 15-min pásy */
   function valueAtHour(timesISO, arr, target){
     const idx = timesISO.findIndex(t=>t.slice(0,13)===target.slice(0,13));
     if(idx>=0) return arr[idx];
@@ -329,8 +321,7 @@
   }
   function renderParts(){
     const box = $('#parts'); box.innerHTML='';
-    const d=state.last;
-    const base = new Date(d.current.time);
+    const d=state.last; const base = new Date(d.current.time);
     const make = (h,label)=>{
       const dt=new Date(base); dt.setHours(h,0,0,0);
       const temp = valueAtHour(d.hourly.time, d.hourly.temperature_2m, dt.toISOString());
@@ -342,8 +333,7 @@
         <div class="lbl">${label}</div>
         <div class="emoji">${wmoEmoji(code)}</div>
         <div class="val">${fmt0(temp,'°')}</div>
-        <div class="sub">${fmt1(pr,' mm/h')} • vietor ${fmt1(wind,' km/h')}</div>
-      `;
+        <div class="sub">${fmt1(pr,' mm/h')} • vietor ${fmt1(wind,' km/h')}</div>`;
       box.appendChild(el);
     };
     make(10,'Doobeda'); make(15,'Poobede'); make(20,'Večer');
@@ -357,12 +347,10 @@
       <div class="lbl">Noc</div>
       <div class="emoji">${wmoEmoji(codeN)}</div>
       <div class="val">${fmt0(tempN,'°')}</div>
-      <div class="sub">${fmt1(prN,' mm/h')} • vietor ${fmt1(windN,' km/h')}</div>
-    `;
+      <div class="sub">${fmt1(prN,' mm/h')} • vietor ${fmt1(windN,' km/h')}</div>`;
     box.appendChild(el);
   }
 
-  // 15-min pás
   const lerp=(a,b,t)=>a+(b-a)*t;
   function valueAt15min(timesISO,arr,date){
     const ts=timesISO.map(t=>new Date(t));
@@ -400,13 +388,11 @@
         <div class="lbl">${t.toLocaleTimeString('sk-SK',{hour:'2-digit',minute:'2-digit'})}</div>
         <div class="emoji">${wmoEmoji(code)}</div>
         <div class="val">${fmt0(tmp,'°')}</div>
-        <div class="sub">${prep!=null?fmt1(prep,' mm/h'):'—'} • vietor ${wind!=null?fmt1(wind,' km/h'):'—'}</div>
-      `;
+        <div class="sub">${prep!=null?fmt1(prep,' mm/h'):'—'} • vietor ${wind!=null?fmt1(wind,' km/h'):'—'}</div>`;
       box.appendChild(el);
     }
   }
 
-  // Modely (7d)
   async function fetchModels(which){
     activeModel=which;
     ['ecmwf','icon','gfs'].forEach(id=>{
@@ -440,13 +426,11 @@
         <div class="em">${wmoEmoji(code)}</div>
         <div class="max">${fmt0(max,'°')}</div>
         <div class="min">${fmt0(min,'°')}</div>
-        <div class="pp">Zrážky: ${pp!=null?pp+'%':'—'}</div>
-      `;
+        <div class="pp">Zrážky: ${pp!=null?pp+'%':'—'}</div>`;
       box.appendChild(el);
     }
   }
 
-  // História (pred rokom)
   async function fetchHistory(){
     const tz=Intl.DateTimeFormat().resolvedOptions().timeZone;
     const now=new Date(); const lastYear=new Date(now); lastYear.setFullYear(now.getFullYear()-1);
@@ -486,13 +470,33 @@
   });
   document.addEventListener('click',e=>{const box=$('#suggestions'); if(!box.contains(e.target)&&e.target!==$('#q')) box.style.display='none';});
 
-  // Ovládanie
+  // GEO – „Zistiť polohu“ a nahradiť názvom mesta
   $('#geoBtn').addEventListener('click',()=>{
     if(!navigator.geolocation) return alert('Geolokácia nie je podporovaná.');
-    navigator.geolocation.getCurrentPosition(pos=>{
-      state.lat=pos.coords.latitude; state.lon=pos.coords.longitude; state.place='Moja poloha';
-      $('#suggestions').style.display='none'; savePrefs(); fetchWeather();
-    });
+    $('#geoBtn').textContent='⌛ Zisťujem polohu...';
+    navigator.geolocation.getCurrentPosition(async pos=>{
+      state.lat=pos.coords.latitude; state.lon=pos.coords.longitude;
+      // reverzné geokódovanie (Open-Meteo)
+      try{
+        const rev=await fetch(`https://geocoding-api.open-meteo.com/v1/reverse?latitude=${state.lat}&longitude=${state.lon}&language=sk&count=1`).then(r=>r.json());
+        const hit=rev?.results?.[0];
+        if(hit){
+          state.place=`${hit.name}${hit.admin1?`, ${hit.admin1}`:''}, ${hit.country_code}`;
+          $('#geoBtn').textContent=state.place;
+        }else{
+          state.place='Zistená poloha';
+          $('#geoBtn').textContent='Zistená poloha';
+        }
+      }catch(_){
+        state.place='Zistená poloha';
+        $('#geoBtn').textContent='Zistená poloha';
+      }
+      savePrefs();
+      fetchWeather();
+    }, err=>{
+      alert('Nepodarilo sa získať polohu.');
+      $('#geoBtn').textContent='📍 Zistiť polohu';
+    }, {enableHighAccuracy:true,timeout:10000,maximumAge:300000});
   });
 
   // Modelové taby
