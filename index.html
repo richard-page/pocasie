@@ -14,27 +14,26 @@
   body{
     margin:0;color:var(--txt);
     font-family:Poppins,system-ui,-apple-system,Segoe UI,Roboto,Arial;
-    background:radial-gradient(1300px 800px at 50% -10%,#16508e 0%,#0e2f5b 40%,#0a1f3e 100%),
-               linear-gradient(180deg,var(--bg1),var(--bg2));
-    min-height:100vh; display:flex; flex-direction:column;
-    overflow-y:auto;
+    background:radial-gradient(1300px 800px at 50% -10%,#16508e 0%,#0e2f5b 40%,#0a1f3e 100%),linear-gradient(180deg,var(--bg1),var(--bg2));
+    min-height:100vh;display:flex;flex-direction:column;overflow-y:auto
   }
   .wrap{max-width:1180px;margin:auto;padding:28px 16px 40px;flex:1}
   header h1{margin:0;font-size:28px;text-align:center}
 
   .toolbar{display:grid;grid-template-columns:1fr auto auto auto;gap:10px;align-items:start;margin:16px 0 10px}
-  .searchCol{display:flex;flex-direction:column;gap:10px}
+  .searchCol{display:flex;flex-direction:column;gap:10px;position:relative}
   .search{width:100%;background:#223e6d;border:1px solid var(--stroke);color:#fff;border-radius:14px;padding:12px 14px;outline:none}
   .search:focus{background:#223e6d;color:#fff;border-color:var(--stroke);outline:none}
   input.search:-webkit-autofill,
   input.search:-webkit-autofill:hover,
   input.search:-webkit-autofill:focus{-webkit-text-fill-color:#fff;-webkit-box-shadow:0 0 0 1000px #223e6d inset;box-shadow:0 0 0 1000px #223e6d inset;caret-color:#fff;transition:background-color 9999s ease-out 0s}
-  .pill{background:#274b86;border:1px solid var(--stroke);color:#dfeaff;border-radius:14px;padding:12px 14px;font-weight:600;cursor:pointer}
+
+  .pill{background:#274b86;border:1px solid var(--stroke);color:#dfeaff;border-radius:14px;padding:12px 14px;font-weight:600;cursor:pointer;min-height:44px}
   .pill:hover{filter:brightness(1.07)}
   .pill.active{background:var(--brand);border-color:#3c7bd0;color:#001b3b}
 
-  #suggestions{display:none;gap:8px}
-  .sugg{background:#1b335e;border:1px solid var(--stroke);border-radius:12px;padding:10px 12px;cursor:pointer}
+  #suggestions{display:none;gap:8px;position:absolute;top:calc(100% + 6px);left:0;right:0;background:#0f2549;border:1px solid var(--stroke);border-radius:12px;padding:8px;z-index:50;max-height:50vh;overflow:auto}
+  .sugg{background:#1b335e;border:1px solid var(--stroke);border-radius:10px;padding:10px 12px;cursor:pointer}
   .sugg:hover{background:#223f70}
 
   .row{display:grid;grid-template-columns:1.05fr 1fr;gap:16px}
@@ -54,13 +53,11 @@
   .min15Scroller::-webkit-scrollbar-track{background:#11264a;border-radius:10px}
   .min15Scroller::-webkit-scrollbar-thumb{background:#274b86;border-radius:10px}
   .slot15{scroll-snap-align:start;min-width:130px;background:#182f57;border:1px solid var(--stroke);border-radius:14px;padding:10px 12px;text-align:center;display:flex;flex-direction:column;gap:6px}
-  .slot15 .em{font-size:20px}
-  .slot15 .tt{font-weight:700}
-  .slot15 .sub{color:#b7c9f2;font-size:12px}
+  .slot15 .em{font-size:20px}.slot15 .tt{font-weight:700}.slot15 .sub{color:#b7c9f2;font-size:12px}
 
   .centerCard .head{display:flex;flex-direction:column;align-items:center;text-align:center}
-  .modelTabs{display:flex;gap:8px;align-items:center;justify-content:center}
-  .tab{background:#274b86;border:1px solid var(--stroke);color:#dfeaff;border-radius:12px;padding:6px 10px;font-weight:600;cursor:pointer}
+  .modelTabs{display:flex;gap:8px;align-items:center;justify-content:center;flex-wrap:wrap}
+  .tab{background:#274b86;border:1px solid var(--stroke);color:#dfeaff;border-radius:12px;padding:6px 10px;font-weight:600;cursor:pointer;min-height:40px}
   .tab.active{background:var(--brand);border-color:#3c7bd0;color:#001b3b}
 
   .modelsGrid{display:grid;grid-template-columns:repeat(7,minmax(0,1fr));gap:12px}
@@ -68,9 +65,7 @@
   @media (max-width:780px){.modelsGrid{grid-template-columns:repeat(3,1fr)}}
   @media (max-width:520px){.modelsGrid{grid-template-columns:repeat(2,1fr)}}
   .mcol{background:#182f57;border:1px solid var(--stroke);border-radius:14px;padding:12px;text-align:center;display:flex;flex-direction:column;gap:6px}
-  .mcol .em{font-size:22px}
-  .mcol .hi{font-weight:700}
-  .mcol .lo{opacity:.85}
+  .mcol .em{font-size:22px}.mcol .hi{font-weight:700}.mcol .lo{opacity:.85}
 
   .histCard .head{display:flex;flex-direction:column;align-items:center;gap:6px;text-align:center}
   .histRow{display:flex;align-items:center;justify-content:center;gap:14px;flex-wrap:wrap;text-align:center}
@@ -80,13 +75,32 @@
   .histSub{color:var(--muted);font-size:12px;margin-top:6px;text-align:center}
 
   footer{padding:14px 10px;text-align:center;color:#cfe0ff;font-size:14px;border-top:1px solid rgba(255,255,255,.12)}
+
+  /* ===== Mobilné úpravy ===== */
+  @media (max-width:640px){
+    .wrap{padding:18px 12px 28px}
+    header h1{font-size:24px}
+    .toolbar{grid-template-columns:1fr 1fr;gap:8px}
+    .searchCol{grid-column:1/-1}
+    .pill{padding:10px 12px}
+    .row{grid-template-columns:1fr}
+    .card{padding:14px}
+    .tempNow{font-size:40px}
+    .icon{width:64px;height:64px;font-size:46px}
+    .meta{grid-template-columns:1fr}
+    .chartWrap{height:220px}
+    .slot15{min-width:110px;padding:8px 10px}
+  }
+  @media (max-width:380px){
+    header h1{font-size:22px}
+    .tab{padding:6px 8px;font-size:12px}
+    .chartWrap{height:200px}
+  }
 </style>
 </head>
 <body>
   <div class="wrap">
-    <header>
-      <h1>Počasie</h1>
-    </header>
+    <header><h1>Počasie</h1></header>
 
     <div class="toolbar">
       <div class="searchCol">
@@ -161,9 +175,7 @@
     </section>
   </div>
 
-  <footer>
-    &copy; <span id="year"></span> Richard / Počasie
-  </footer>
+  <footer>&copy; <span id="year"></span> Richard / Počasie</footer>
 
 <script>
   const $=s=>document.querySelector(s);
@@ -279,7 +291,7 @@
         plugins:{
           legend:{
             labels:{color:'#fff'},
-            onClick:(e,li,legend)=>{}, // zakáže vypínanie datasetu
+            onClick:(e,li,legend)=>{},  // zakáže vypínanie datasetu
             onHover:(e)=>{ if(e && e.native) e.native.target.style.cursor='default'; }
           }
         }
@@ -361,7 +373,7 @@
                     <span class="em">${wmoEmoji(code)}</span>
                     <div class="hi">${fmt0(max,'°')}</div>
                     <div class="lo">${fmt0(min,'°')}</div>
-                    <div class="pp">Zrážky: ${pp!=null?pp+'%':'—'}</div>`;
+                    <div class="pp">Zrážky: ${pp!=null?pp+'%' : '—'}</div>`;
       box.appendChild(el);
     }
   }
@@ -385,8 +397,8 @@
     $('#hist-extra').textContent=pr>0?`Zrážky: ${fmt1(pr,' mm')}`:'Bez zrážok.';
   }
 
-  // rok v pätičke
-  document.addEventListener('DOMContentLoaded',()=>{ const y=document.getElementById('year'); if(y) y.textContent=new Date().getFullYear(); });
+  // auto-rok v pätičke
+  document.getElementById('year').textContent = new Date().getFullYear();
 
   let timer;
   $('#q').addEventListener('input',e=>{
