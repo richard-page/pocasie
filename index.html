@@ -2,17 +2,17 @@
 <html lang="sk">
 <head>
 <meta charset="utf-8">
-<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="viewport" content="width=device-width, initial-scale=1">
 <title>Počasie</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;600;700&display=swap" rel="stylesheet">
-<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.3/dist/chart.umd.min.js" defer></script>
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.3/dist/chart.umd.min.js"></script>
 <style>
   :root{
     --bg1:#0f3a6e; --bg2:#0b2443; --stroke:#2a4573; --txt:#eaf2ff; --muted:#a9bad9; --brand:#57a6ff;
     --card-grad:linear-gradient(180deg,rgba(255,255,255,.06),rgba(255,255,255,.03));
-    --r:14px; --shadow:0 10px 24px rgba(0,0,0,.25)
+    --r:12px; --shadow:0 8px 18px rgba(0,0,0,.22)
   }
   *{box-sizing:border-box}
   html,body{height:100%}
@@ -20,96 +20,93 @@
     margin:0; color:var(--txt); font-family:Poppins,system-ui,-apple-system,Segoe UI,Roboto,Arial;
     background:radial-gradient(1100px 700px at 50% -10%,#16508e 0%,#0e2f5b 40%,#0a1f3e 100%), linear-gradient(180deg,var(--bg1),var(--bg2));
     min-height:100dvh; display:flex; flex-direction:column; overflow-x:hidden;
-    -webkit-text-size-adjust:100%; -ms-text-size-adjust:100%; -webkit-tap-highlight-color:transparent;
+    -webkit-text-size-adjust:100%; -webkit-tap-highlight-color:transparent;
   }
-  .wrap{width:100%; max-width:1120px; margin-inline:auto; padding:16px 12px 24px; flex:1}
-  header h1{margin:0 0 10px; font-size:clamp(22px,3.6vw,28px); text-align:center; letter-spacing:.3px}
+  .wrap{width:100%; max-width:1120px; margin-inline:auto; padding:14px 10px 20px; flex:1}
+  header h1{margin:0 0 8px; font-size:clamp(20px,3.6vw,26px); text-align:center; letter-spacing:.2px}
 
-  .toolbar{display:grid; grid-template-columns:1fr; gap:10px; margin:8px 0 12px}
+  .toolbar{display:grid; grid-template-columns:1fr; gap:8px; margin:6px 0 10px}
   .searchCol{display:flex; flex-direction:column; gap:6px; position:relative}
-  .search{width:100%; background:#223e6d; border:1px solid var(--stroke); color:#fff; border-radius:12px; padding:12px 14px; outline:none; font-size:16px; min-height:46px}
-  .search:focus{background:#223e6d}
+  .search{width:100%; background:#223e6d; border:1px solid var(--stroke); color:#fff; border-radius:10px; padding:10px 12px; outline:none; font-size:16px; min-height:42px}
+  .search:focus{background:#223e6d; border-color:var(--stroke)}
   input.search:-webkit-autofill,
   input.search:-webkit-autofill:hover,
-  input.search:-webkit-autofill:focus{-webkit-text-fill-color:#fff; -webkit-box-shadow:0 0 0 1000px #223e6d inset; box-shadow:0 0 0 1000px #223e6d inset; caret-color:#fff}
-  #suggestions{display:none; gap:6px; position:absolute; top:calc(100% + 6px); left:0; right:0; z-index:50; background:#0f2549; border:1px solid var(--stroke); border-radius:12px; padding:8px; max-height:55vh; overflow:auto}
+  input.search:-webkit-autofill:focus{-webkit-text-fill-color:#fff;-webkit-box-shadow:0 0 0 1000px #223e6d inset;box-shadow:0 0 0 1000px #223e6d inset;caret-color:#fff}
+  #suggestions{display:none; gap:6px; position:absolute; top:calc(100% + 6px); left:0; right:0; z-index:50; background:#0f2549; border:1px solid var(--stroke); border-radius:10px; padding:8px; max-height:55vh; overflow:auto}
   .sugg{background:#1b335e; border:1px solid var(--stroke); border-radius:10px; padding:10px 12px; cursor:pointer}
   .btnRow{display:grid; grid-template-columns:repeat(3,1fr); gap:8px}
-  .pill{background:#274b86; border:1px solid var(--stroke); color:#dfeaff; border-radius:12px; padding:12px; font-weight:600; cursor:pointer; min-height:46px; font-size:16px; text-align:center}
+  .pill{background:#274b86; border:1px solid var(--stroke); color:#dfeaff; border-radius:10px; padding:10px; font-weight:600; cursor:pointer; min-height:42px; font-size:15px; text-align:center}
   .pill.active{background:var(--brand); border-color:#3c7bd0; color:#001b3b}
 
-  .row{display:grid; grid-template-columns:1fr; gap:12px}
-  .card{background:var(--card-grad); border:1px solid var(--stroke); border-radius:var(--r); box-shadow:var(--shadow); padding:12px}
-  .card h3{margin:0 0 10px; text-align:center; font-size:clamp(18px,2.8vw,20px)}
-  .meta{display:grid; grid-template-columns:1fr; gap:6px; color:var(--muted); font-size:14px}
+  .row{display:grid; grid-template-columns:1fr; gap:10px}
+  .card{background:var(--card-grad); border:1px solid var(--stroke); border-radius:var(--r); box-shadow:var(--shadow); padding:10px}
+  .card h3{margin:0 0 8px; text-align:center; font-size:clamp(17px,2.6vw,19px)}
+  .meta{display:grid; grid-template-columns:1fr; gap:4px; color:var(--muted); font-size:14px}
   .meta strong{color:#fff}
-  .chip{display:inline-flex; gap:8px; align-items:center; background:#244879; border:1px solid var(--stroke); color:#dce9ff; border-radius:999px; padding:6px 10px; font-size:12px}
-  .tempNow{font-size:clamp(34px,6vw,48px); font-weight:700; line-height:1; margin:6px 0}
-  .icon{width:62px; height:62px; display:flex; align-items:center; justify-content:center; font-size:48px; line-height:1}
+  .chip{display:inline-flex; gap:6px; align-items:center; background:#244879; border:1px solid var(--stroke); color:#dce9ff; border-radius:999px; padding:5px 8px; font-size:12px}
+  .tempNow{font-size:clamp(32px,6vw,44px); font-weight:700; line-height:1; margin:4px 0}
+  .icon{width:56px; height:56px; display:flex; align-items:center; justify-content:center; font-size:44px; line-height:1}
 
-  .summaryBox{margin-top:8px; border:1px solid var(--stroke); border-radius:12px; background:rgba(17,39,74,.55); padding:10px 12px; line-height:1.5}
+  .summaryBox{margin-top:8px; border:1px solid var(--stroke); border-radius:10px; background:rgba(17,39,74,.55); padding:10px 12px; line-height:1.45}
 
-  .partsGrid{display:grid; grid-template-columns:repeat(2,minmax(0,1fr)); gap:10px; margin-top:12px}
-  .part{background:#182f57; border:1px solid var(--stroke); border-radius:12px; padding:12px; text-align:center}
-  .part .t{font-size:20px; font-weight:700; margin-top:6px}
+  /* 2×2 denná skladba */
+  .partsGrid{display:grid; grid-template-columns:repeat(2,minmax(0,1fr)); gap:8px; margin-top:10px}
+  .part{background:#182f57; border:1px solid var(--stroke); border-radius:10px; padding:10px; text-align:center; min-height:112px; display:flex; flex-direction:column; justify-content:center}
+  .part .hdr{font-weight:700; margin-bottom:6px}
+  .part .t{font-size:18px; font-weight:700; margin-top:2px}
   .part .sub{color:#b7c9f2; font-size:12px; margin-top:6px}
 
-  .chartWrap{height:210px}
-  canvas{background:#162e59; border:1px solid var(--stroke); border-radius:12px}
+  .chartWrap{height:190px}
+  canvas{background:#162e59; border:1px solid var(--stroke); border-radius:10px}
 
+  /* 15-min carousel */
   .min15Scroller{overflow-x:auto; display:flex; gap:8px; scroll-snap-type:x mandatory; padding:6px 2px 8px; -webkit-overflow-scrolling:touch}
-  .min15Scroller::-webkit-scrollbar{height:8px}
-  .min15Scroller::-webkit-scrollbar-track{background:#11264a; border-radius:10px}
-  .min15Scroller::-webkit-scrollbar-thumb{background:#274b86; border-radius:10px}
-  .slot15{scroll-snap-align:start; min-width:96px; background:#182f57; border:1px solid var(--stroke); border-radius:12px; padding:8px 8px; text-align:center; display:flex; flex-direction:column; gap:4px}
+  .slot15{scroll-snap-align:start; min-width:90px; background:#182f57; border:1px solid var(--stroke); border-radius:10px; padding:8px; text-align:center; display:flex; flex-direction:column; gap:4px}
   .slot15 .em{font-size:18px} .slot15 .tt{font-weight:700} .slot15 .sub{color:#b7c9f2; font-size:12px}
 
-  .centerCard .head{display:flex; flex-direction:column; align-items:center; text-align:center}
-
+  /* Modely – na mobile horizontálny posuvník */
+  .modelsScroller{display:flex; gap:10px; overflow-x:auto; -webkit-overflow-scrolling:touch; padding:2px 2px 6px}
+  .mcol{flex:0 0 140px; background:#182f57; border:1px solid var(--stroke); border-radius:10px; padding:10px; text-align:center; display:flex; flex-direction:column; gap:6px}
+  .mcol .em{font-size:20px} .mcol .hi{font-weight:700} .mcol .lo{opacity:.85}
   .modelTabs{display:flex; gap:6px; align-items:center; justify-content:center; flex-wrap:wrap}
   .tab{background:#274b86; border:1px solid var(--stroke); color:#dfeaff; border-radius:10px; padding:8px 10px; font-weight:600; cursor:pointer; min-height:38px; font-size:14px}
   .tab.active{background:var(--brand); border-color:#3c7bd0; color:#001b3b}
-  .modelsBar{position:relative}
-  .modelsScroller{overflow-x:auto; -webkit-overflow-scrolling:touch; padding:2px 0 8px}
-  .modelsStrip{display:flex; gap:10px; min-width:max-content}
-  .mcol{flex:0 0 180px; background:#182f57; border:1px solid var(--stroke); border-radius:12px; padding:10px; text-align:center}
-  .mcol .em{font-size:20px} .mcol .hi{font-weight:700} .mcol .lo{opacity:.85}
-  .scrollBtn{position:absolute; top:50%; transform:translateY(-50%); width:34px; height:34px; border-radius:50%; border:1px solid var(--stroke); background:#1b3160a6; color:#fff; display:grid; place-items:center; cursor:pointer; backdrop-filter:blur(3px)}
-  .scrollBtn:active{transform:translateY(-50%) scale(.98)}
-  .scrollLeft{left:-6px} .scrollRight{right:-6px}
 
+  /* História */
   .histCard .head{display:flex; flex-direction:column; align-items:center; gap:6px; text-align:center}
   .histRow{display:flex; align-items:center; justify-content:center; gap:10px; flex-wrap:wrap; text-align:center}
   .badge{display:inline-block; padding:6px 10px; border-radius:10px; font-weight:700}
   .badge.max{background:#ff4a4a; color:#fff} .badge.min{background:#ffcc3d; color:#001b3b}
-  .histSub{color:#aecdff; font-size:12px; margin-top:6px; text-align:center}
+  .histSub{color:var(--muted); font-size:12px; margin-top:6px; text-align:center}
 
-  footer{padding:12px 10px; text-align:center; color:#cfe0ff; font-size:14px; border-top:1px solid rgba(255,255,255,.12); padding-bottom:calc(12px + env(safe-area-inset-bottom))}
+  footer{padding:12px 10px; text-align:center; color:#cfe0ff; font-size:14px; border-top:1px solid rgba(255,255,255,.12)}
 
+  /* Väčšie obrazovky */
   @media (min-width:720px){
-    .wrap{padding:22px 16px 36px}
+    .wrap{padding:22px 14px 36px}
     .toolbar{grid-template-columns:1fr auto auto auto}
     .btnRow{display:contents}
     .row{grid-template-columns:1.05fr 1fr; gap:14px}
     .meta{grid-template-columns:repeat(2,minmax(0,1fr))}
-    .partsGrid{grid-template-columns:repeat(4,minmax(0,1fr))}
-    .chartWrap{height:240px}
-    .icon{width:72px;height:72px;font-size:56px}
-    .tempNow{font-size:48px}
+    .chartWrap{height:220px}
   }
-  @media (min-width:1024px){ .chartWrap{height:270px} }
+  @media (min-width:1024px){
+    .chartWrap{height:260px}
+    .modelsScroller{flex-wrap:wrap; overflow-x:visible}
+    .mcol{flex:1 0 calc(14.28% - 10px)}
+  }
 </style>
 </head>
 <body>
   <div class="wrap">
     <header><h1>Počasie</h1></header>
 
-    <div class="toolbar" role="search">
+    <div class="toolbar">
       <div class="searchCol">
-        <input id="q" class="search" type="text" placeholder="Hľadaj mesto (napr. Bratislava, Košice)" autocomplete="off" aria-label="Hľadať mesto">
+        <input id="q" class="search" type="text" placeholder="Hľadaj mesto (napr. Bratislava, Košice)">
         <div id="suggestions"></div>
       </div>
-      <div class="btnRow" aria-label="Ovládanie">
+      <div class="btnRow">
         <button id="geoBtn" class="pill">📍 Moja poloha</button>
         <button id="cBtn" class="pill active">°C</button>
         <button id="fBtn" class="pill">°F</button>
@@ -117,7 +114,7 @@
     </div>
 
     <div class="row">
-      <section class="card" aria-labelledby="place">
+      <section class="card">
         <div style="display:grid;grid-template-columns:1fr auto;gap:12px;align-items:start">
           <div>
             <h3 id="place">—</h3>
@@ -136,24 +133,26 @@
 
             <div class="summaryBox" id="summary">—</div>
 
-            <div class="partsGrid" id="partsGrid"></div>
+            <div class="partsGrid" id="partsGrid">
+              <!-- doplní JS -->
+            </div>
           </div>
-          <div id="icon" class="icon" aria-hidden="true">—</div>
+          <div id="icon" class="icon">—</div>
         </div>
       </section>
 
       <section class="card">
         <h3>Teplota počas 24 hodín</h3>
-        <div class="chartWrap"><canvas id="hourly" aria-label="24-hodinový vývoj teploty"></canvas></div>
+        <div class="chartWrap"><canvas id="hourly"></canvas></div>
       </section>
     </div>
 
-    <section class="card centerCard" style="margin-top:12px">
+    <section class="card centerCard" style="margin-top:10px">
       <div class="head"><h3>15-minútová predpoveď (6 h)</h3></div>
-      <div id="min15" class="min15Scroller" aria-label="Predpoveď po 15 minútach"></div>
+      <div id="min15" class="min15Scroller"></div>
     </section>
 
-    <section class="card centerCard" style="margin-top:12px">
+    <section class="card centerCard" style="margin-top:10px">
       <div class="head">
         <h3>Modely – denný prehľad</h3>
         <div class="modelTabs">
@@ -162,16 +161,10 @@
           <button class="tab" id="tab-gfs">GFS (NOAA)</button>
         </div>
       </div>
-      <div class="modelsBar">
-        <button class="scrollBtn scrollLeft" id="modelsLeft" aria-label="Posun doľava">‹</button>
-        <div class="modelsScroller" id="modelsScroller">
-          <div id="modelsStrip" class="modelsStrip"></div>
-        </div>
-        <button class="scrollBtn scrollRight" id="modelsRight" aria-label="Posun doprava">›</button>
-      </div>
+      <div id="modelsGrid" class="modelsScroller" style="margin-top:8px"></div>
     </section>
 
-    <section class="card histCard" style="margin-top:12px">
+    <section class="card histCard" style="margin-top:10px">
       <div class="head">
         <h3>Počasie presne pred rokom</h3>
         <div id="hist-date" style="color:var(--muted);font-size:12px">—</div>
@@ -196,13 +189,23 @@
 
   const WMO={0:['Jasno','sun'],1:['Prevažne jasno','sun'],2:['Polojasno','cloud-sun'],3:['Zamračené','cloud'],45:['Hmla','fog'],48:['Mrznúca hmla','fog'],51:['Slabé mrholenie','drizzle'],53:['Mrholenie','drizzle'],55:['Silné mrholenie','drizzle'],61:['Slabý dážď','rain'],63:['Dážď','rain'],65:['Lejak','rain'],66:['Mrznúci dážď','sleet'],67:['Mrznúci dážď','sleet'],71:['Slabé sneženie','snow'],73:['Sneženie','snow'],75:['Silné sneženie','snow'],77:['Snehové zrná','snow'],80:['Prehánky','rain'],81:['Prehánky','rain'],82:['Silné prehánky','rain'],85:['Snehové prehánky','snow'],86:['Silné snehové prehánky','snow'],95:['Búrky','storm'],96:['Búrky s krúpami','storm'],99:['Silné búrky s krúpami','storm']};
   const uvCat=u=>u<3?'nízky':u<6?'mierny':u<8?'vysoký':u<11?'veľmi vysoký':'extrémny';
-  const wmoEmoji=(code)=>{const k=Number(code);if([0,1].includes(k))return'☀️';if([2].includes(k))return'⛅';if([3].includes(k))return'☁️';if([45,48].includes(k))return'🌫️';if([51,53,55].includes(k))return'🌦️';if([61,63,65,80,81,82].includes(k))return'🌧️';if([71,73,75,77,85,86].includes(k))return'❄️';if([95,96,99].includes(k))return'⛈️';return'🌤️'};
+  const wmoEmoji=code=>{
+    const k=Number(code);
+    if([0,1].includes(k))return'☀️'; if([2].includes(k))return'⛅'; if([3].includes(k))return'☁️';
+    if([45,48].includes(k))return'🌫️'; if([51,53,55].includes(k))return'🌦️';
+    if([61,63,65,80,81,82].includes(k))return'🌧️'; if([71,73,75,77,85,86].includes(k))return'❄️';
+    if([95,96,99].includes(k))return'⛈️'; return'🌤️';
+  };
 
   let state={units:'c',place:'Bratislava, SK',lat:48.1486,lon:17.1077,last:null};
   let hourlyChart=null; let activeModel='ecmwf';
 
   const LS_KEY='wx_prefs_v1';
-  (()=>{try{const raw=localStorage.getItem(LS_KEY);if(raw){const p=JSON.parse(raw);if(typeof p.lat==='number'&&typeof p.lon==='number'&&typeof p.place==='string'){state.lat=p.lat;state.lon=p.lon;state.place=p.place}if(p.units==='c'||p.units==='f'){state.units=p.units}}}catch(e){}})();
+  (()=>{try{const raw=localStorage.getItem(LS_KEY);
+    if(raw){const p=JSON.parse(raw);
+      if(typeof p.lat==='number'&&typeof p.lon==='number'&&typeof p.place==='string'){state.lat=p.lat;state.lon=p.lon;state.place=p.place}
+      if(p.units==='c'||p.units==='f'){state.units=p.units}
+    }}catch(e){}})();
   const savePrefs=()=>{try{localStorage.setItem(LS_KEY,JSON.stringify({lat:state.lat,lon:state.lon,place:state.place,units:state.units}))}catch(e){}};
 
   async function fetchWeather(){
@@ -210,12 +213,14 @@
     const p=new URLSearchParams({
       latitude:state.lat,longitude:state.lon,timezone:tz,
       current:'temperature_2m,apparent_temperature,relative_humidity_2m,pressure_msl,wind_speed_10m,weather_code,uv_index',
-      hourly:'temperature_2m,precipitation,weather_code,wind_speed_10m',
+      hourly:'temperature_2m,precipitation_probability,precipitation,weather_code,wind_speed_10m',
       daily:'weather_code,temperature_2m_max,temperature_2m_min,precipitation_sum,precipitation_probability_max,wind_speed_10m_max,uv_index_max,sunrise,sunset',
       forecast_days:'3'
     });
-    const r=await fetch(`https://api.open-meteo.com/v1/forecast?${p}`); if(!r.ok) throw new Error('Načítanie zlyhalo');
-    state.last=await r.json(); renderAll(); drawHourly(); buildDayparts(); fetchModels(activeModel); fetchHistory().catch(()=>{});
+    const r=await fetch(`https://api.open-meteo.com/v1/forecast?${p}`);
+    if(!r.ok) throw new Error('Načítanie zlyhalo');
+    state.last=await r.json();
+    renderAll(); drawHourly(); renderDayParts(); fetchModels(activeModel); fetchHistory().catch(()=>{});
   }
 
   function renderAll(){
@@ -247,6 +252,7 @@
 
     $('#cBtn').classList.toggle('active',state.units==='c');
     $('#fBtn').classList.toggle('active',state.units==='f');
+
     renderMin15();
   }
 
@@ -260,9 +266,10 @@
       type:'line',
       data:{labels,datasets:[{label:state.units==='c'?'Teplota (°C)':'Teplota (°F)',data:t24,borderWidth:2,pointRadius:2,tension:.35}]},
       options:{
-        responsive:true,maintainAspectRatio:false,interaction:{mode:'nearest',intersect:false},
+        responsive:true,maintainAspectRatio:false,
+        interaction:{mode:'nearest',intersect:false},
         scales:{x:{grid:{color:'rgba(255,255,255,.08)'}},y:{grid:{color:'rgba(255,255,255,.08)'}}},
-        plugins:{legend:{labels:{color:'#fff'},onClick:()=>{},onHover:(e)=>{if(e&&e.native)e.native.target.style.cursor='default';}}}
+        plugins:{legend:{labels:{color:'#fff'},onClick:(e,li)=>{},onHover:(e)=>{if(e&&e.native)e.native.target.style.cursor='default';}}}
       }
     });
   }
@@ -309,59 +316,34 @@
     }
   }
 
-  function buildDayparts(){
-    const d=state.last; if(!d) return;
-    const tz=d.timezone;
-    const times=d.hourly.time.map(t=>new Date(t));
-    const temp=d.hourly.temperature_2m;
-    const precip=d.hourly.precipitation;
-    const wind=d.hourly.wind_speed_10m;
-    const code=d.hourly.weather_code;
-
-    const today=new Date(d.current.time);
-    const dayKey=today.toLocaleDateString('sv-SE',{timeZone:tz});
-
-    const ranges=[
-      {label:'Doobeda', startH:6,  endH:12},
-      {label:'Poobede', startH:12, endH:18},
-      {label:'Večer',   startH:18, endH:22},
-      {label:'Noc',     startH:22, endH:30}
-    ];
-
-    function pickIndices(startH,endH){
-      const arr=[];
-      for(let i=0;i<times.length;i++){
-        const t=times[i];
-        const local = new Date(t.toLocaleString('en-US',{timeZone:tz}));
-        let h=local.getHours()+local.getMinutes()/60;
-        const key=local.toLocaleDateString('sv-SE',{timeZone:tz});
-        if(endH>24){
-          if( (key===dayKey && h>=startH) || (key!==dayKey && h<(endH-24)) ) arr.push(i);
-        }else{
-          if(key===dayKey && h>=startH && h<endH) arr.push(i);
-        }
-      }
-      return arr;
-    }
-
+  // 4 časti dňa (priemer z intervalov)
+  function avg(arr){const v=arr.filter(x=>x!=null); if(!v.length) return null; return v.reduce((a,b)=>a+b,0)/v.length;}
+  function sliceRange(timesISO, arr, fromH, toH, tz){
+    const res=[]; for(let i=0;i<timesISO.length;i++){
+      const d=new Date(timesISO[i]);
+      const h=d.toLocaleString('sk-SK',{hour:'2-digit',hour12:false,timeZone:tz}); const hh=Number(h);
+      if(fromH<=toH ? (hh>=fromH && hh<toH) : (hh>=fromH || hh<toH)){ res.push(arr[i]); }
+    } return res;
+  }
+  function renderDayParts(){
+    const d=state.last, tz=d.timezone;
+    const parts=[['Doobeda',6,12],['Poobede',12,18],['Večer',18,24],['Noc',0,6]];
     const box=$('#partsGrid'); box.innerHTML='';
-    for(const r of ranges){
-      const idx=pickIndices(r.startH,r.endH);
-      if(!idx.length) continue;
-      const avgIndex=(arr)=>arr.reduce((s,i)=>s+i,0)/arr.length;
-      const meanT = idx.reduce((s,i)=>s+temp[i],0)/idx.length;
-      const meanW = idx.reduce((s,i)=>s+wind[i],0)/idx.length;
-      const pWet = Math.round(idx.filter(i=>precip[i]>0.05).length/idx.length*100);
-      const freq=new Map(); idx.forEach(i=>freq.set(code[i],(freq.get(code[i])||0)+1));
-      const best=[...freq.entries()].sort((a,b)=>b[1]-a[1])[0]?.[0] ?? 0;
-
+    parts.forEach(([label,from,to])=>{
+      const temps = sliceRange(d.hourly.time,d.hourly.temperature_2m,from,to,tz);
+      const precP = sliceRange(d.hourly.time,d.hourly.precipitation_probability||[],from,to,tz);
+      const wind  = sliceRange(d.hourly.time,d.hourly.wind_speed_10m,from,to,tz);
+      const codes = sliceRange(d.hourly.time,d.hourly.weather_code,from,to,tz);
+      const tAvgC = avg(temps); const wAvg = avg(wind); const pAvg = avg(precP);
+      const code  = codes[Math.floor(codes.length/2)] ?? 0;
+      const tAvg = state.units==='c'? tAvgC : (tAvgC!=null?toF(tAvgC):null);
       const el=document.createElement('div'); el.className='part';
-      el.innerHTML=`<div style="opacity:.9">${r.label}</div>
-                    <div style="font-size:26px;margin:6px 0">${wmoEmoji(best)}</div>
-                    <div class="t">${fmt0(state.units==='c'?meanT:toF(meanT),'°')}</div>
-                    <div class="sub">Zrážky: ${isNaN(pWet)?'—':pWet+'%'} • vietor ${fmt1(meanW,' km/h')}</div>`;
+      el.innerHTML = `<div class="hdr">${label}</div>
+                      <div style="font-size:22px">${wmoEmoji(code)}</div>
+                      <div class="t">${fmt0(tAvg,'°')}</div>
+                      <div class="sub">Zrážky: ${pAvg!=null?Math.round(pAvg)+'%':'—'} • vietor ${wAvg!=null?fmt1(wAvg,' km/h'):'—'}</div>`;
       box.appendChild(el);
-    }
+    });
   }
 
   async function fetchModels(which){
@@ -373,11 +355,15 @@
     if(which==='icon') base='https://api.open-meteo.com/v1/dwd-icon';
     if(which==='gfs') base='https://api.open-meteo.com/v1/gfs';
     const p=new URLSearchParams({latitude:state.lat,longitude:state.lon,timezone:tz,daily,forecast_days:'7'});
-    try{const r=await fetch(`${base}?${p}`); if(!r.ok) throw 0; const j=await r.json(); renderModelStrip(j)}
-    catch(e){$('#modelsStrip').innerHTML='<div style="color:#ffd4d4;text-align:center;padding:8px 0">Model sa nepodarilo načítať.</div>'}
+    try{
+      const r=await fetch(`${base}?${p}`); if(!r.ok) throw 0;
+      const j=await r.json(); renderModelGrid(j);
+    }catch(e){
+      $('#modelsGrid').innerHTML='<div style="color:#ffd4d4;text-align:center;width:100%">Model sa nepodarilo načítať.</div>';
+    }
   }
-  function renderModelStrip(d){
-    const box=$('#modelsStrip'); box.innerHTML='';
+  function renderModelGrid(d){
+    const box=$('#modelsGrid'); box.innerHTML='';
     const days=d.daily; const n=Math.min(7,days.time.length);
     for(let i=0;i<n;i++){
       const lab=new Date(days.time[i]+'T00:00:00').toLocaleDateString('sk-SK',{weekday:'short',day:'2-digit',month:'2-digit'});
@@ -387,15 +373,12 @@
       const pp=days.precipitation_probability_max?.[i];
       const el=document.createElement('div'); el.className='mcol';
       el.innerHTML=`<div style="opacity:.8">${lab}</div>
-                    <div style="font-size:24px;margin:4px 0">${wmoEmoji(code)}</div>
+                    <span class="em" style="font-size:22px">${wmoEmoji(code)}</span>
                     <div class="hi">${fmt0(max,'°')}</div>
                     <div class="lo">${fmt0(min,'°')}</div>
-                    <div class="pp" style="color:#b7c9f2;margin-top:4px;font-size:12px">Zrážky: ${pp!=null?pp+'%':'—'}</div>`;
+                    <div class="pp" style="color:#b7c9f2;font-size:12px">Zrážky: ${pp!=null?pp+'%':'—'}</div>`;
       box.appendChild(el);
     }
-    const sc=$('#modelsScroller');
-    $('#modelsLeft').onclick=()=>sc.scrollBy({left:-220,behavior:'smooth'});
-    $('#modelsRight').onclick=()=>sc.scrollBy({left:220,behavior:'smooth'});
   }
 
   async function fetchHistory(){
@@ -419,6 +402,7 @@
 
   document.getElementById('year').textContent=new Date().getFullYear();
 
+  // Vyhľadávanie / udalosti
   let timer;
   $('#q').addEventListener('input',e=>{
     const q=e.target.value.trim(); clearTimeout(timer);
@@ -444,15 +428,15 @@
       $('#suggestions').style.display='none'; savePrefs(); fetchWeather();
     });
   });
-  $('#cBtn').addEventListener('click',()=>{state.units='c';$('#cBtn').classList.add('active');$('#fBtn').classList.remove('active');savePrefs();renderAll();drawHourly();buildDayparts();fetchModels(activeModel);fetchHistory().catch(()=>{});});
-  $('#fBtn').addEventListener('click',()=>{state.units='f';$('#fBtn').classList.add('active');$('#cBtn').classList.remove('active');savePrefs();renderAll();drawHourly();buildDayparts();fetchModels(activeModel);fetchHistory().catch(()=>{});});
+  $('#cBtn').addEventListener('click',()=>{state.units='c';$('#cBtn').classList.add('active');$('#fBtn').classList.remove('active');savePrefs();renderAll();drawHourly();renderDayParts();fetchModels(activeModel);fetchHistory().catch(()=>{});});
+  $('#fBtn').addEventListener('click',()=>{state.units='f';$('#fBtn').classList.add('active');$('#cBtn').classList.remove('active');savePrefs();renderAll();drawHourly();renderDayParts();fetchModels(activeModel);fetchHistory().catch(()=>{});});
 
   $('#tab-ecmwf').addEventListener('click',()=>fetchModels('ecmwf'));
   $('#tab-icon').addEventListener('click',()=>fetchModels('icon'));
   $('#tab-gfs').addEventListener('click',()=>fetchModels('gfs'));
 
   fetchWeather().catch(e=>alert(e.message));
-  window.addEventListener('resize',()=>{ if(state.last){ drawHourly(); renderMin15(); buildDayparts(); fetchModels(activeModel); }});
+  window.addEventListener('resize',()=>{ if(state.last){ drawHourly(); renderMin15(); renderDayParts(); fetchModels(activeModel); }});
 </script>
 </body>
 </html>
