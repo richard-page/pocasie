@@ -15,7 +15,7 @@
     --bg0:#0b0f14; --bg1:#0e1620; --panel:#121e2a; --stroke:#233448;
     --txt:#eaf3ff; --muted:#a8bed5; --accent:#3ad0e6; --accent-2:#ffb756;
     --r:14px; --shadow:0 10px 28px rgba(0,0,0,.28);
-    --gap:10px;       /* jednotná medzera medzi kartami v karuseloch */
+    --gap:10px;
   }
   *{box-sizing:border-box}
   html,body{height:100%}
@@ -34,7 +34,6 @@
   .wrap{width:100%; max-width:1120px; margin-inline:auto; padding:16px 12px 28px; flex:1}
   header h1{margin:0 0 10px; text-align:center; font-size:28px; letter-spacing:.3px}
 
-  /* Toolbar */
   .toolbar{display:grid; grid-template-columns:1fr; gap:10px; margin:10px 0 12px}
   .searchCol{display:flex; flex-direction:column; gap:6px; position:relative}
   .search{
@@ -42,11 +41,6 @@
     border-radius:12px; padding:12px 14px; outline:none; font-size:16px; min-height:46px;
   }
   .search:focus{border-color:#2e4a67}
-  input.search:-webkit-autofill,
-  input.search:-webkit-autofill:hover,
-  input.search:-webkit-autofill:focus{
-    -webkit-text-fill-color:#fff; -webkit-box-shadow:0 0 0 1000px #152535 inset; box-shadow:0 0 0 1000px #152535 inset; caret-color:#fff;
-  }
   #suggestions{
     display:none; gap:6px; position:absolute; top:calc(100% + 6px); left:0; right:0; z-index:40;
     background:#0f1c2a; border:1px solid var(--stroke); border-radius:12px; padding:8px; max-height:55vh; overflow:auto;
@@ -59,7 +53,6 @@
   }
   .pill.active{background:var(--accent); border-color:#2abbd0; color:#002a32}
 
-  /* Karty */
   .card{
     background:linear-gradient(180deg, rgba(255,255,255,.06), rgba(255,255,255,.03));
     border:1px solid var(--stroke); border-radius:var(--r); box-shadow:var(--shadow); padding:14px;
@@ -72,18 +65,16 @@
   .icon{width:64px; height:64px; display:flex; align-items:center; justify-content:center; font-size:48px}
   .row{display:grid; grid-template-columns:1fr; gap:12px; margin-top:4px}
 
-  /* POSUVNÍK – vyplní šírku bez prázdneho chvosta */
+  /* posuvníky */
   .hscroll{
     display:grid; grid-auto-flow:column; gap:var(--gap);
     overflow-x:auto; padding:6px 2px 10px; scroll-snap-type:x mandatory; -webkit-overflow-scrolling:touch;
   }
   .hscroll > .snap{scroll-snap-align:start}
-
   .hscroll::-webkit-scrollbar{height:8px}
   .hscroll::-webkit-scrollbar-track{background:#0f1c2a; border-radius:10px}
   .hscroll::-webkit-scrollbar-thumb{background:#1e3c54; border-radius:10px}
 
-  /* Karty v posuvníku */
   .part,.day,.slot15{
     background:#152433; border:1px solid var(--stroke); border-radius:12px; padding:10px; text-align:center;
   }
@@ -107,11 +98,24 @@
   .badge{display:inline-block; padding:6px 10px; border-radius:10px; font-weight:700}
   .badge.max{background:#ff5e5e; color:#fff}
   .badge.min{background:#ffd265; color:#2b2300}
-  .histSub{color:var(--muted); font-size:12px; margin-top:6px; text-align:center}
+  .histSub{color:#a8bed5; font-size:12px; margin-top:6px; text-align:center}
+
+  /* CENTROVANÝ súhrn */
+  .summaryBox{
+    margin:0 auto;                        /* centrovanie kontajnera */
+    text-align:center;                     /* centrovanie textu */
+    color:#dbeeff; background:#0f1c2a;
+    border:1px solid var(--stroke); border-radius:10px; padding:12px;
+    max-width:720px;                       /* rozumná max šírka */
+  }
+
+  /* modelové tabu – pod nadpisom, v strede */
+  .modelTabs{
+    display:flex; gap:8px; justify-content:center; flex-wrap:wrap; margin-top:6px;
+  }
 
   footer{padding:14px 10px; text-align:center; color:#cfe8ff; font-size:14px; border-top:1px solid rgba(255,255,255,.12)}
 
-  /* Väčšie obrazovky */
   @media (min-width:780px){
     .wrap{padding:22px 16px 36px}
     .toolbar{grid-template-columns:1fr auto auto auto}
@@ -159,8 +163,7 @@
             </div>
 
             <h3 style="margin:12px 0 6px">Dnešný súhrn</h3>
-            <!-- zarovnanie na stred + jednotný box -->
-            <p id="summary" style="margin:0;color:#dbeeff;background:#0f1c2a;border:1px solid var(--stroke);border-radius:10px;padding:12px;text-align:center"></p>
+            <p id="summary" class="summaryBox"></p>
           </div>
           <div id="icon" class="icon">—</div>
         </div>
@@ -181,13 +184,11 @@
 
     <!-- 7-dňová predpoveď -->
     <section class="card" style="margin-top:12px">
-      <div style="display:flex;justify-content:center;align-items:center;gap:8px;flex-wrap:wrap">
-        <h3 style="margin:0">7-dňová predpoveď</h3>
-        <div style="display:flex;gap:6px">
-          <button class="pill" id="tab-ecmwf">ECMWF IFS</button>
-          <button class="pill" id="tab-icon">ICON (DWD)</button>
-          <button class="pill" id="tab-gfs">GFS (NOAA)</button>
-        </div>
+      <h3 style="margin:0;text-align:center">7-dňová predpoveď</h3>
+      <div class="modelTabs">
+        <button class="pill" id="tab-ecmwf">ECMWF IFS</button>
+        <button class="pill" id="tab-icon">ICON (DWD)</button>
+        <button class="pill" id="tab-gfs">GFS (NOAA)</button>
       </div>
       <div id="days" class="hscroll" style="margin-top:8px"></div>
     </section>
@@ -202,7 +203,7 @@
     <section class="card" style="margin-top:12px">
       <div class="head" style="text-align:center">
         <h3>Počasie presne pred rokom</h3>
-        <div id="hist-date" style="color:var(--muted);font-size:12px">—</div>
+        <div id="hist-date" style="color:#a8bed5;font-size:12px">—</div>
       </div>
       <div class="histRow" style="margin-top:6px">
         <div id="hist-emoji" style="font-size:26px">—</div>
@@ -230,26 +231,19 @@
   let hourlyChart=null; let activeModel='ecmwf';
   const LS_KEY='wx_prefs_v2';
 
-  /* ---------- HELPERS: posuvník bez prázdneho miesta ---------- */
+  /* posuvník – vypočíta presné šírky položiek (bez prázdneho konca) */
   function fillSnap(container, colsMobile=2, colsTablet=3, colsDesktop=4){
     const w = container.clientWidth;
     const gap = parseFloat(getComputedStyle(container).gap || '10');
     let cols = colsMobile;
     if (w >= 720) cols = colsTablet;
     if (w >= 1024) cols = colsDesktop;
-    // výpočet šírky položky tak, aby presne vyšiel počet stĺpcov
     const itemW = (w - gap*(cols-1)) / cols;
-    Array.from(container.children).forEach(ch=>{
-      ch.style.width = `${itemW}px`;
-    });
+    Array.from(container.children).forEach(ch=>{ ch.style.width = `${itemW}px`; });
   }
-  function applyAllFill(){
-    ['#parts','#days','#min15'].forEach(id=>{
-      const el=$(id); if(el) fillSnap(el, 2, 3, 4);
-    });
-  }
+  function applyAllFill(){ ['#parts','#days','#min15'].forEach(id=>{ const el=$(id); if(el) fillSnap(el,2,3,4); }); }
 
-  /* ---------- Uloženie preferencií ---------- */
+  /* načítanie preferencií */
   (()=>{try{
     const raw=localStorage.getItem(LS_KEY);
     if(raw){const p=JSON.parse(raw);
@@ -259,7 +253,6 @@
   }catch(e){}})();
   const savePrefs=()=>{try{localStorage.setItem(LS_KEY,JSON.stringify({lat:state.lat,lon:state.lon,place:state.place,units:state.units}))}catch(e){}};
 
-  /* ---------- Načítanie počasia ---------- */
   async function fetchWeather(){
     const tz=Intl.DateTimeFormat().resolvedOptions().timeZone;
     const p=new URLSearchParams({
@@ -329,7 +322,6 @@
     });
   }
 
-  // Dnes po častiach (doobeda/poobede/večer/noc)
   function valueAtHour(timesISO, arr, target){
     const idx = timesISO.findIndex(t=>t.slice(0,13)===target.slice(0,13));
     if(idx>=0) return arr[idx];
@@ -373,7 +365,6 @@
     box.appendChild(el);
   }
 
-  // 15-minútový pás
   const lerp=(a,b,t)=>a+(b-a)*t;
   function valueAt15min(timesISO,arr,date){
     const ts=timesISO.map(t=>new Date(t));
@@ -418,7 +409,6 @@
     }
   }
 
-  // 7-dňové modely
   async function fetchModels(which){
     activeModel=which;
     ['ecmwf','icon','gfs'].forEach(id=>{
@@ -460,7 +450,6 @@
     applyAllFill();
   }
 
-  // História
   async function fetchHistory(){
     const tz=Intl.DateTimeFormat().resolvedOptions().timeZone;
     const now=new Date(); const lastYear=new Date(now); lastYear.setFullYear(now.getFullYear()-1);
@@ -479,10 +468,8 @@
     $('#hist-extra').textContent=pr>0?`Zrážky: ${fmt1(pr,' mm')}`:'Bez zrážok.';
   }
 
-  // Rok v pätičke
   document.getElementById('year').textContent=new Date().getFullYear();
 
-  // Vyhľadávanie
   let timer;
   $('#q').addEventListener('input',e=>{
     const q=e.target.value.trim(); clearTimeout(timer);
@@ -502,7 +489,6 @@
   });
   document.addEventListener('click',e=>{const box=$('#suggestions'); if(!box.contains(e.target)&&e.target!==$('#q')) box.style.display='none';});
 
-  // Ovládanie
   $('#geoBtn').addEventListener('click',()=>{
     if(!navigator.geolocation) return alert('Geolokácia nie je podporovaná.');
     navigator.geolocation.getCurrentPosition(pos=>{
@@ -517,7 +503,6 @@
   $('#tab-icon').addEventListener('click',()=>fetchModels('icon'));
   $('#tab-gfs').addEventListener('click',()=>fetchModels('gfs'));
 
-  // Init
   fetchWeather().catch(e=>alert(e.message));
   window.addEventListener('resize',()=>{ if(state.last){ drawHourly(); applyAllFill(); }});
 </script>
