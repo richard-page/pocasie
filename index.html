@@ -20,7 +20,6 @@
     --accent:#3ad0e6;
     --r:14px;
     --shadow:0 10px 28px rgba(0,0,0,.28);
-    --card-max:70vh; /* max výška okien – všetko má vnútorný posuvník */
   }
   *{box-sizing:border-box}
   html,body{height:100%}
@@ -61,15 +60,7 @@
   .card{
     background:linear-gradient(180deg, rgba(255,255,255,.06), rgba(255,255,255,.03));
     border:1px solid var(--stroke); border-radius:var(--r); box-shadow:var(--shadow); padding:14px;
-    max-height:var(--card-max);
-    overflow:auto;                 /* posuvník vo všetkých oknách */
-    overscroll-behavior:contain;
   }
-  /* scrollbar pre karty */
-  .card::-webkit-scrollbar{width:10px;height:10px}
-  .card::-webkit-scrollbar-track{background:#0f1c2a;border-radius:10px}
-  .card::-webkit-scrollbar-thumb{background:#1e3c54;border-radius:10px}
-
   .card h3{margin:0 0 10px; text-align:center; font-size:18px}
 
   .row{display:grid; grid-template-columns:1fr; gap:12px; margin-top:4px}
@@ -103,7 +94,7 @@
   .chartWrap{height:200px}
   canvas{background:#0f1c2a; border:1px solid var(--stroke); border-radius:12px}
 
-  /* skutočne centrovaný súhrn pod gridom */
+  /* centrovaný súhrn */
   .summarySection{margin-top:12px}
   .summarySection h3{margin-bottom:8px}
   #summary{
@@ -121,6 +112,17 @@
   .histSub{color:#a8bed5; font-size:12px; margin-top:6px; text-align:center}
 
   footer{padding:14px 10px; text-align:center; color:#cfe8ff; font-size:14px; border-top:1px solid rgba(255,255,255,.12)}
+
+  /* === DESKTOP úprava: 4 karty bez prázdneho miesta === */
+  @media (min-width:1000px){
+    #parts{
+      display:grid !important;
+      overflow:visible !important;
+      grid-template-columns:repeat(4,minmax(0,1fr));
+      gap:10px;
+    }
+    #parts .part{min-width:0}
+  }
 
   @media (min-width:780px){
     .wrap{padding:22px 16px 36px}
@@ -170,7 +172,7 @@
           <div id="icon" class="icon">—</div>
         </div>
 
-        <!-- Skutočne centrovaný súhrn -->
+        <!-- centrovaný súhrn -->
         <div class="summarySection">
           <h3>Dnešný súhrn</h3>
           <p id="summary">—</p>
@@ -184,13 +186,13 @@
       </section>
     </div>
 
-    <!-- Dnes po častiach -->
+    <!-- Predpoveď (predtým „Dnes po častiach“) -->
     <section class="card" style="margin-top:12px">
-      <h3>Dnes po častiach</h3>
+      <h3>Predpoveď</h3>
       <div id="parts" class="hscroll"></div>
     </section>
 
-    <!-- 7-dňová predpoveď + tlačidlá modelov pod nadpisom -->
+    <!-- 7-dňová predpoveď -->
     <section class="card" style="margin-top:12px">
       <h3 style="margin-bottom:8px">7-dňová predpoveď</h3>
       <div style="display:flex;justify-content:center;gap:8px;flex-wrap:wrap;margin-bottom:8px">
@@ -249,10 +251,10 @@
   let hourlyChart=null; let activeModel='ecmwf';
   const LS_KEY='wx_prefs_v2';
 
-  // Load prefs
   (()=>{try{
     const raw=localStorage.getItem(LS_KEY);
-    if(raw){const p=JSON.parse(raw);
+    if(raw){
+      const p=JSON.parse(raw);
       if(typeof p.lat==='number'&&typeof p.lon==='number'&&typeof p.place==='string'){state.lat=p.lat;state.lon=p.lon;state.place=p.place}
     }
   }catch(e){}})();
@@ -275,10 +277,8 @@
 
   function renderAll(){
     const d=state.last,cur=d.current,tz=d.timezone;
-    $('#place').textContent=state.place || '—';
-    // input vyplním iba ak máme reálne mesto
-    $('#q').value = state.place && !state.place.includes('Zistená') ? state.place : '';
-
+    $('#place').textContent=state.place||'—';
+    if(state.place){ $('#q').value=state.place; } // do inputu dáme názov len keď ho poznáme
     $('#time').textContent=new Intl.DateTimeFormat('sk-SK',{dateStyle:'medium',timeStyle:'short',timeZone:tz}).format(new Date(cur.time));
     $('#temp').textContent=fmt0(cur.temperature_2m,'°');
     $('#apparent').textContent=fmt0(cur.apparent_temperature,'°');
@@ -303,9 +303,7 @@
     $('#sunrise').textContent=sr?sr.toLocaleTimeString('sk-SK',{hour:'2-digit',minute:'2-digit'}):'—';
     $('#sunset').textContent=ss?ss.toLocaleTimeString('sk-SK',{hour:'2-digit',minute:'2-digit'}):'—';
 
-    /* ← doplnené: vyrenderuj pásy */
-    renderParts();
-    renderMin15();
+    renderParts(); renderMin15();
   }
 
   function drawHourly(){
@@ -326,7 +324,7 @@
     });
   }
 
-  /* pomocné na hodinové a 15-min pásy */
+  // === PREDPOVEĎ (4 časti) ===
   function valueAtHour(timesISO, arr, target){
     const idx = timesISO.findIndex(t=>t.slice(0,13)===target.slice(0,13));
     if(idx>=0) return arr[idx];
@@ -366,6 +364,7 @@
     box.appendChild(el);
   }
 
+  // === 15-min pás ===
   const lerp=(a,b,t)=>a+(b-a)*t;
   function valueAt15min(timesISO,arr,date){
     const ts=timesISO.map(t=>new Date(t));
@@ -408,6 +407,7 @@
     }
   }
 
+  // === MODELY (7 dní) ===
   async function fetchModels(which){
     activeModel=which;
     ['ecmwf','icon','gfs'].forEach(id=>{
@@ -446,6 +446,7 @@
     }
   }
 
+  // === História ===
   async function fetchHistory(){
     const tz=Intl.DateTimeFormat().resolvedOptions().timeZone;
     const now=new Date(); const lastYear=new Date(now); lastYear.setFullYear(now.getFullYear()-1);
@@ -478,14 +479,14 @@
       arr.forEach(p=>{
         const b=document.createElement('div'); b.className='sugg';
         b.textContent=`${p.name}${p.admin1?`, ${p.admin1}`:''}, ${p.country_code}`;
-        b.addEventListener('click',()=>{state.lat=p.latitude;state.lon=p.longitude;state.place=b.textContent;$('#q').value=state.place;box.style.display='none';savePrefs();fetchWeather();});
+        b.addEventListener('click',()=>{state.lat=p.latitude;state.lon=p.longitude;state.place=b.textContent;box.style.display='none';savePrefs();fetchWeather();});
         box.appendChild(b);
       });
     },250);
   });
   document.addEventListener('click',e=>{const box=$('#suggestions'); if(!box.contains(e.target)&&e.target!==$('#q')) box.style.display='none';});
 
-  // GEO – „Zistiť polohu“ a nahradiť názvom mesta
+  // GEO – Zistiť polohu (aj reverzné geokódovanie + doplnenie do inputu)
   $('#geoBtn').addEventListener('click',()=>{
     if(!navigator.geolocation) return alert('Geolokácia nie je podporovaná.');
     $('#geoBtn').textContent='⌛ Zisťujem polohu...';
@@ -494,16 +495,23 @@
       try{
         const rev=await fetch(`https://geocoding-api.open-meteo.com/v1/reverse?latitude=${state.lat}&longitude=${state.lon}&language=sk&count=1`).then(r=>r.json());
         const hit=rev?.results?.[0];
-        state.place = hit ? `${hit.name}${hit.admin1?`, ${hit.admin1}`:''}, ${hit.country_code}` : 'Zistená poloha';
-        $('#geoBtn').textContent=state.place;
-        $('#q').value = state.place.includes('Zistená') ? '' : state.place;
+        if(hit){
+          state.place=`${hit.name}${hit.admin1?`, ${hit.admin1}`:''}, ${hit.country_code}`;
+        }else{
+          state.place='Zistená poloha';
+        }
       }catch(_){
         state.place='Zistená poloha';
-        $('#geoBtn').textContent='Zistená poloha';
       }
-      savePrefs(); fetchWeather();
-    }, _=>{ alert('Nepodarilo sa získať polohu.'); $('#geoBtn').textContent='📍 Zistiť polohu'; },
-       {enableHighAccuracy:true,timeout:10000,maximumAge:300000});
+      $('#geoBtn').textContent=state.place;
+      $('#q').value=state.place;         // <- dopln do vyhľadávania
+      $('#place').textContent=state.place; // <- dopln do hlavičky
+      savePrefs();
+      fetchWeather();
+    }, _=>{
+      alert('Nepodarilo sa získať polohu.');
+      $('#geoBtn').textContent='📍 Zistiť polohu';
+    }, {enableHighAccuracy:true,timeout:10000,maximumAge:300000});
   });
 
   // Modelové taby
