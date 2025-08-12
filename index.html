@@ -12,27 +12,19 @@
 
 <style>
   :root{
-    --bg0:#0b0f14;
-    --bg1:#0e1620;
-    --stroke:#233448;
-    --txt:#eaf3ff;
-    --muted:#a8bed5;
-    --accent:#3ad0e6;
-    --r:14px;
-    --shadow:0 10px 28px rgba(0,0,0,.28);
+    --bg0:#0b0f14; --bg1:#0e1620; --panel:#101a24; --stroke:#233448;
+    --txt:#eaf3ff; --muted:#a8bed5; --accent:#3ad0e6;
+    --r:14px; --shadow:0 10px 28px rgba(0,0,0,.28);
   }
   *{box-sizing:border-box}
   html,body{height:100%}
   body{
     margin:0; color:var(--txt);
     font-family:Poppins,system-ui,-apple-system,Segoe UI,Roboto,Arial;
-    background:
-      radial-gradient(1200px 800px at 50% -10%, #102538 0%, #0f1a26 45%, #0b0f14 100%),
-      linear-gradient(180deg,var(--bg1),var(--bg0));
-    min-height:100dvh; display:flex; flex-direction:column;
-    -webkit-text-size-adjust:100%;
-    -webkit-tap-highlight-color:transparent;
-    overflow-x:hidden;
+    background:radial-gradient(1200px 800px at 50% -10%, #102538 0%, #0f1a26 45%, #0b0f14 100%),
+               linear-gradient(180deg,var(--bg1),var(--bg0));
+    min-height:100dvh; display:flex; flex-direction:column; overflow-x:hidden;
+    -webkit-text-size-adjust:100%; -webkit-tap-highlight-color:transparent;
   }
   .wrap{width:100%; max-width:1120px; margin-inline:auto; padding:16px 12px 28px; flex:1}
   header h1{margin:0 0 10px; text-align:center; font-size:28px; letter-spacing:.3px}
@@ -40,86 +32,60 @@
   /* Toolbar */
   .toolbar{display:grid; grid-template-columns:1fr; gap:10px; margin:10px 0 12px}
   .searchCol{display:flex; flex-direction:column; gap:6px; position:relative}
-  .search{
-    width:100%; background:#152535; border:1px solid var(--stroke); color:#fff;
-    border-radius:12px; padding:12px 14px; outline:none; font-size:16px; min-height:46px;
-  }
+  .search{width:100%; background:#152535; border:1px solid var(--stroke); color:#fff; border-radius:12px; padding:12px 14px; outline:none; font-size:16px; min-height:46px}
   .search:focus{border-color:#2e4a67}
-  #suggestions{
-    display:none; gap:6px; position:absolute; top:calc(100% + 6px); left:0; right:0; z-index:40;
-    background:#0f1c2a; border:1px solid var(--stroke); border-radius:12px; padding:8px; max-height:55vh; overflow:auto;
-  }
+  #suggestions{display:none; gap:6px; position:absolute; top:calc(100% + 6px); left:0; right:0; z-index:40; background:#0f1c2a; border:1px solid var(--stroke); border-radius:12px; padding:8px; max-height:55vh; overflow:auto}
   .sugg{background:#13263a; border:1px solid var(--stroke); border-radius:10px; padding:10px 12px; cursor:pointer}
-  .btnRow{display:grid; grid-template-columns:repeat(2,1fr); gap:10px}
-  .pill{
-    background:#1b2c3d; border:1px solid var(--stroke); color:#dfeaff; border-radius:12px;
-    padding:12px; font-weight:600; cursor:pointer; min-height:46px; font-size:16px; text-align:center
-  }
+  .btnRow{display:grid; grid-template-columns:repeat(2,auto); gap:10px; justify-content:start}
+  .pill{background:#1b2c3d; border:1px solid var(--stroke); color:#dfeaff; border-radius:12px; padding:12px 14px; font-weight:600; cursor:pointer; min-height:46px; font-size:16px}
   .pill.active{background:var(--accent); border-color:#2abbd0; color:#002a32}
 
-  .card{
-    background:linear-gradient(180deg, rgba(255,255,255,.06), rgba(255,255,255,.03));
-    border:1px solid var(--stroke); border-radius:var(--r); box-shadow:var(--shadow); padding:14px;
-  }
+  /* Karty + layout */
+  .card{background:linear-gradient(180deg,rgba(255,255,255,.06),rgba(255,255,255,.03)); border:1px solid var(--stroke); border-radius:var(--r); box-shadow:var(--shadow); padding:14px}
   .card h3{margin:0 0 10px; text-align:center; font-size:18px}
-
   .row{display:grid; grid-template-columns:1fr; gap:12px; margin-top:4px}
+  .gridInfo{display:grid; grid-template-columns:1fr auto; gap:14px; align-items:start}
   .meta{display:grid; grid-template-columns:1fr; gap:8px; color:var(--muted); font-size:14px}
   .meta strong{color:#fff}
-  .chip{display:inline-flex; gap:8px; align-items:center; background:#143344; border:1px solid var(--stroke); color:#d8f7ff; border-radius:999px; padding:6px 10px; font-size:12px; margin-right:6px}
+  .chip{display:inline-flex; gap:8px; align-items:center; background:#143344; border:1px solid var(--stroke); color:#d8f7ff; border-radius:999px; padding:6px 10px; font-size:12px}
   .tempNow{font-size:44px; font-weight:700; line-height:1; margin:6px 0}
   .icon{width:64px; height:64px; display:flex; align-items:center; justify-content:center; font-size:48px}
 
-  .gridInfo{display:grid; grid-template-columns:1fr auto; gap:14px; align-items:start}
-
-  /* horizontálne pásy */
-  .hscroll{display:flex; gap:10px; overflow-x:auto; padding:6px 2px 8px; scroll-snap-type:x mandatory; -webkit-overflow-scrolling:touch}
-  .hscroll::-webkit-scrollbar{height:8px}
-  .hscroll::-webkit-scrollbar-track{background:#0f1c2a; border-radius:10px}
-  .hscroll::-webkit-scrollbar-thumb{background:#1e3c54; border-radius:10px}
-
-  .part{min-width:150px; background:#152433; border:1px solid var(--stroke); border-radius:12px; padding:10px; text-align:center; scroll-snap-align:start}
-  .part .lbl{opacity:.9; margin-bottom:4px}
-  .part .emoji{font-size:22px}
-  .part .val{font-weight:700; font-size:22px; margin-top:6px}
-  .part .sub{color:#bcd1e5; font-size:12px; margin-top:4px}
-
-  .day{min-width:170px; background:#152433; border:1px solid var(--stroke); border-radius:12px; padding:12px; text-align:center; scroll-snap-align:start}
-  .day .top{opacity:.9; margin-bottom:6px}
-  .day .em{font-size:22px}
-  .day .max{font-weight:700; font-size:22px; margin:6px 0 2px}
-  .day .min{opacity:.85}
-  .day .pp{color:#bcd1e5; font-size:12px; margin-top:6px}
-
-  .chartWrap{height:200px}
-  canvas{background:#0f1c2a; border:1px solid var(--stroke); border-radius:12px}
-
-  /* skutočne centrovaný súhrn pod gridom */
+  /* Skutočne centrovaný súhrn pod gridom */
   .summarySection{margin-top:12px}
   .summarySection h3{margin-bottom:8px}
-  #summary{
-    margin:0 auto;
-    max-width:720px;
-    color:#dbeeff; background:#0f1c2a; border:1px solid var(--stroke);
-    border-radius:10px; padding:12px; text-align:center
+  #summary{margin:0 auto; max-width:760px; color:#dbeeff; background:#0f1c2a; border:1px solid var(--stroke); border-radius:10px; padding:12px; text-align:center}
+
+  .chartWrap{height:220px}
+  canvas{background:#0f1c2a; border:1px solid var(--stroke); border-radius:12px}
+
+  /* Kartičky */
+  .tile{background:#152433; border:1px solid var(--stroke); border-radius:12px; padding:12px; text-align:center}
+  .tile .lbl{opacity:.9; margin-bottom:6px}
+  .tile .em{font-size:22px}
+  .tile .val{font-weight:700; font-size:22px; margin:6px 0 2px}
+  .tile .sub{color:#bcd1e5; font-size:12px; margin-top:4px}
+
+  /* PÁS NA MOBILE, MREŽA NA DESKTOPE */
+  .scrollRow{display:flex; gap:10px; overflow-x:auto; padding:6px 2px 8px; scroll-snap-type:x mandatory; -webkit-overflow-scrolling:touch}
+  .scrollRow > .tile{min-width:160px; scroll-snap-align:start}
+  .scrollRow::-webkit-scrollbar{height:8px}
+  .scrollRow::-webkit-scrollbar-track{background:#0f1c2a; border-radius:10px}
+  .scrollRow::-webkit-scrollbar-thumb{background:#1e3c54; border-radius:10px}
+
+  /* >= 900px sa pás zmení na mriežku bez posuvníka a bez min-width */
+  @media (min-width:900px){
+    .scrollRow{display:grid; grid-template-columns:repeat(auto-fit,minmax(170px,1fr)); overflow:visible; padding:0}
+    .scrollRow > .tile{min-width:0}
   }
 
-  /* História */
-  .histRow{display:flex; align-items:center; justify-content:center; gap:10px; flex-wrap:wrap}
-  .badge{display:inline-block; padding:6px 10px; border-radius:10px; font-weight:700}
-  .badge.max{background:#ff5e5e; color:#fff}
-  .badge.min{background:#ffd265; color:#2b2300}
-  .histSub{color:#a8bed5; font-size:12px; margin-top:6px; text-align:center}
-
-  footer{padding:14px 10px; text-align:center; color:#cfe8ff; font-size:14px; border-top:1px solid rgba(255,255,255,.12)}
-
+  /* Väčšie obrazovky */
   @media (min-width:780px){
     .wrap{padding:22px 16px 36px}
     .toolbar{grid-template-columns:1fr auto}
-    .btnRow{grid-template-columns:repeat(2,auto); justify-content:end}
     .row{grid-template-columns:1.05fr 1fr; gap:16px}
     .meta{grid-template-columns:repeat(2,minmax(0,1fr))}
-    .chartWrap{height:240px}
+    .chartWrap{height:260px}
   }
   @media (min-width:1100px){ .chartWrap{height:280px} }
 </style>
@@ -161,7 +127,7 @@
           <div id="icon" class="icon">—</div>
         </div>
 
-        <!-- Skutočne centrovaný súhrn -->
+        <!-- centrovaný súhrn -->
         <div class="summarySection">
           <h3>Dnešný súhrn</h3>
           <p id="summary">—</p>
@@ -178,24 +144,24 @@
     <!-- Dnes po častiach -->
     <section class="card" style="margin-top:12px">
       <h3>Dnes po častiach</h3>
-      <div id="parts" class="hscroll"></div>
+      <div id="parts" class="scrollRow"></div>
     </section>
 
-    <!-- 7-dňová predpoveď + tlačidlá modelov pod nadpisom -->
+    <!-- 7 dní + prepínače POD nadpisom -->
     <section class="card" style="margin-top:12px">
       <h3 style="margin-bottom:8px">7-dňová predpoveď</h3>
-      <div style="display:flex;justify-content:center;gap:8px;flex-wrap:wrap;margin-bottom:8px">
+      <div style="display:flex;justify-content:center;gap:8px;flex-wrap:wrap;margin-bottom:10px">
         <button class="pill" id="tab-ecmwf">ECMWF IFS</button>
         <button class="pill" id="tab-icon">ICON (DWD)</button>
         <button class="pill" id="tab-gfs">GFS (NOAA)</button>
       </div>
-      <div id="days" class="hscroll"></div>
+      <div id="days" class="scrollRow"></div>
     </section>
 
-    <!-- 15 min -->
+    <!-- 15 min (necháva sa pás) -->
     <section class="card" style="margin-top:12px">
       <h3>15-minútová predpoveď (6 h)</h3>
-      <div id="min15" class="hscroll"></div>
+      <div id="min15" class="scrollRow"></div>
     </section>
 
     <!-- História -->
@@ -204,13 +170,17 @@
         <h3>Počasie presne pred rokom</h3>
         <div id="hist-date" style="color:var(--muted);font-size:12px">—</div>
       </div>
-      <div class="histRow" style="margin-top:6px">
-        <div id="hist-emoji" style="font-size:26px">—</div>
-        <div style="font-weight:700" id="hist-text">—</div>
-        <span class="badge max" id="hist-max">—</span>
-        <span class="badge min" id="hist-min">—</span>
+      <div class="scrollRow" style="justify-content:center; overflow:visible">
+        <div class="tile">
+          <div id="hist-emoji" class="em">—</div>
+          <div style="font-weight:700;margin-top:6px" id="hist-text">—</div>
+          <div style="display:flex;gap:8px;justify-content:center;margin-top:8px">
+            <span class="tile" id="hist-max" style="padding:6px 10px">—</span>
+            <span class="tile" id="hist-min" style="padding:6px 10px">—</span>
+          </div>
+          <div class="sub" id="hist-extra" style="margin-top:8px">—</div>
+        </div>
       </div>
-      <div class="histSub" id="hist-extra">—</div>
     </section>
   </div>
 
@@ -221,10 +191,9 @@
   const fmt0 = (v,u='') => (v==null||Number.isNaN(v)) ? '—' : `${Math.round(v)}${u}`;
   const fmt1 = (v,u='') => (v==null||Number.isNaN(v)) ? '—' : `${(Math.round(v*10)/10).toFixed(1)}${u}`;
 
-  const WMO={0:['Jasno'],1:['Prevažne jasno'],2:['Polojasno'],3:['Zamračené'],
-    45:['Hmla'],48:['Mrznúca hmla'],51:['Slabé mrholenie'],53:['Mrholenie'],55:['Silné mrholenie'],
-    61:['Slabý dážď'],63:['Dážď'],65:['Lejak'],66:['Mrznúci dážď'],67:['Mrznúci dážď'],
-    71:['Slabé sneženie'],73:['Sneženie'],75:['Silné sneženie'],77:['Snehové zrná'],
+  const WMO={0:['Jasno'],1:['Prevažne jasno'],2:['Polojasno'],3:['Zamračené'],45:['Hmla'],48:['Mrznúca hmla'],
+    51:['Slabé mrholenie'],53:['Mrholenie'],55:['Silné mrholenie'],61:['Slabý dážď'],63:['Dážď'],65:['Lejak'],
+    66:['Mrznúci dážď'],67:['Mrznúci dážď'],71:['Slabé sneženie'],73:['Sneženie'],75:['Silné sneženie'],77:['Snehové zrná'],
     80:['Prehánky'],81:['Prehánky'],82:['Silné prehánky'],85:['Snehové prehánky'],86:['Silné snehové prehánky'],
     95:['Búrky'],96:['Búrky s krúpami'],99:['Silné búrky s krúpami']};
   const uvCat=u=>u<3?'nízky':u<6?'mierny':u<8?'vysoký':u<11?'veľmi vysoký':'extrémny';
@@ -240,13 +209,13 @@
   let hourlyChart=null; let activeModel='ecmwf';
   const LS_KEY='wx_prefs_v2';
 
-  // Load prefs
-  (()=>{try{
-    const raw=localStorage.getItem(LS_KEY);
-    if(raw){const p=JSON.parse(raw);
-      if(typeof p.lat==='number'&&typeof p.lon==='number'&&typeof p.place==='string'){state.lat=p.lat;state.lon=p.lon;state.place=p.place}
-    }
-  }catch(e){}})();
+  (function loadPrefs(){
+    try{const raw=localStorage.getItem(LS_KEY);
+      if(raw){const p=JSON.parse(raw);
+        if(typeof p.lat==='number'&&typeof p.lon==='number'&&typeof p.place==='string'){state.lat=p.lat;state.lon=p.lon;state.place=p.place}
+      }
+    }catch(e){}
+  })();
   const savePrefs=()=>{try{localStorage.setItem(LS_KEY,JSON.stringify({lat:state.lat,lon:state.lon,place:state.place,units:'c'}))}catch(e){}};
 
   async function fetchWeather(){
@@ -279,8 +248,7 @@
     $('#uv').textContent=`UV ${uvi!=null?fmt1(uvi):'—'} • ${uvi!=null?uvCat(uvi):'—'}`;
 
     const dd=d.daily;
-    const tmax=dd.temperature_2m_max[0];
-    const tmin=dd.temperature_2m_min[0];
+    const tmax=dd.temperature_2m_max[0], tmin=dd.temperature_2m_min[0];
     const ps=dd.precipitation_sum[0],pp=dd.precipitation_probability_max?.[0],wmax=dd.wind_speed_10m_max[0];
     const condToday=(WMO[dd.weather_code?.[0]]?.[0])||'—';
     const rainTxt=ps<0.1?(pp&&pp>20?`bez výrazných zrážok (pravdepodobnosť ${pp}%)`:'bez zrážok'):`zrážky do ${fmt1(ps,' mm')}`;
@@ -291,6 +259,8 @@
     const ss=dd.sunset?.[0]?new Date(dd.sunset[0]):null;
     $('#sunrise').textContent=sr?sr.toLocaleTimeString('sk-SK',{hour:'2-digit',minute:'2-digit'}):'—';
     $('#sunset').textContent=ss?ss.toLocaleTimeString('sk-SK',{hour:'2-digit',minute:'2-digit'}):'—';
+
+    renderParts(); renderMin15();
   }
 
   function drawHourly(){
@@ -320,34 +290,32 @@
     return arr[best];
   }
   function renderParts(){
-    const box = $('#parts'); box.innerHTML='';
-    const d=state.last; const base = new Date(d.current.time);
-    const make = (h,label)=>{
+    const box=$('#parts'); box.innerHTML='';
+    const d=state.last; const base=new Date(d.current.time);
+    const make=(h,label)=>{
       const dt=new Date(base); dt.setHours(h,0,0,0);
-      const temp = valueAtHour(d.hourly.time, d.hourly.temperature_2m, dt.toISOString());
-      const pr = valueAtHour(d.hourly.time, d.hourly.precipitation, dt.toISOString());
-      const wind = valueAtHour(d.hourly.time, d.hourly.wind_speed_10m, dt.toISOString());
-      const code = valueAtHour(d.hourly.time, d.hourly.weather_code, dt.toISOString());
-      const el=document.createElement('div'); el.className='part';
-      el.innerHTML = `
-        <div class="lbl">${label}</div>
-        <div class="emoji">${wmoEmoji(code)}</div>
-        <div class="val">${fmt0(temp,'°')}</div>
-        <div class="sub">${fmt1(pr,' mm/h')} • vietor ${fmt1(wind,' km/h')}</div>`;
+      const temp=valueAtHour(d.hourly.time,d.hourly.temperature_2m,dt.toISOString());
+      const pr=valueAtHour(d.hourly.time,d.hourly.precipitation,dt.toISOString());
+      const wind=valueAtHour(d.hourly.time,d.hourly.wind_speed_10m,dt.toISOString());
+      const code=valueAtHour(d.hourly.time,d.hourly.weather_code,dt.toISOString());
+      const el=document.createElement('div'); el.className='tile';
+      el.innerHTML=`<div class="lbl">${label}</div>
+                    <div class="em">${wmoEmoji(code)}</div>
+                    <div class="val">${fmt0(temp,'°')}</div>
+                    <div class="sub">${fmt1(pr,' mm/h')} • vietor ${fmt1(wind,' km/h')}</div>`;
       box.appendChild(el);
     };
     make(10,'Doobeda'); make(15,'Poobede'); make(20,'Večer');
-    const next = new Date(base); next.setDate(base.getDate()+1); next.setHours(2,0,0,0);
-    const tempN = valueAtHour(d.hourly.time, d.hourly.temperature_2m, next.toISOString());
-    const prN   = valueAtHour(d.hourly.time, d.hourly.precipitation, next.toISOString());
-    const windN = valueAtHour(d.hourly.time, d.hourly.wind_speed_10m, next.toISOString());
-    const codeN = valueAtHour(d.hourly.time, d.hourly.weather_code, next.toISOString());
-    const el=document.createElement('div'); el.className='part';
-    el.innerHTML = `
-      <div class="lbl">Noc</div>
-      <div class="emoji">${wmoEmoji(codeN)}</div>
-      <div class="val">${fmt0(tempN,'°')}</div>
-      <div class="sub">${fmt1(prN,' mm/h')} • vietor ${fmt1(windN,' km/h')}</div>`;
+    const next=new Date(base); next.setDate(base.getDate()+1); next.setHours(2,0,0,0);
+    const tempN=valueAtHour(d.hourly.time,d.hourly.temperature_2m,next.toISOString());
+    const prN=valueAtHour(d.hourly.time,d.hourly.precipitation,next.toISOString());
+    const windN=valueAtHour(d.hourly.time,d.hourly.wind_speed_10m,next.toISOString());
+    const codeN=valueAtHour(d.hourly.time,d.hourly.weather_code,next.toISOString());
+    const el=document.createElement('div'); el.className='tile';
+    el.innerHTML=`<div class="lbl">Noc</div>
+                  <div class="em">${wmoEmoji(codeN)}</div>
+                  <div class="val">${fmt0(tempN,'°')}</div>
+                  <div class="sub">${fmt1(prN,' mm/h')} • vietor ${fmt1(windN,' km/h')}</div>`;
     box.appendChild(el);
   }
 
@@ -383,50 +351,41 @@
       const prep=valueAt15min(d.hourly.time,d.hourly.precipitation,t);
       const code=codeAt15min(d.hourly.time,d.hourly.weather_code,t);
       const wind=valueAt15min(d.hourly.time,d.hourly.wind_speed_10m,t);
-      const el=document.createElement('div'); el.className='part'; el.style.minWidth='130px';
-      el.innerHTML = `
-        <div class="lbl">${t.toLocaleTimeString('sk-SK',{hour:'2-digit',minute:'2-digit'})}</div>
-        <div class="emoji">${wmoEmoji(code)}</div>
-        <div class="val">${fmt0(tmp,'°')}</div>
-        <div class="sub">${prep!=null?fmt1(prep,' mm/h'):'—'} • vietor ${wind!=null?fmt1(wind,' km/h'):'—'}</div>`;
+      const el=document.createElement('div'); el.className='tile';
+      el.innerHTML=`<div class="lbl">${t.toLocaleTimeString('sk-SK',{hour:'2-digit',minute:'2-digit'})}</div>
+                    <div class="em">${wmoEmoji(code)}</div>
+                    <div class="val">${fmt0(tmp,'°')}</div>
+                    <div class="sub">${prep!=null?fmt1(prep,' mm/h'):'—'} • vietor ${wind!=null?fmt1(wind,' km/h'):'—'}</div>`;
       box.appendChild(el);
     }
   }
 
   async function fetchModels(which){
     activeModel=which;
-    ['ecmwf','icon','gfs'].forEach(id=>{
-      const btn=$(`#tab-${id}`); if(!btn) return;
-      btn.classList.toggle('active', id===which);
-    });
+    ['ecmwf','icon','gfs'].forEach(id=>{const btn=$(`#tab-${id}`); if(btn) btn.classList.toggle('active',id===which);});
     const tz=Intl.DateTimeFormat().resolvedOptions().timeZone;
     const daily='weather_code,temperature_2m_max,temperature_2m_min,precipitation_probability_max';
     let base=''; if(which==='ecmwf') base='https://api.open-meteo.com/v1/ecmwf';
     if(which==='icon') base='https://api.open-meteo.com/v1/dwd-icon';
     if(which==='gfs') base='https://api.open-meteo.com/v1/gfs';
     const p=new URLSearchParams({latitude:state.lat,longitude:state.lon,timezone:tz,daily,forecast_days:'7'});
-    try{
-      const r=await fetch(`${base}?${p}`); if(!r.ok) throw 0;
-      const j=await r.json(); renderDays(j);
-    }catch(e){
-      $('#days').innerHTML='<div style="color:#ffd4d4">Model sa nepodarilo načítať.</div>';
-    }
+    try{const r=await fetch(`${base}?${p}`); if(!r.ok) throw 0; const j=await r.json(); renderDays(j);}
+    catch{ $('#days').innerHTML='<div style="color:#ffd4d4">Model sa nepodarilo načítať.</div>'; }
   }
   function renderDays(d){
     const box=$('#days'); box.innerHTML='';
-    const days=d.daily; const n=Math.min(7, days.time.length);
+    const days=d.daily; const n=Math.min(7,days.time.length);
     for(let i=0;i<n;i++){
       const lab=new Date(days.time[i]+'T00:00:00').toLocaleDateString('sk-SK',{weekday:'short',day:'2-digit',month:'2-digit'});
       const code=days.weather_code?.[i];
       const max=days.temperature_2m_max[i], min=days.temperature_2m_min[i];
       const pp=days.precipitation_probability_max?.[i];
-      const el=document.createElement('div'); el.className='day';
-      el.innerHTML = `
-        <div class="top">${lab}</div>
-        <div class="em">${wmoEmoji(code)}</div>
-        <div class="max">${fmt0(max,'°')}</div>
-        <div class="min">${fmt0(min,'°')}</div>
-        <div class="pp">Zrážky: ${pp!=null?pp+'%':'—'}</div>`;
+      const el=document.createElement('div'); el.className='tile';
+      el.innerHTML=`<div class="lbl">${lab}</div>
+                    <div class="em">${wmoEmoji(code)}</div>
+                    <div class="val">${fmt0(max,'°')}</div>
+                    <div class="sub">${fmt0(min,'°')}</div>
+                    <div class="sub">Zrážky: ${pp!=null?pp+'%':'—'}</div>`;
       box.appendChild(el);
     }
   }
@@ -470,33 +429,21 @@
   });
   document.addEventListener('click',e=>{const box=$('#suggestions'); if(!box.contains(e.target)&&e.target!==$('#q')) box.style.display='none';});
 
-  // GEO – „Zistiť polohu“ a nahradiť názvom mesta
+  // GEO tlačidlo – po zistení polohy sa text zmení na názov mesta
   $('#geoBtn').addEventListener('click',()=>{
     if(!navigator.geolocation) return alert('Geolokácia nie je podporovaná.');
     $('#geoBtn').textContent='⌛ Zisťujem polohu...';
     navigator.geolocation.getCurrentPosition(async pos=>{
       state.lat=pos.coords.latitude; state.lon=pos.coords.longitude;
-      // reverzné geokódovanie (Open-Meteo)
       try{
         const rev=await fetch(`https://geocoding-api.open-meteo.com/v1/reverse?latitude=${state.lat}&longitude=${state.lon}&language=sk&count=1`).then(r=>r.json());
         const hit=rev?.results?.[0];
-        if(hit){
-          state.place=`${hit.name}${hit.admin1?`, ${hit.admin1}`:''}, ${hit.country_code}`;
-          $('#geoBtn').textContent=state.place;
-        }else{
-          state.place='Zistená poloha';
-          $('#geoBtn').textContent='Zistená poloha';
-        }
-      }catch(_){
-        state.place='Zistená poloha';
-        $('#geoBtn').textContent='Zistená poloha';
-      }
-      savePrefs();
-      fetchWeather();
-    }, err=>{
-      alert('Nepodarilo sa získať polohu.');
-      $('#geoBtn').textContent='📍 Zistiť polohu';
-    }, {enableHighAccuracy:true,timeout:10000,maximumAge:300000});
+        if(hit){ state.place=`${hit.name}${hit.admin1?`, ${hit.admin1}`:''}, ${hit.country_code}`; $('#geoBtn').textContent=state.place; }
+        else   { state.place='Zistená poloha'; $('#geoBtn').textContent='Zistená poloha'; }
+      }catch{ state.place='Zistená poloha'; $('#geoBtn').textContent='Zistená poloha'; }
+      savePrefs(); fetchWeather();
+    }, _=>{ alert('Nepodarilo sa získať polohu.'); $('#geoBtn').textContent='📍 Zistiť polohu'; },
+       {enableHighAccuracy:true,timeout:10000,maximumAge:300000});
   });
 
   // Modelové taby
