@@ -2,99 +2,118 @@
 <html lang="sk">
 <head>
 <meta charset="utf-8">
-<meta name="viewport" content="width=device-width,initial-scale=1">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
 <title>Počasie</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;600;700&display=swap" rel="stylesheet">
 <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.3/dist/chart.umd.min.js"></script>
 <style>
-  :root{--bg1:#0f3a6e;--bg2:#0b2443;--card:#152c50;--stroke:#2a4573;--txt:#eaf2ff;--muted:#a9bad9;--brand:#57a6ff;--r:18px;--shadow:0 14px 40px rgba(0,0,0,.28)}
-  *{box-sizing:border-box}
-  body{
-    margin:0;color:var(--txt);
-    font-family:Poppins,system-ui,-apple-system,Segoe UI,Roboto,Arial;
-    background:radial-gradient(1300px 800px at 50% -10%,#16508e 0%,#0e2f5b 40%,#0a1f3e 100%),linear-gradient(180deg,var(--bg1),var(--bg2));
-    min-height:100vh;display:flex;flex-direction:column;overflow-y:auto
+  :root{
+    --bg1:#0f3a6e; --bg2:#0b2443; --card:#152c50; --stroke:#2a4573; --txt:#eaf2ff; --muted:#a9bad9; --brand:#57a6ff;
+    --r:16px; --shadow:0 12px 30px rgba(0,0,0,.28)
   }
-  .wrap{max-width:1180px;margin:auto;padding:28px 16px 40px;flex:1}
-  header h1{margin:0;font-size:28px;text-align:center}
+  *{box-sizing:border-box}
+  html,body{height:100%}
+  body{
+    margin:0; color:var(--txt);
+    font-family:Poppins,system-ui,-apple-system,Segoe UI,Roboto,Arial;
+    background: radial-gradient(1100px 700px at 50% -10%, #16508e 0%, #0e2f5b 40%, #0a1f3e 100%),
+               linear-gradient(180deg,var(--bg1),var(--bg2));
+    min-height:100dvh; display:flex; flex-direction:column;
+  }
 
-  .toolbar{display:grid;grid-template-columns:1fr auto auto auto;gap:10px;align-items:start;margin:16px 0 10px}
-  .searchCol{display:flex;flex-direction:column;gap:10px;position:relative}
-  .search{width:100%;background:#223e6d;border:1px solid var(--stroke);color:#fff;border-radius:14px;padding:12px 14px;outline:none}
-  .search:focus{background:#223e6d;color:#fff;border-color:var(--stroke);outline:none}
+  .wrap{width:100%; max-width:1120px; margin-inline:auto; padding:18px 12px 28px; flex:1}
+  header h1{margin:0 0 8px; font-size:26px; text-align:center}
+
+  /* Toolbar – mobil: na 2 riadky */
+  .toolbar{display:grid; grid-template-columns:1fr; gap:10px; margin:12px 0 8px}
+  .searchCol{display:flex; flex-direction:column; gap:8px; position:relative}
+  .search{
+    width:100%; background:#223e6d; border:1px solid var(--stroke); color:#fff;
+    border-radius:14px; padding:12px 14px; outline:none; font-size:16px; min-height:46px;
+  }
+  .search:focus{background:#223e6d; color:#fff; border-color:var(--stroke); outline:none}
   input.search:-webkit-autofill,
   input.search:-webkit-autofill:hover,
-  input.search:-webkit-autofill:focus{-webkit-text-fill-color:#fff;-webkit-box-shadow:0 0 0 1000px #223e6d inset;box-shadow:0 0 0 1000px #223e6d inset;caret-color:#fff;transition:background-color 9999s ease-out 0s}
+  input.search:-webkit-autofill:focus{
+    -webkit-text-fill-color:#fff; -webkit-box-shadow:0 0 0 1000px #223e6d inset; box-shadow:0 0 0 1000px #223e6d inset; caret-color:#fff;
+  }
+  .btnRow{display:grid; grid-template-columns:1fr 1fr 1fr; gap:8px}
+  .pill{
+    background:#274b86; border:1px solid var(--stroke); color:#dfeaff; border-radius:14px;
+    padding:12px; font-weight:600; cursor:pointer; min-height:46px; font-size:16px; text-align:center
+  }
+  .pill:active{transform:translateY(1px)}
+  .pill.active{background:var(--brand); border-color:#3c7bd0; color:#001b3b}
 
-  .pill{background:#274b86;border:1px solid var(--stroke);color:#dfeaff;border-radius:14px;padding:12px 14px;font-weight:600;cursor:pointer;min-height:44px}
-  .pill:hover{filter:brightness(1.07)}
-  .pill.active{background:var(--brand);border-color:#3c7bd0;color:#001b3b}
-
-  #suggestions{display:none;gap:8px;position:absolute;top:calc(100% + 6px);left:0;right:0;background:#0f2549;border:1px solid var(--stroke);border-radius:12px;padding:8px;z-index:50;max-height:50vh;overflow:auto}
-  .sugg{background:#1b335e;border:1px solid var(--stroke);border-radius:10px;padding:10px 12px;cursor:pointer}
+  #suggestions{
+    display:none; gap:8px; position:absolute; top:calc(100% + 6px); left:0; right:0;
+    background:#0f2549; border:1px solid var(--stroke); border-radius:12px; padding:8px; z-index:50;
+    max-height:55vh; overflow:auto
+  }
+  .sugg{background:#1b335e; border:1px solid var(--stroke); border-radius:10px; padding:10px 12px; cursor:pointer}
+  .sugg:active{transform:translateY(1px)}
   .sugg:hover{background:#223f70}
 
-  .row{display:grid;grid-template-columns:1.05fr 1fr;gap:16px}
-  @media (max-width:980px){.row{grid-template-columns:1fr}}
-  .card{background:linear-gradient(180deg,rgba(255,255,255,.06),rgba(255,255,255,.025));border:1px solid var(--stroke);border-radius:var(--r);box-shadow:var(--shadow);padding:18px}
-  .card h3{margin:0 0 12px;text-align:center}
-  .meta{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:8px;color:var(--muted)}
+  /* Karty */
+  .row{display:grid; grid-template-columns:1fr; gap:12px}
+  .card{background:linear-gradient(180deg,rgba(255,255,255,.06),rgba(255,255,255,.03));
+        border:1px solid var(--stroke); border-radius:var(--r); box-shadow:var(--shadow); padding:14px}
+  .card h3{margin:0 0 10px; text-align:center}
+  .meta{display:grid; grid-template-columns:1fr; gap:8px; color:var(--muted); font-size:14px}
   .meta strong{color:#fff}
-  .chip{display:inline-flex;gap:8px;align-items:center;background:#244879;border:1px solid var(--stroke);color:#dce9ff;border-radius:999px;padding:6px 10px;font-size:12px;margin-right:6px}
-  .tempNow{font-size:44px;font-weight:700;line-height:1;margin:6px 0}
-  .icon{width:78px;height:78px;display:flex;align-items:center;justify-content:center;font-size:58px;line-height:1}
-  .chartWrap{height:260px}
-  canvas{background:#162e59;border:1px solid var(--stroke);border-radius:14px}
+  .chip{display:inline-flex; gap:8px; align-items:center; background:#244879; border:1px solid var(--stroke);
+        color:#dce9ff; border-radius:999px; padding:6px 10px; font-size:12px; margin-right:6px}
+  .tempNow{font-size:40px; font-weight:700; line-height:1; margin:6px 0}
+  .icon{width:64px; height:64px; display:flex; align-items:center; justify-content:center; font-size:46px; line-height:1}
 
-  .min15Scroller{overflow-x:auto;display:flex;gap:12px;scroll-snap-type:x mandatory;padding-bottom:8px;-webkit-overflow-scrolling:touch}
-  .min15Scroller::-webkit-scrollbar{height:10px}
-  .min15Scroller::-webkit-scrollbar-track{background:#11264a;border-radius:10px}
-  .min15Scroller::-webkit-scrollbar-thumb{background:#274b86;border-radius:10px}
-  .slot15{scroll-snap-align:start;min-width:130px;background:#182f57;border:1px solid var(--stroke);border-radius:14px;padding:10px 12px;text-align:center;display:flex;flex-direction:column;gap:6px}
-  .slot15 .em{font-size:20px}.slot15 .tt{font-weight:700}.slot15 .sub{color:#b7c9f2;font-size:12px}
+  .chartWrap{height:200px}
+  canvas{background:#162e59; border:1px solid var(--stroke); border-radius:14px}
 
-  .centerCard .head{display:flex;flex-direction:column;align-items:center;text-align:center}
-  .modelTabs{display:flex;gap:8px;align-items:center;justify-content:center;flex-wrap:wrap}
-  .tab{background:#274b86;border:1px solid var(--stroke);color:#dfeaff;border-radius:12px;padding:6px 10px;font-weight:600;cursor:pointer;min-height:40px}
-  .tab.active{background:var(--brand);border-color:#3c7bd0;color:#001b3b}
+  /* 15-min carousel */
+  .min15Scroller{overflow-x:auto; display:flex; gap:10px; scroll-snap-type:x mandatory; padding-bottom:6px; -webkit-overflow-scrolling:touch}
+  .min15Scroller::-webkit-scrollbar{height:8px}
+  .min15Scroller::-webkit-scrollbar-track{background:#11264a; border-radius:10px}
+  .min15Scroller::-webkit-scrollbar-thumb{background:#274b86; border-radius:10px}
+  .slot15{scroll-snap-align:start; min-width:100px; background:#182f57; border:1px solid var(--stroke);
+          border-radius:14px; padding:8px 10px; text-align:center; display:flex; flex-direction:column; gap:6px}
+  .slot15 .em{font-size:20px} .slot15 .tt{font-weight:700} .slot15 .sub{color:#b7c9f2; font-size:12px}
 
-  .modelsGrid{display:grid;grid-template-columns:repeat(7,minmax(0,1fr));gap:12px}
-  @media (max-width:1024px){.modelsGrid{grid-template-columns:repeat(5,1fr)}}
-  @media (max-width:780px){.modelsGrid{grid-template-columns:repeat(3,1fr)}}
-  @media (max-width:520px){.modelsGrid{grid-template-columns:repeat(2,1fr)}}
-  .mcol{background:#182f57;border:1px solid var(--stroke);border-radius:14px;padding:12px;text-align:center;display:flex;flex-direction:column;gap:6px}
-  .mcol .em{font-size:22px}.mcol .hi{font-weight:700}.mcol .lo{opacity:.85}
+  .centerCard .head{display:flex; flex-direction:column; align-items:center; text-align:center}
+  .modelTabs{display:flex; gap:8px; align-items:center; justify-content:center; flex-wrap:wrap}
+  .tab{background:#274b86; border:1px solid var(--stroke); color:#dfeaff; border-radius:12px; padding:8px 10px; font-weight:600; cursor:pointer; min-height:40px}
+  .tab.active{background:var(--brand); border-color:#3c7bd0; color:#001b3b}
 
-  .histCard .head{display:flex;flex-direction:column;align-items:center;gap:6px;text-align:center}
-  .histRow{display:flex;align-items:center;justify-content:center;gap:14px;flex-wrap:wrap;text-align:center}
-  .badge{display:inline-block;padding:6px 10px;border-radius:10px;font-weight:700}
-  .badge.max{background:#ff4a4a;color:#fff}
-  .badge.min{background:#ffcc3d;color:#001b3b}
-  .histSub{color:var(--muted);font-size:12px;margin-top:6px;text-align:center}
+  .modelsGrid{display:grid; grid-template-columns:repeat(2,minmax(0,1fr)); gap:10px}
+  .mcol{background:#182f57; border:1px solid var(--stroke); border-radius:14px; padding:10px; text-align:center; display:flex; flex-direction:column; gap:6px}
+  .mcol .em{font-size:22px} .mcol .hi{font-weight:700} .mcol .lo{opacity:.85}
 
-  footer{padding:14px 10px;text-align:center;color:#cfe0ff;font-size:14px;border-top:1px solid rgba(255,255,255,.12)}
+  .histCard .head{display:flex; flex-direction:column; align-items:center; gap:6px; text-align:center}
+  .histRow{display:flex; align-items:center; justify-content:center; gap:12px; flex-wrap:wrap; text-align:center}
+  .badge{display:inline-block; padding:6px 10px; border-radius:10px; font-weight:700}
+  .badge.max{background:#ff4a4a; color:#fff}
+  .badge.min{background:#ffcc3d; color:#001b3b}
+  .histSub{color:var(--muted); font-size:12px; margin-top:6px; text-align:center}
 
-  /* ===== Mobilné úpravy ===== */
-  @media (max-width:640px){
-    .wrap{padding:18px 12px 28px}
-    header h1{font-size:24px}
-    .toolbar{grid-template-columns:1fr 1fr;gap:8px}
-    .searchCol{grid-column:1/-1}
-    .pill{padding:10px 12px}
-    .row{grid-template-columns:1fr}
-    .card{padding:14px}
-    .tempNow{font-size:40px}
-    .icon{width:64px;height:64px;font-size:46px}
-    .meta{grid-template-columns:1fr}
-    .chartWrap{height:220px}
-    .slot15{min-width:110px;padding:8px 10px}
+  footer{padding:14px 10px; text-align:center; color:#cfe0ff; font-size:14px; border-top:1px solid rgba(255,255,255,.12)}
+
+  /* Väčšie obrazovky */
+  @media (min-width:720px){
+    .wrap{padding:24px 16px 40px}
+    .toolbar{grid-template-columns:1fr auto auto auto}
+    .btnRow{display:contents}
+    .row{grid-template-columns:1.05fr 1fr; gap:16px}
+    .meta{grid-template-columns:repeat(2,minmax(0,1fr))}
+    .chartWrap{height:240px}
+    .modelsGrid{grid-template-columns:repeat(5,minmax(0,1fr))}
   }
-  @media (max-width:380px){
-    header h1{font-size:22px}
-    .tab{padding:6px 8px;font-size:12px}
-    .chartWrap{height:200px}
+  @media (min-width:1024px){
+    .modelsGrid{grid-template-columns:repeat(7,minmax(0,1fr))}
+    header h1{font-size:28px}
+    .tempNow{font-size:44px}
+    .icon{width:78px;height:78px;font-size:58px}
+    .chartWrap{height:260px}
   }
 </style>
 </head>
@@ -107,14 +126,16 @@
         <input id="q" class="search" type="text" placeholder="Hľadaj mesto (napr. Bratislava, Košice)">
         <div id="suggestions"></div>
       </div>
-      <button id="geoBtn" class="pill">📍 Moja poloha</button>
-      <button id="cBtn" class="pill active">°C</button>
-      <button id="fBtn" class="pill">°F</button>
+      <div class="btnRow">
+        <button id="geoBtn" class="pill">📍 Moja poloha</button>
+        <button id="cBtn" class="pill active">°C</button>
+        <button id="fBtn" class="pill">°F</button>
+      </div>
     </div>
 
     <div class="row">
       <section class="card">
-        <div style="display:grid;grid-template-columns:1fr auto;gap:16px;align-items:start">
+        <div style="display:grid;grid-template-columns:1fr auto;gap:14px;align-items:start">
           <div>
             <h3 id="place">—</h3>
             <div id="time" style="color:var(--muted);font-size:14px">—</div>
@@ -143,12 +164,12 @@
       </section>
     </div>
 
-    <section class="card centerCard" style="margin-top:16px">
+    <section class="card centerCard" style="margin-top:12px">
       <div class="head"><h3>15-minútová predpoveď (6 h)</h3></div>
       <div id="min15" class="min15Scroller"></div>
     </section>
 
-    <section class="card centerCard" style="margin-top:16px">
+    <section class="card centerCard" style="margin-top:12px">
       <div class="head">
         <h3>Modely – denný prehľad</h3>
         <div class="modelTabs">
@@ -157,10 +178,10 @@
           <button class="tab" id="tab-gfs">GFS (NOAA)</button>
         </div>
       </div>
-      <div id="modelsGrid" class="modelsGrid" style="margin-top:12px"></div>
+      <div id="modelsGrid" class="modelsGrid" style="margin-top:10px"></div>
     </section>
 
-    <section class="card histCard" style="margin-top:16px">
+    <section class="card histCard" style="margin-top:12px">
       <div class="head">
         <h3>Počasie presne pred rokom</h3>
         <div id="hist-date" style="color:var(--muted);font-size:12px">—</div>
@@ -196,7 +217,7 @@
     95:['Búrky','storm'],96:['Búrky s krúpami','storm'],99:['Silné búrky s krúpami','storm']
   };
   const uvCat=u=>u<3?'nízky':u<6?'mierny':u<8?'vysoký':u<11?'veľmi vysoký':'extrémny';
-  function wmoEmoji(code){
+  const wmoEmoji=(code)=>{
     const k=Number(code);
     if([0,1].includes(k)) return '☀️';
     if([2].includes(k)) return '⛅';
@@ -207,13 +228,13 @@
     if([71,73,75,77,85,86].includes(k)) return '❄️';
     if([95,96,99].includes(k)) return '⛈️';
     return '🌤️';
-  }
+  };
 
   let state={units:'c',place:'Bratislava, SK',lat:48.1486,lon:17.1077,last:null};
   let hourlyChart=null;
 
   const LS_KEY='wx_prefs_v1';
-  (function(){
+  (()=>{ // načítaj preferencie
     try{
       const raw=localStorage.getItem(LS_KEY);
       if(raw){
@@ -223,12 +244,12 @@
       }
     }catch(e){}
   })();
-  function savePrefs(){try{localStorage.setItem(LS_KEY,JSON.stringify({lat:state.lat,lon:state.lon,place:state.place,units:state.units}))}catch(e){}}
+  const savePrefs=()=>{try{localStorage.setItem(LS_KEY,JSON.stringify({lat:state.lat,lon:state.lon,place:state.place,units:state.units}))}catch(e){}};
 
   async function fetchWeather(){
     const tz=Intl.DateTimeFormat().resolvedOptions().timeZone;
     const p=new URLSearchParams({
-      latitude:state.lat,longitude:state.lon,timezone:tz,
+      latitude:state.lat, longitude:state.lon, timezone:tz,
       current:'temperature_2m,apparent_temperature,relative_humidity_2m,pressure_msl,wind_speed_10m,weather_code,uv_index',
       hourly:'temperature_2m,precipitation,weather_code,wind_speed_10m',
       daily:'weather_code,temperature_2m_max,temperature_2m_min,precipitation_sum,precipitation_probability_max,wind_speed_10m_max,uv_index_max,sunrise,sunset',
@@ -241,7 +262,7 @@
   }
 
   function renderAll(){
-    const d=state.last,cur=d.current,tz=d.timezone;
+    const d=state.last, cur=d.current, tz=d.timezone;
     $('#place').textContent=state.place;
     $('#q').value=state.place==='Moja poloha'?'':state.place;
     $('#time').textContent=new Intl.DateTimeFormat('sk-SK',{dateStyle:'medium',timeStyle:'short',timeZone:tz}).format(new Date(cur.time));
@@ -277,7 +298,7 @@
   }
 
   function drawHourly(){
-    const d=state.last,cur=d.current,hours=d.hourly.time,key=(cur.time||'').slice(0,13);
+    const d=state.last, cur=d.current, hours=d.hourly.time, key=(cur.time||'').slice(0,13);
     let i=hours.findIndex(h=>h.slice(0,13)===key); if(i<0) i=0;
     const labels=hours.slice(i,i+24).map(h=>h.split('T')[1]);
     const t24c=d.hourly.temperature_2m.slice(i,i+24), t24=state.units==='c'?t24c:t24c.map(toF);
@@ -291,7 +312,7 @@
         plugins:{
           legend:{
             labels:{color:'#fff'},
-            onClick:(e,li,legend)=>{},  // zakáže vypínanie datasetu
+            onClick:(e,li,legend)=>{},  // disable toggle
             onHover:(e)=>{ if(e && e.native) e.native.target.style.cursor='default'; }
           }
         }
@@ -299,7 +320,8 @@
     });
   }
 
-  function lerp(a,b,t){return a+(b-a)*t}
+  // 15-min interpolácia
+  const lerp=(a,b,t)=>a+(b-a)*t;
   function valueAt15min(timesISO,arr,date){
     const ts=timesISO.map(t=>new Date(t));
     for(let i=0;i<ts.length-1;i++){
@@ -343,8 +365,9 @@
     }
   }
 
+  // Modely
   async function fetchModels(which){
-    ['ecmwf','icon','gfs'].forEach(k=>$('#tab-'+k).classList.toggle('active',k===which));
+    ['ecmwf','icon','gfs'].forEach(k=>$('#tab-'+k).classList?.toggle('active',k===which));
     const tz=Intl.DateTimeFormat().resolvedOptions().timeZone;
     const daily='weather_code,temperature_2m_max,temperature_2m_min,precipitation_probability_max';
     let base=''; if(which==='ecmwf') base='https://api.open-meteo.com/v1/ecmwf';
@@ -361,7 +384,9 @@
   function renderModelGrid(d){
     const box=$('#modelsGrid'); box.innerHTML='';
     const days=d.daily; const n=Math.min(7,days.time.length);
-    box.style.gridTemplateColumns=`repeat(${n},minmax(0,1fr))`;
+    box.style.gridTemplateColumns = (window.innerWidth>=1024) ? `repeat(${n},minmax(0,1fr))` :
+                                    (window.innerWidth>=720)  ? `repeat(${Math.min(5,n)},minmax(0,1fr))` :
+                                                                `repeat(${Math.min(2,n)},minmax(0,1fr))`;
     for(let i=0;i<n;i++){
       const lab=new Date(days.time[i]+'T00:00:00').toLocaleDateString('sk-SK',{weekday:'short',day:'2-digit',month:'2-digit'});
       const code=days.weather_code?.[i];
@@ -373,11 +398,12 @@
                     <span class="em">${wmoEmoji(code)}</span>
                     <div class="hi">${fmt0(max,'°')}</div>
                     <div class="lo">${fmt0(min,'°')}</div>
-                    <div class="pp">Zrážky: ${pp!=null?pp+'%' : '—'}</div>`;
+                    <div class="pp">Zrážky: ${pp!=null?pp+'%':'—'}</div>`;
       box.appendChild(el);
     }
   }
 
+  // História – pred rokom
   async function fetchHistory(){
     const tz=Intl.DateTimeFormat().resolvedOptions().timeZone;
     const now=new Date(); const lastYear=new Date(now); lastYear.setFullYear(now.getFullYear()-1);
@@ -397,9 +423,10 @@
     $('#hist-extra').textContent=pr>0?`Zrážky: ${fmt1(pr,' mm')}`:'Bez zrážok.';
   }
 
-  // auto-rok v pätičke
-  document.getElementById('year').textContent = new Date().getFullYear();
+  // rok v pätičke
+  document.getElementById('year').textContent=new Date().getFullYear();
 
+  // Vyhľadávanie / udalosti
   let timer;
   $('#q').addEventListener('input',e=>{
     const q=e.target.value.trim(); clearTimeout(timer);
@@ -433,7 +460,7 @@
   $('#tab-gfs').addEventListener('click',()=>fetchModels('gfs'));
 
   fetchWeather().catch(e=>alert(e.message));
-  window.addEventListener('resize',()=>{ if(state.last){ drawHourly(); renderMin15(); }});
+  window.addEventListener('resize',()=>{ if(state.last){ drawHourly(); renderMin15(); renderModelGrid(state.lastModels||{}); }});
 </script>
 </body>
 </html>
