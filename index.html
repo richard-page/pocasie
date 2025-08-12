@@ -63,15 +63,6 @@
   .tempNow{font-size:38px; font-weight:700; line-height:1; margin:6px 0}
   .icon{width:58px; height:58px; display:flex; align-items:center; justify-content:center; font-size:42px; line-height:1}
 
-  /* Dnešný súhrn – lepšia čitateľnosť */
-  .summaryBox{
-    max-width:56ch; margin:0 auto; line-height:1.5; font-size:15px;
-    background:linear-gradient(180deg, rgba(255,255,255,.07), rgba(255,255,255,.03));
-    border:1px solid var(--stroke); border-left:4px solid var(--brand);
-    border-radius:12px; padding:10px 12px; color:#dbe6ff;
-    hyphens:auto; overflow-wrap:anywhere;
-  }
-
   .chartWrap{height:190px}
   canvas{background:#162e59; border:1px solid var(--stroke); border-radius:12px}
 
@@ -85,13 +76,20 @@
 
   .centerCard .head{display:flex; flex-direction:column; align-items:center; text-align:center}
 
-  /* Modely – kompaktnejšie na mobile */
+  /* === Modely – horizontálny posuvník na mobile === */
   .modelTabs{display:flex; gap:6px; align-items:center; justify-content:center; flex-wrap:wrap}
   .tab{background:#274b86; border:1px solid var(--stroke); color:#dfeaff; border-radius:10px; padding:8px 10px; font-weight:600; cursor:pointer; min-height:38px; font-size:14px}
   .tab.active{background:var(--brand); border-color:#3c7bd0; color:#001b3b}
 
-  .modelsGrid{display:grid; grid-template-columns:repeat(2,minmax(0,1fr)); gap:8px}
-  .mcol{background:#182f57; border:1px solid var(--stroke); border-radius:12px; padding:10px; text-align:center; display:flex; flex-direction:column; gap:4px}
+  .modelsWrap{overflow-x:auto; -webkit-overflow-scrolling:touch; scroll-snap-type:x proximity; padding-bottom:6px}
+  .modelsWrap::-webkit-scrollbar{height:8px}
+  .modelsWrap::-webkit-scrollbar-track{background:#11264a; border-radius:10px}
+  .modelsWrap::-webkit-scrollbar-thumb{background:#274b86; border-radius:10px}
+
+  /* na mobile je to flex „vlak“ kariet */
+  .modelsGrid{display:flex; gap:8px}
+  .mcol{background:#182f57; border:1px solid var(--stroke); border-radius:12px; padding:10px; text-align:center; display:flex; flex-direction:column; gap:4px;
+        min-width:220px; scroll-snap-align:start}
   .mcol .em{font-size:18px} .mcol .hi{font-weight:700; font-size:18px} .mcol .lo{opacity:.85; font-size:14px} .mcol .pp{font-size:12px; color:#b7c9f2}
 
   .histCard .head{display:flex; flex-direction:column; align-items:center; gap:6px; text-align:center}
@@ -102,10 +100,7 @@
 
   footer{padding:12px 10px; text-align:center; color:#cfe0ff; font-size:14px; border-top:1px solid rgba(255,255,255,.12); padding-bottom:calc(12px + env(safe-area-inset-bottom))}
 
-  /* Väčšie obrazovky */
-  @media (min-width:480px){
-    .modelsGrid{grid-template-columns:repeat(3,minmax(0,1fr))}
-  }
+  /* Väčšie obrazovky – prepneme na mriežku */
   @media (min-width:720px){
     .wrap{padding:22px 14px 36px}
     .toolbar{grid-template-columns:1fr auto auto auto}
@@ -113,10 +108,12 @@
     .row{grid-template-columns:1.05fr 1fr; gap:14px}
     .meta{grid-template-columns:repeat(2,minmax(0,1fr))}
     .chartWrap{height:220px}
-    .modelsGrid{grid-template-columns:repeat(5,minmax(0,1fr))}
     .icon{width:72px;height:72px;font-size:54px}
     .tempNow{font-size:44px}
-    .summaryBox{max-width:62ch}
+
+    .modelsWrap{overflow:visible; padding-bottom:0}
+    .modelsGrid{display:grid; grid-template-columns:repeat(5,minmax(0,1fr)); gap:10px}
+    .mcol{min-width:0}
   }
   @media (min-width:1024px){
     .modelsGrid{grid-template-columns:repeat(7,minmax(0,1fr))}
@@ -159,7 +156,7 @@
             </div>
 
             <h3 style="margin:12px 0 6px">Dnešný súhrn</h3>
-            <div class="summaryBox" id="summary">—</div>
+            <p id="summary" style="margin:0;color:#dbe6ff">—</p>
           </div>
           <div id="icon" class="icon">—</div>
         </div>
@@ -185,7 +182,10 @@
           <button class="tab" id="tab-gfs">GFS (NOAA)</button>
         </div>
       </div>
-      <div id="modelsGrid" class="modelsGrid" style="margin-top:8px"></div>
+      <!-- tu je nový horizontálny scroller -->
+      <div id="modelsWrap" class="modelsWrap">
+        <div id="modelsGrid" class="modelsGrid" style="margin-top:8px"></div>
+      </div>
     </section>
 
     <section class="card histCard" style="margin-top:10px">
@@ -224,7 +224,13 @@
 
   async function fetchWeather(){
     const tz=Intl.DateTimeFormat().resolvedOptions().timeZone;
-    const p=new URLSearchParams({latitude:state.lat,longitude:state.lon,timezone:tz,current:'temperature_2m,apparent_temperature,relative_humidity_2m,pressure_msl,wind_speed_10m,weather_code,uv_index',hourly:'temperature_2m,precipitation,weather_code,wind_speed_10m',daily:'weather_code,temperature_2m_max,temperature_2m_min,precipitation_sum,precipitation_probability_max,wind_speed_10m_max,uv_index_max,sunrise,sunset',forecast_days:'3'});
+    const p=new URLSearchParams({
+      latitude:state.lat,longitude:state.lon,timezone:tz,
+      current:'temperature_2m,apparent_temperature,relative_humidity_2m,pressure_msl,wind_speed_10m,weather_code,uv_index',
+      hourly:'temperature_2m,precipitation,weather_code,wind_speed_10m',
+      daily:'weather_code,temperature_2m_max,temperature_2m_min,precipitation_sum,precipitation_probability_max,wind_speed_10m_max,uv_index_max,sunrise,sunset',
+      forecast_days:'3'
+    });
     const r=await fetch(`https://api.open-meteo.com/v1/forecast?${p}`); if(!r.ok) throw new Error('Načítanie zlyhalo');
     state.last=await r.json(); renderAll(); drawHourly(); fetchModels(activeModel); fetchHistory().catch(()=>{});
   }
@@ -337,12 +343,6 @@
     if(!d||!d.daily) return;
     const box=$('#modelsGrid'); box.innerHTML='';
     const days=d.daily; const n=Math.min(7,days.time.length);
-
-    if(window.innerWidth>=1024){box.style.gridTemplateColumns=`repeat(${n},minmax(0,1fr))`}
-    else if(window.innerWidth>=720){box.style.gridTemplateColumns=`repeat(${Math.min(5,n)},minmax(0,1fr))`}
-    else if(window.innerWidth>=480){box.style.gridTemplateColumns=`repeat(${Math.min(3,n)},minmax(0,1fr))`}
-    else{box.style.gridTemplateColumns=`repeat(${Math.min(2,n)},minmax(0,1fr))`}
-
     for(let i=0;i<n;i++){
       const lab=new Date(days.time[i]+'T00:00:00').toLocaleDateString('sk-SK',{weekday:'short',day:'2-digit',month:'2-digit'});
       const code=days.weather_code?.[i];
