@@ -63,6 +63,15 @@
   .tempNow{font-size:38px; font-weight:700; line-height:1; margin:6px 0}
   .icon{width:58px; height:58px; display:flex; align-items:center; justify-content:center; font-size:42px; line-height:1}
 
+  /* Dnešný súhrn – lepšia čitateľnosť */
+  .summaryBox{
+    max-width:56ch; margin:0 auto; line-height:1.5; font-size:15px;
+    background:linear-gradient(180deg, rgba(255,255,255,.07), rgba(255,255,255,.03));
+    border:1px solid var(--stroke); border-left:4px solid var(--brand);
+    border-radius:12px; padding:10px 12px; color:#dbe6ff;
+    hyphens:auto; overflow-wrap:anywhere;
+  }
+
   .chartWrap{height:190px}
   canvas{background:#162e59; border:1px solid var(--stroke); border-radius:12px}
 
@@ -76,23 +85,27 @@
 
   .centerCard .head{display:flex; flex-direction:column; align-items:center; text-align:center}
 
+  /* Modely – kompaktnejšie na mobile */
   .modelTabs{display:flex; gap:6px; align-items:center; justify-content:center; flex-wrap:wrap}
   .tab{background:#274b86; border:1px solid var(--stroke); color:#dfeaff; border-radius:10px; padding:8px 10px; font-weight:600; cursor:pointer; min-height:38px; font-size:14px}
   .tab.active{background:var(--brand); border-color:#3c7bd0; color:#001b3b}
 
-  .modelsGrid{display:grid; grid-template-columns:1fr; gap:10px}
-  .mcol{background:#182f57; border:1px solid var(--stroke); border-radius:12px; padding:10px; text-align:center; display:flex; flex-direction:column; gap:6px}
-  .mcol .em{font-size:20px} .mcol .hi{font-weight:700} .mcol .lo{opacity:.85}
+  .modelsGrid{display:grid; grid-template-columns:repeat(2,minmax(0,1fr)); gap:8px}
+  .mcol{background:#182f57; border:1px solid var(--stroke); border-radius:12px; padding:10px; text-align:center; display:flex; flex-direction:column; gap:4px}
+  .mcol .em{font-size:18px} .mcol .hi{font-weight:700; font-size:18px} .mcol .lo{opacity:.85; font-size:14px} .mcol .pp{font-size:12px; color:#b7c9f2}
 
   .histCard .head{display:flex; flex-direction:column; align-items:center; gap:6px; text-align:center}
   .histRow{display:flex; align-items:center; justify-content:center; gap:10px; flex-wrap:wrap; text-align:center}
   .badge{display:inline-block; padding:6px 10px; border-radius:10px; font-weight:700}
   .badge.max{background:#ff4a4a; color:#fff} .badge.min{background:#ffcc3d; color:#001b3b}
-  .histSub{color:var(--muted); font-size:12px; margin-top:6px; text-align:center}
+  .histSub{color:#aec4eb; font-size:12px; margin-top:6px; text-align:center}
 
   footer{padding:12px 10px; text-align:center; color:#cfe0ff; font-size:14px; border-top:1px solid rgba(255,255,255,.12); padding-bottom:calc(12px + env(safe-area-inset-bottom))}
 
   /* Väčšie obrazovky */
+  @media (min-width:480px){
+    .modelsGrid{grid-template-columns:repeat(3,minmax(0,1fr))}
+  }
   @media (min-width:720px){
     .wrap{padding:22px 14px 36px}
     .toolbar{grid-template-columns:1fr auto auto auto}
@@ -103,6 +116,7 @@
     .modelsGrid{grid-template-columns:repeat(5,minmax(0,1fr))}
     .icon{width:72px;height:72px;font-size:54px}
     .tempNow{font-size:44px}
+    .summaryBox{max-width:62ch}
   }
   @media (min-width:1024px){
     .modelsGrid{grid-template-columns:repeat(7,minmax(0,1fr))}
@@ -145,7 +159,7 @@
             </div>
 
             <h3 style="margin:12px 0 6px">Dnešný súhrn</h3>
-            <p id="summary" style="margin:0;color:#dbe6ff">—</p>
+            <div class="summaryBox" id="summary">—</div>
           </div>
           <div id="icon" class="icon">—</div>
         </div>
@@ -323,10 +337,12 @@
     if(!d||!d.daily) return;
     const box=$('#modelsGrid'); box.innerHTML='';
     const days=d.daily; const n=Math.min(7,days.time.length);
-    // na mobile 1 stĺpec, tablet 5, desktop až 7
+
     if(window.innerWidth>=1024){box.style.gridTemplateColumns=`repeat(${n},minmax(0,1fr))`}
     else if(window.innerWidth>=720){box.style.gridTemplateColumns=`repeat(${Math.min(5,n)},minmax(0,1fr))`}
-    else{box.style.gridTemplateColumns=`repeat(1,minmax(0,1fr))`}
+    else if(window.innerWidth>=480){box.style.gridTemplateColumns=`repeat(${Math.min(3,n)},minmax(0,1fr))`}
+    else{box.style.gridTemplateColumns=`repeat(${Math.min(2,n)},minmax(0,1fr))`}
+
     for(let i=0;i<n;i++){
       const lab=new Date(days.time[i]+'T00:00:00').toLocaleDateString('sk-SK',{weekday:'short',day:'2-digit',month:'2-digit'});
       const code=days.weather_code?.[i];
@@ -361,7 +377,6 @@
     $('#hist-extra').textContent=pr>0?`Zrážky: ${fmt1(pr,' mm')}`:'Bez zrážok.';
   }
 
-  // rok v pätičke
   document.getElementById('year').textContent=new Date().getFullYear();
 
   // Vyhľadávanie / udalosti
