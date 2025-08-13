@@ -4,14 +4,19 @@
 <meta charset="utf-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
 <title>Počasie</title>
+
 <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate" />
 <meta http-equiv="Pragma" content="no-cache" />
 <meta http-equiv="Expires" content="0" />
+
 <link rel="icon" type="image/png" href="favicon.png" />
+
 <link rel="preconnect" href="https://fonts.googleapis.com" />
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
 <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;600;700&display=swap" rel="stylesheet" />
-<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.3/dist/chart.umd.min.js"></script>
+
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.3/dist/chart.umd.min.js" defer></script>
+
 <style>
   :root{--bg0:#0b0f14;--bg1:#0e1620;--stroke:#233448;--txt:#eaf3ff;--muted:#a8bed5;--accent:#3ad0e6;--r:14px;--shadow:0 10px 28px rgba(0,0,0,.28)}
   *{box-sizing:border-box}
@@ -61,17 +66,10 @@
   .badge.min{background:#ffd265;color:#2b2300}
   .histSub{color:#a8bed5;font-size:12px;margin-top:6px;text-align:center}
   footer{padding:14px 10px;text-align:center;color:#cfe8ff;font-size:14px;border-top:1px solid rgba(255,255,255,.12)}
-  @media (max-width:900px){
-    .partsWrap{display:flex;gap:10px;overflow-x:auto;padding-bottom:6px;scroll-snap-type:x mandatory}
-    .part{min-width:150px;scroll-snap-align:start}
-  }
-  @media (min-width:780px){
-    .wrap{padding:22px 16px 36px}
-    .row{grid-template-columns:1.05fr 1fr;gap:16px}
-    .meta{grid-template-columns:repeat(2,minmax(0,1fr))}
-    .chartWrap{height:240px}
-  }
+  @media (max-width:900px){.partsWrap{display:flex;gap:10px;overflow-x:auto;padding-bottom:6px;scroll-snap-type:x mandatory}.part{min-width:150px;scroll-snap-align:start}}
+  @media (min-width:780px){.wrap{padding:22px 16px 36px}.row{grid-template-columns:1.05fr 1fr;gap:16px}.meta{grid-template-columns:repeat(2,minmax(0,1fr))}.chartWrap{height:240px}}
   @media (min-width:1100px){.chartWrap{height:280px}}
+  .error{color:#ffd4d4;background:#2a1111;border:1px solid #6b2a2a;border-radius:10px;padding:10px;text-align:center;margin-top:8px}
 </style>
 </head>
 <body>
@@ -87,6 +85,7 @@
 
     <div class="row">
       <section class="card">
+        <div id="errorTop" style="display:none" class="error"></div>
         <div class="gridInfo">
           <div>
             <h3 id="place">Bratislava, SK</h3>
@@ -154,28 +153,36 @@
   <footer>&copy; <span id="year"></span> Richard / Počasie</footer>
 
 <script>
-  const APP_VERSION='2025-08-12-3'
+  const APP_VERSION='2025-08-13-1'
   const $=s=>document.querySelector(s)
   const fmt0=(v,u='')=>(v==null||Number.isNaN(v))?'—':`${Math.round(v)}${u}`
   const fmt1=(v,u='')=>(v==null||Number.isNaN(v))?'—':`${(Math.round(v*10)/10).toFixed(1)}${u}`
   const WMO={0:['Jasno'],1:['Prevažne jasno'],2:['Polojasno'],3:['Zamračené'],45:['Hmla'],48:['Mrznúca hmla'],51:['Slabé mrholenie'],53:['Mrholenie'],55:['Silné mrholenie'],61:['Slabý dážď'],63:['Dážď'],65:['Lejak'],66:['Mrznúci dážď'],67:['Mrznúci dážď'],71:['Slabé sneženie'],73:['Sneženie'],75:['Silné sneženie'],77:['Snehové zrná'],80:['Prehánky'],81:['Prehánky'],82:['Silné prehánky'],85:['Snehové prehánky'],86:['Silné snehové prehánky'],95:['Búrky'],96:['Búrky s krúpami'],99:['Silné búrky s krúpami']}
   const uvCat=u=>u<3?'nízky':u<6?'mierny':u<8?'vysoký':u<11?'veľmi vysoký':'extrémny'
   const wmoEmoji=code=>{const k=Number(code);if([0,1].includes(k))return'☀️';if([2].includes(k))return'⛅';if([3].includes(k))return'☁️';if([45,48].includes(k))return'🌫️';if([51,53,55].includes(k))return'🌦️';if([61,63,65,80,81,82].includes(k))return'🌧️';if([71,73,75,77,85,86].includes(k))return'❄️';if([95,96,99].includes(k))return'⛈️';return'🌤️'}
+
   let state={place:'Bratislava, SK',lat:48.1486,lon:17.1077,last:null}
   let hourlyChart=null
   let activeModel='ecmwf'
   const LS_KEY='wx_prefs_v3'
+
   try{const v=localStorage.getItem('app_version');if(v!==APP_VERSION){localStorage.setItem('app_version',APP_VERSION)}}catch(_){}
+
   ;(()=>{try{const raw=localStorage.getItem(LS_KEY);if(raw){const p=JSON.parse(raw);if(typeof p.lat==='number'&&typeof p.lon==='number'&&typeof p.place==='string'){state.lat=p.lat;state.lon=p.lon;state.place=p.place}}}catch(e){}})()
   const savePrefs=()=>{try{localStorage.setItem(LS_KEY,JSON.stringify({lat:state.lat,lon:state.lon,place:state.place}))}catch(e){}}
 
   async function fetchWeather(){
     const tz=Intl.DateTimeFormat().resolvedOptions().timeZone
-    const p=new URLSearchParams({latitude:state.lat,longitude:state.lon,timezone:tz,current:'temperature_2m,apparent_temperature,relative_humidity_2m,pressure_msl,wind_speed_10m,weather_code,uv_index',hourly:'temperature_2m,precipitation,weather_code,wind_speed_10m',daily:'weather_code,temperature_2m_max,temperature_2m_min,precipitation_probability_max,precipitation_sum,uv_index_max,wind_speed_10m_max,sunrise,sunset',forecast_days:'3'})
+    const p=new URLSearchParams({
+      latitude:state.lat,longitude:state.lon,timezone:tz,
+      current:'temperature_2m,apparent_temperature,relative_humidity_2m,pressure_msl,wind_speed_10m,weather_code,uv_index',
+      hourly:'temperature_2m,precipitation,weather_code,wind_speed_10m',
+      daily:'weather_code,temperature_2m_max,temperature_2m_min,precipitation_probability_max,precipitation_sum,uv_index_max,wind_speed_10m_max,sunrise,sunset',
+      forecast_days:'3'
+    })
     const r=await fetch(`https://api.open-meteo.com/v1/forecast?${p}&v=${APP_VERSION}`)
     if(!r.ok) throw new Error('Načítanie zlyhalo')
     state.last=await r.json()
-    renderAll();drawHourly();fetchModels(activeModel);fetchHistory().catch(()=>{})
   }
 
   function renderAll(){
@@ -203,18 +210,17 @@
     const ss=dd.sunset?.[0]?new Date(dd.sunset[0]):null
     $('#sunrise').textContent=sr?sr.toLocaleTimeString('sk-SK',{hour:'2-digit',minute:'2-digit'}):'—'
     $('#sunset').textContent=ss?ss.toLocaleTimeString('sk-SK',{hour:'2-digit',minute:'2-digit'}):'—'
-    renderParts();renderMin15()
   }
 
   function drawHourly(){
+    if(!window.Chart) return
     const d=state.last,cur=d.current,hours=d.hourly.time,key=(cur.time||'').slice(0,13)
     let i=hours.findIndex(h=>h.slice(0,13)===key);if(i<0)i=0
     const labels=hours.slice(i,i+24).map(h=>h.split('T')[1])
     const t24=d.hourly.temperature_2m.slice(i,i+24)
     if(hourlyChart)hourlyChart.destroy()
-    hourlyChart=new Chart($('#hourly'),{type:'line',data:{labels,datasets:[{label:'Teplota (°C)',data:t24,borderWidth:2,pointRadius:2,tension:.35}]},options:{responsive:true,maintainAspectRatio:false,interaction:{mode:'nearest',intersect:false},scales:{x:{grid:{color:'rgba(255,255,255,.08)'}},y:{grid:{color:'rgba(255,255,255,.08)'}}},plugins:{legend:{labels:{color:'#fff'},onClick:(e,li)=>{},onHover:(e)=>{if(e&&e.native)e.native.target.style.cursor='default';}}}})
-  }
-
+    hourlyChart=new Chart($('#hourly'),{type:'line',data:{labels,datasets:[{label:'Teplota (°C)',data:t24,borderWidth:2,pointRadius:2,tension:.35}]},options:{responsive:true,maintainAspectRatio:false,interaction:{mode:'nearest',intersect:false},scales:{x:{grid:{color:'rgba(255,255,255,.08)'}},y:{grid:{color:'rgba(255,255,255,.08)'}}},plugins:{legend:{labels:{color:'#fff'}}}})}
+  
   function valueAtHour(timesISO,arr,target){
     const idx=timesISO.findIndex(t=>t.slice(0,13)===target.slice(0,13))
     if(idx>=0)return arr[idx]
@@ -259,7 +265,7 @@
     const daily='weather_code,temperature_2m_max,temperature_2m_min,precipitation_probability_max'
     let base='';if(which==='ecmwf')base='https://api.open-meteo.com/v1/ecmwf';if(which==='icon')base='https://api.open-meteo.com/v1/dwd-icon';if(which==='gfs')base='https://api.open-meteo.com/v1/gfs'
     const p=new URLSearchParams({latitude:state.lat,longitude:state.lon,timezone:tz,daily,forecast_days:'7'})
-    try{const r=await fetch(`${base}?${p}&v=${APP_VERSION}`);if(!r.ok)throw 0;const j=await r.json();renderDays(j)}catch(e){$('#days').innerHTML='<div style="color:#ffd4d4">Model sa nepodarilo načítať.</div>'}
+    try{const r=await fetch(`${base}?${p}&v=${APP_VERSION}`);if(!r.ok)throw 0;const j=await r.json();renderDays(j)}catch(e){$('#days').innerHTML='<div class="error">Model sa nepodarilo načítať.</div>'}
   }
   function renderDays(d){
     const box=$('#days');box.innerHTML=''
@@ -295,7 +301,7 @@
       arr.forEach(p=>{
         const b=document.createElement('div');b.className='sugg'
         b.textContent=`${p.name}${p.admin1?`, ${p.admin1}`:''}, ${p.country_code}`
-        b.addEventListener('click',()=>{state.lat=p.latitude;state.lon=p.longitude;state.place=b.textContent;box.style.display='none';savePrefs();fetchWeather()})
+        b.addEventListener('click',()=>{state.lat=p.latitude;state.lon=p.longitude;state.place=b.textContent;box.style.display='none';savePrefs();boot()})
         box.appendChild(b)
       })
     },250)
@@ -304,10 +310,32 @@
 
   document.getElementById('year').textContent=new Date().getFullYear()
 
-  fetchWeather().catch(e=>alert(e.message))
+  async function boot(){
+    $('#errorTop').style.display='none'
+    try{
+      await fetchWeather()
+      renderAll()
+      drawHourly()
+      renderParts()
+      renderMin15()
+      fetchModels(activeModel)
+      fetchHistory().catch(()=>{})
+    }catch(err){
+      console.error(err)
+      const box=$('#errorTop')
+      box.textContent='Nepodarilo sa načítať počasie. Skús obnoviť stránku alebo over pripojenie.'
+      box.style.display='block'
+    }
+  }
+
+  window.addEventListener('DOMContentLoaded',boot)
   window.addEventListener('resize',()=>{if(state.last){drawHourly();renderMin15();fetchModels(activeModel)}})
-  fetchModels('ecmwf')
-  fetchHistory().catch(()=>{})
 </script>
+
+<noscript>
+  <div style="max-width:1120px;margin:0 auto;color:#ffd4d4;padding:12px">
+    Táto stránka potrebuje JavaScript.
+  </div>
+</noscript>
 </body>
 </html>
