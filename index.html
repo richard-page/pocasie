@@ -27,28 +27,16 @@
   *{box-sizing:border-box}
   html,body{height:100%}
   body{
-    margin:0;
-    color:var(--txt);
-    font-family:Poppins,system-ui,-apple-system,Segoe UI,Roboto,Arial;
-    background-color:var(--bg0);
-    min-height:100dvh;
-    display:flex;
-    flex-direction:column;
-    -webkit-text-size-adjust:100%;
-    -webkit-tap-highlight-color:transparent;
-    overflow-x:hidden;
+    margin:0; color:var(--txt); font-family:Poppins,system-ui,-apple-system,Segoe UI,Roboto,Arial;
+    background-color:var(--bg0); min-height:100dvh; display:flex; flex-direction:column;
+    -webkit-text-size-adjust:100%; -webkit-tap-highlight-color:transparent; overflow-x:hidden;
   }
   body::before{
-    content:"";
-    position:fixed;
-    inset:-1px;
-    z-index:-1;
+    content:""; position:fixed; inset:-1px; z-index:-1;
     background:
       radial-gradient(120vw 80vh at 50% -10%, #102538 0%, #0f1a26 50%, #0b0f14 100%) no-repeat,
       linear-gradient(180deg, var(--bg1), var(--bg0)) no-repeat;
-    background-attachment:fixed,fixed;
-    background-size:160vw 120vh, 100% 100%;
-    background-position:center top, center top;
+    background-attachment:fixed,fixed; background-size:160vw 120vh, 100% 100%; background-position:center top, center top;
   }
 
   .wrap{width:100%; max-width:1120px; margin-inline:auto; padding:16px 12px 28px; flex:1}
@@ -79,15 +67,7 @@
   }
   .card h3{margin:0 0 10px; text-align:center; font-size:18px}
 
-  #place{
-    text-align:left !important;
-    display:block;
-    margin:0;
-    width:auto;
-    white-space:nowrap;
-    overflow:hidden;
-    text-overflow:ellipsis;
-  }
+  #place{ text-align:left; display:block; margin:0; width:auto; white-space:nowrap; overflow:hidden; text-overflow:ellipsis }
 
   .row{display:grid; grid-template-columns:1fr; gap:12px; margin-top:4px}
   .meta{display:grid; grid-template-columns:1fr; gap:8px; color:var(--muted); font-size:14px}
@@ -128,6 +108,14 @@
   .badge.max{background:#ff5e5e; color:#fff}
   .badge.min{background:#ffd265; color:#2b2300}
   .histSub{color:#a8bed5; font-size:12px; margin-top:6px; text-align:center}
+
+  .pbadge{display:inline-block; padding:4px 10px; border-radius:999px; font-weight:700; font-size:12px}
+  .p0{background:#2e7d32; color:#fff}
+  .p1{background:#43a047; color:#fff}
+  .p2{background:#fdd835; color:#211}
+  .p3{background:#fb8c00; color:#211}
+  .p4{background:#e53935; color:#fff}
+  .p5{background:#b71c1c; color:#fff}
 
   footer{padding:14px 10px; text-align:center; color:#cfe8ff; font-size:14px; border-top:1px solid rgba(255,255,255,.12)}
 
@@ -222,7 +210,7 @@
   <footer>&copy; <span id="year"></span> Richard / Počasie</footer>
 
   <script>
-    const APP_VERSION = '2025-08-13-geo-nominatim-3';
+    const APP_VERSION = '2025-08-13-stable-sk';
 
     const $ = s => document.querySelector(s);
     const fmt0 = (v, u = '') => (v == null || Number.isNaN(v)) ? '—' : `${Math.round(v)}${u}`;
@@ -309,7 +297,7 @@
       try{
         const url = `https://nominatim.openstreetmap.org/reverse?lat=${lat}&lon=${lon}&format=json&accept-language=sk`;
         const res = await fetch(url, {headers:{'Accept':'application/json'}});
-        if(!res.ok) throw new Error('Nominatim HTTP error');
+        if(!res.ok) throw new Error('Nominatim');
         const data = await res.json();
         const a = data.address || {};
         let name = a.city || a.town || a.village || a.municipality || a.hamlet || a.suburb || '';
@@ -317,9 +305,7 @@
         if(name) return `${name}${country}`;
         name = a.county || a.state || a.region || '';
         if (name) return `${name}${country}`;
-      }catch(e){
-        console.info('Nominatim reverse geocoding neúspešné:', e?.message || e);
-      }
+      }catch(e){}
       return null;
     }
     async function reverseGeocodeOpenMeteo(lat, lon){
@@ -333,9 +319,7 @@
           if (name) return `${name}${cc}`;
           if (r.admin1) return `${r.admin1}${cc}`;
         }
-      }catch(e){
-        console.info('Open-Meteo reverse geocoding neúspešné:', e?.message || e);
-      }
+      }catch(e){}
       return null;
     }
     async function reverseGeocode(lat, lon){
@@ -351,7 +335,7 @@
       let label = labelOpt || await reverseGeocode(lat, lon);
       state.place = label;
       savePrefs();
-      await fetchWeather().catch(e => alert(e.message));
+      await fetchWeather().catch(()=>{});
     }
 
     function initGeolocation(){
@@ -364,7 +348,6 @@
         await setLocation(latitude, longitude);
       }, err=>{
         placeEl.textContent = prev;
-        console.info('Geolokácia zlyhala/odmietnutá:', err?.message);
         fetchWeather().catch(()=>{});
       }, {enableHighAccuracy:true, timeout:10000, maximumAge:300000});
     }
@@ -373,8 +356,8 @@
       const tz = Intl.DateTimeFormat().resolvedOptions().timeZone;
       const p = new URLSearchParams({
         latitude:state.lat, longitude:state.lon, timezone:tz,
-        current:'temperature_2m,apparent_temperature,relative_humidity_2m,pressure_msl,wind_speed_10m,weather_code,uv_index',
-        hourly:'temperature_2m,precipitation,weather_code,wind_speed_10m',
+        current:'temperature_2m,apparent_temperature,relative_humidity_2m,wind_speed_10m,weather_code,uv_index,surface_pressure',
+        hourly:'temperature_2m,precipitation,weather_code,wind_speed_10m,pressure_msl',
         daily:'weather_code,temperature_2m_max,temperature_2m_min,precipitation_probability_max,precipitation_sum,uv_index_max,wind_speed_10m_max,sunrise,sunset',
         forecast_days:'3'
       });
@@ -397,7 +380,8 @@
       $('#apparent').textContent = fmt0(cur.apparent_temperature,'°');
       $('#wind').textContent = fmt1(cur.wind_speed_10m,' km/h');
       $('#hum').textContent = fmt0(cur.relative_humidity_2m,'%');
-      $('#press').textContent = fmt0(cur.pressure_msl,' hPa');
+      const pressNow = cur.surface_pressure != null ? cur.surface_pressure : null;
+      $('#press').textContent = pressNow!=null ? fmt0(pressNow,' hPa') : '—';
       $('#icon').textContent = wmoEmoji(cur.weather_code);
 
       const uvi = (cur.uv_index ?? d.daily?.uv_index_max?.[0] ?? null);
@@ -500,7 +484,7 @@
            <div class="sub">${fmt1(pr,' mm/h')} • vietor ${fmt1(wind,' km/h')}</div>`;
         wrap.appendChild(el);
       };
-      add(10,'Doobeda'); add(15,'Poobede'); add(20,'Večer');
+      add(10,'Doobeda'); add(15,'Popoludní'); add(20,'Večer');
       const nx = new Date(base); nx.setDate(base.getDate()+1); nx.setHours(2,0,0,0);
       const tempN = valueAtHour(d.hourly.time, d.hourly.temperature_2m, nx.toISOString());
       const prN   = valueAtHour(d.hourly.time, d.hourly.precipitation, nx.toISOString());
@@ -508,7 +492,7 @@
       const codeN = valueAtHour(d.hourly.time, d.hourly.weather_code, nx.toISOString());
       const el = document.createElement('div'); el.className = 'part';
       el.innerHTML =
-        `<div class="lbl">Noc</div>
+        `<div class="lbl">V noci</div>
          <div class="emoji">${wmoEmoji(codeN)}</div>
          <div class="val">${fmt0(tempN,'°')}</div>
          <div class="sub">${fmt1(prN,' mm/h')} • vietor ${fmt1(windN,' km/h')}</div>`;
@@ -623,6 +607,15 @@
       if (n <= 4) return 'veľmi vysoký';
       return 'extrémny';
     }
+    function pollenClass(v){
+      const n = Number(v);
+      if (n <= 0) return 'p0';
+      if (n <= 1) return 'p1';
+      if (n <= 2) return 'p2';
+      if (n <= 3) return 'p3';
+      if (n <= 4) return 'p4';
+      return 'p5';
+    }
 
     async function fetchPollen(){
       try{
@@ -653,11 +646,13 @@
       rows.forEach(([name,val])=>{
         const el = document.createElement('div');
         el.className = 'part';
+        const cls = val!=null ? pollenClass(val) : '';
+        const label = val!=null ? pollenCat(val) : '—';
         el.innerHTML =
           `<div class="lbl">${name}</div>
            <div class="emoji">🌿</div>
            <div class="val">${val!=null?val:'—'}</div>
-           <div class="sub">${val!=null?pollenCat(val):''}</div>`;
+           <div class="sub"><span class="pbadge ${cls}">${label}</span></div>`;
         box.appendChild(el);
       });
     }
