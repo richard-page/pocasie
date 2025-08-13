@@ -79,6 +79,20 @@
   }
   .card h3{margin:0 0 10px; text-align:center; font-size:18px}
 
+  /* >>> UPRAVA: mesto od úplného ľavého okraja (full-bleed) a vľavo zarovnané */
+  #place{
+    text-align:left !important;
+    display:block;
+    margin:0;
+    width:100vw;
+    margin-left:calc(50% - 50vw); /* posunie ľavý okraj hneď na kraj viewportu */
+    padding-left:0;               /* žiadny ľavý odsadený okraj */
+    white-space:nowrap;
+    overflow:hidden;
+    text-overflow:ellipsis;
+  }
+  /* <<< koniec úpravy */
+
   .row{display:grid; grid-template-columns:1fr; gap:12px; margin-top:4px}
   .meta{display:grid; grid-template-columns:1fr; gap:8px; color:var(--muted); font-size:14px}
   .meta strong{color:#fff}
