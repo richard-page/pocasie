@@ -223,7 +223,7 @@
 
 <script>
   // ========= UTIL & STAV =========
-  const APP_VERSION = '2025-08-13-geo-1';
+  const APP_VERSION = '2025-08-13-geo-nominatim-1';
 
   const $ = s => document.querySelector(s);
   const fmt0 = (v, u = '') => (v == null || Number.isNaN(v)) ? '—' : `${Math.round(v)}${u}`;
@@ -284,35 +284,69 @@
     try { localStorage.setItem(LS_KEY, JSON.stringify({lat:state.lat, lon:state.lon, place:state.place})); } catch (e) {}
   };
 
-  // ========= GEOLOKÁCIA =========
-  async function reverseGeocode(lat, lon){
+  // ========= GEOLOKÁCIA + PRESNÉ MESTO/OBEC =========
+  async function reverseGeocodeNominatim(lat, lon){
+    try{
+      // Nominatim – detailné mestá/obce; pre prehliadač stačí referer (User-Agent header sa nedá nastaviť)
+      const url = `https://nominatim.openstreetmap.org/reverse?lat=${lat}&lon=${lon}&format=json&accept-language=sk`;
+      const res = await fetch(url);
+      if(!res.ok) throw new Error('Nominatim HTTP error');
+      const data = await res.json();
+      const a = data.address || {};
+
+      // Priorita: city > town > village > municipality > hamlet > suburb
+      let name = a.city || a.town || a.village || a.municipality || a.hamlet || a.suburb || '';
+      // doplníme okres/region ak sa hodí
+      const county = a.county ? `, ${a.county}` : '';
+      const country = a.country_code ? `, ${a.country_code.toUpperCase()}` : '';
+      if(name) return `${name}${country}`;
+
+      // fallback na väčšie jednotky
+      name = a.county || a.state || a.region || '';
+      if (name) return `${name}${country}`;
+    }catch(e){
+      console.info('Nominatim reverse geocoding neúspešné:', e?.message || e);
+    }
+    return null;
+  }
+
+  async function reverseGeocodeOpenMeteo(lat, lon){
     try{
       const url = `https://geocoding-api.open-meteo.com/v1/reverse?latitude=${lat}&longitude=${lon}&language=sk&format=json`;
       const j = await fetch(url).then(r=>r.json());
       const r = j?.results?.[0];
       if (r){
-        // uprednostni city/town/village name + admin1 + country_code
         const name = r.name || r.city || r.town || r.village || '';
         const admin = r.admin1 ? `, ${r.admin1}` : '';
         const cc = r.country_code ? `, ${r.country_code}` : '';
-        return `${name}${admin}${cc}`.trim();
+        if (name) return `${name}${cc}`;
+        if (r.admin1) return `${r.admin1}${cc}`;
       }
-    }catch(e){}
+    }catch(e){
+      console.info('Open-Meteo reverse geocoding neúspešné:', e?.message || e);
+    }
     return null;
+  }
+
+  async function reverseGeocode(lat, lon){
+    // Najprv Nominatim, potom fallback Open-Meteo, až potom súradnice
+    const a = await reverseGeocodeNominatim(lat, lon);
+    if (a) return a;
+    const b = await reverseGeocodeOpenMeteo(lat, lon);
+    if (b) return b;
+    return `${lat.toFixed(3)}, ${lon.toFixed(3)}`;
   }
 
   async function setLocation(lat, lon, labelOpt){
     state.lat = lat; state.lon = lon;
     let label = labelOpt || await reverseGeocode(lat, lon);
-    if (!label) label = `${lat.toFixed(3)}, ${lon.toFixed(3)}`;
     state.place = label;
     savePrefs();
     await fetchWeather().catch(e => alert(e.message));
   }
 
   function initGeolocation(){
-    if (!('geolocation' in navigator)) return; // bez geolokácie – ostane fallback
-    // signalizácia načítania
+    if (!('geolocation' in navigator)) { fetchWeather().catch(()=>{}); return; }
     const placeEl = $('#place');
     const prev = placeEl.textContent;
     placeEl.textContent = 'Zisťujem polohu…';
@@ -320,12 +354,9 @@
       const {latitude, longitude} = pos.coords;
       await setLocation(latitude, longitude);
     }, err=>{
-      // necháme pôvodný text a nič nevnucujeme
       placeEl.textContent = prev;
-      // voliteľná nenásilná informácia
-      console.info('Geolokácia zlyhala alebo bola zamietnutá:', err?.message);
-      // pokračujeme s uloženou/štandardnou lokáciou
-      fetchWeather().catch(e=>alert(e.message));
+      console.info('Geolokácia zlyhala/odmietnutá:', err?.message);
+      fetchWeather().catch(()=>{});
     }, {enableHighAccuracy:true, timeout:10000, maximumAge:300000});
   }
 
@@ -592,8 +623,8 @@
   window.addEventListener('resize', () => {
     if (state.last) { drawHourly(); renderMin15(); }
   });
-  // pre istotu – ak geolokácia zlyhá okamžite, nech sa tiež načíta
-  setTimeout(() => { if (!state.last) fetchWeather().catch(e => alert(e.message)); }, 1200);
+  // ak by geolokácia nevrátila nič, načítaj aspoň fallback
+  setTimeout(() => { if (!state.last) fetchWeather().catch(()=>{}); }, 1200);
   // predvolený model
   fetchModels('ecmwf');
 </script>
