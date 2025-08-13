@@ -96,6 +96,10 @@
   .histSub{color:#a8bed5; font-size:12px; margin-top:6px; text-align:center}
 
   /* ALERTS */
+  .alertsHead{display:flex; align-items:center; justify-content:center; gap:10px; flex-wrap:wrap; margin-top:4px}
+  .seg{display:inline-flex; background:#102233; border:1px solid var(--stroke); border-radius:999px; padding:3px}
+  .segbtn{border:0; background:transparent; color:#dbeeff; font-weight:600; padding:6px 12px; border-radius:999px; cursor:pointer}
+  .segbtn.active{background:var(--accent); color:#002a32}
   .alertsWrap{display:flex; gap:10px; flex-wrap:wrap; justify-content:center}
   .alert{
     display:grid; grid-template-columns:auto 1fr; gap:10px; align-items:center;
@@ -140,6 +144,12 @@
     <!-- VÝSTRAHY -->
     <section class="card" style="margin-top:6px">
       <h3>Výstrahy (SHMÚ)</h3>
+      <div class="alertsHead">
+        <div class="seg">
+          <button id="day-0" class="segbtn active">Dnes</button>
+          <button id="day-1" class="segbtn">Zajtra</button>
+        </div>
+      </div>
       <div id="alerts" class="alertsWrap">
         <div class="alert sev-green">
           <div class="em">✅</div>
@@ -149,7 +159,7 @@
           </div>
         </div>
       </div>
-      <div id="alerts-note" style="text-align:center;color:#8fbbe0;font-size:12px;margin-top:6px">Zdroj: SHMÚ (cez read-only CORS relay)</div>
+      <div id="alerts-note" style="text-align:center;color:#8fbbe0;font-size:12px;margin-top:6px">Zdroj: SHMÚ</div>
     </section>
 
     <div class="row">
@@ -223,18 +233,18 @@
   <footer>&copy; <span id="year"></span> Richard / Počasie</footer>
 
   <script>
-    const APP_VERSION = '2025-08-13-shmu-relay-v1';
+    const APP_VERSION = '2025-08-13-alerts-fix-dnes-zajtra';
 
     const $ = s => document.querySelector(s);
     const fmt0 = (v, u = '') => (v == null || Number.isNaN(v)) ? '—' : `${Math.round(v)}${u}`;
     const fmt1 = (v, u = '') => (v == null || Number.isNaN(v)) ? '—' : `${(Math.round(v * 10) / 10).toFixed(1)}${u}`;
 
-    /* ==== KONFIG PRE SHMÚ SCRAPE ==== */
-    const RELAY_ORIGIN = 'https://r.jina.ai'; // read-only CORS relay
-    // ak používaš inú stránku výstrah SHMÚ, zmeň URL nižšie:
+    /* ==== SHMÚ cez read-only relay (CORS) ==== */
+    const RELAY_ORIGIN = 'https://r.jina.ai';
     const SHMU_WARNINGS_PAGE = 'http://www.shmu.sk/sk/?page=1&id=meteo_warning';
-    // zoznam krajov pre matchovanie:
-    const SK_REGIONS = ['Bratislavský kraj','Trnavský kraj','Trenčiansky kraj','Nitriansky kraj','Žilinský kraj','Banskobystrický kraj','Prešovský kraj','Košický kraj'];
+
+    let alertsDay = 0; // 0 = dnes, 1 = zajtra
+    let warningsCache = {source:'shmu', items:[]};
 
     const WMO = {
       0:['Jasno'],1:['Prevažne jasno'],2:['Polojasno'],3:['Zamračené'],
@@ -312,13 +322,13 @@
       try{
         const url = `https://nominatim.openstreetmap.org/reverse?lat=${lat}&lon=${lon}&format=json&accept-language=sk`;
         const res = await fetch(url, {headers:{'Accept':'application/json'}});
-        if(!res.ok) throw new Error('Nominatim HTTP error');
+        if(!res.ok) throw 0;
         const data = await res.json();
         const a = data.address || {};
-        const name = a.city || a.town || a.village || a.municipality || a.hamlet || a.suburb || '';
+        const labelName = a.city || a.town || a.village || a.municipality || a.hamlet || a.suburb || '';
         const country = a.country_code ? `, ${a.country_code.toUpperCase()}` : '';
-        return {label: name ? `${name}${country}` : (a.county || a.state || a.region || `${lat.toFixed(3)}, ${lon.toFixed(3)}`), admin1: a.state || a.region || null};
-      }catch(e){ return null; }
+        return {label: labelName ? `${labelName}${country}` : (a.county || a.state || a.region || `${lat.toFixed(3)}, ${lon.toFixed(3)}`), admin1: a.state || a.region || null};
+      }catch{ return null; }
     }
     async function reverseGeocodeOpenMeteo(lat, lon){
       try{
@@ -330,7 +340,7 @@
           const cc = r.country_code ? `, ${r.country_code}` : '';
           return {label: (name ? `${name}${cc}` : (r.admin1 ? `${r.admin1}${cc}` : `${lat.toFixed(3)}, ${lon.toFixed(3)}`)), admin1: r.admin1 || null};
         }
-      }catch(e){}
+      }catch{}
       return null;
     }
     async function reverseGeocode(lat, lon){
@@ -347,16 +357,16 @@
       state.admin1 = info.admin1 || state.admin1;
       savePrefs();
       await fetchWeather().catch(e => alert(e.message));
-      await fetchWarningsSHMU().catch(()=>{});
+      await fetchWarningsSHMU(true).catch(()=>{});
     }
 
     function initGeolocation(){
-      if (!('geolocation' in navigator)) { fetchWeather().catch(()=>{}); fetchWarningsSHMU().catch(()=>{}); return; }
+      if (!('geolocation' in navigator)) { fetchWeather().catch(()=>{}); fetchWarningsSHMU(true).catch(()=>{}); return; }
       const placeEl = $('#place'); const prev = placeEl.textContent; placeEl.textContent = 'Zisťujem polohu…';
       navigator.geolocation.getCurrentPosition(async pos=>{
         const {latitude, longitude} = pos.coords; await setLocation(latitude, longitude);
       }, err=>{
-        placeEl.textContent = prev; fetchWeather().catch(()=>{}); fetchWarningsSHMU().catch(()=>{});
+        placeEl.textContent = prev; fetchWeather().catch(()=>{}); fetchWarningsSHMU(true).catch(()=>{});
       }, {enableHighAccuracy:true, timeout:10000, maximumAge:300000});
     }
 
@@ -520,6 +530,111 @@
       }
     }
 
+    /* ==== Výstrahy ==== */
+
+    const eventIcon = (ev) => {
+      const s = (ev||'').toLowerCase();
+      if (s.includes('búrk')) return '⛈️';
+      if (s.includes('vietor')) return '💨';
+      if (s.includes('teplot') || s.includes('horúč')) return '🥵';
+      if (s.includes('chlad') || s.includes('mráz')) return '🥶';
+      if (s.includes('dážď') || s.includes('zráž')) return '🌧️';
+      if (s.includes('sneh') || s.includes('ľad')) return '❄️';
+      if (s.includes('povode') || s.includes('záplav')) return '🌊';
+      if (s.includes('hmla')) return '🌫️';
+      return '⚠️';
+    };
+    const sevClass = (txt) => {
+      const x = (txt||'').toLowerCase();
+      if (x.includes('3') || x.includes('červe') || x.includes('red')) return 'sev-red';
+      if (x.includes('2') || x.includes('oran')  || x.includes('orange')) return 'sev-orange';
+      if (x.includes('1') || x.includes('žlt')   || x.includes('yellow')) return 'sev-yellow';
+      return 'sev-green';
+    };
+
+    function dayWindow(offset){
+      const s = new Date(); s.setHours(0,0,0,0); s.setDate(s.getDate()+offset);
+      const e = new Date(s); e.setDate(e.getDate()+1);
+      return [s.getTime(), e.getTime()];
+    }
+    function intersectsDay(onset, expires, offset){
+      const [S,E] = dayWindow(offset);
+      const a = onset ? new Date(onset).getTime() : null;
+      const b = expires ? new Date(expires).getTime() : null;
+      if (a==null && b==null) return true;           // ak čas nevieme, zobraz
+      if (a!=null && b!=null) return !(b<=S || a>=E); // interval vs deň
+      if (a!=null) return a < E;
+      return b > S;
+    }
+
+    function renderAlerts(items, sourceLabel){
+      const box = $('#alerts'); box.innerHTML = '';
+      const filtered = (items||[]).filter(w => intersectsDay(w.onset, w.expires, alertsDay));
+      if (!filtered.length){
+        box.innerHTML = `<div class="alert sev-green"><div class="em">✅</div><div><div class="t">Bez výstrah</div><div class="s">Žiadne aktívne upozornenia pre zvolený deň</div></div></div>`;
+      }else{
+        filtered.forEach(w=>{
+          const sevTxt = (w.severity || w.level || w.color || '').toString();
+          const cls = sevClass(sevTxt);
+          const ev  = w.event || w.event_name || w.headline || w.event_translation || 'Výstraha';
+          const note = w.description || w.instruction || w.note || '';
+          const when = (w.onset||w.expires)
+            ? `${w.onset?new Date(w.onset).toLocaleString('sk-SK',{hour:'2-digit',minute:'2-digit'})+' – ':''}${w.expires?new Date(w.expires).toLocaleString('sk-SK',{hour:'2-digit',minute:'2-digit'}):''}`
+            : '';
+          const el = document.createElement('div'); el.className = `alert ${cls}`;
+          el.innerHTML = `
+            <div class="em">${eventIcon(ev)}</div>
+            <div>
+              <div class="t">${ev}${sevTxt? ' • '+sevTxt.replace(/.*?([123]).*/,'$1. stupeň') : ''}</div>
+              <div class="s">${when}${when && note ? ' — ' : ''}${note ? (''+note).slice(0,160)+'…' : ''}${state.admin1?` ${note?' • ':''}${state.admin1}`:''}</div>
+            </div>`;
+          box.appendChild(el);
+        });
+      }
+      $('#alerts-note').textContent = sourceLabel;
+    }
+
+    async function fetchWarningsSHMU(useFallbackIfNeeded){
+      try{
+        const res = await fetch(`${RELAY_ORIGIN}/${SHMU_WARNINGS_PAGE}`, {headers:{'Accept':'text/plain'}});
+        if(!res.ok) throw 0;
+        const html = await res.text();
+        // pokus: nájsť vložený GeoJSON s výstrahami
+        const m = html.match(/(\{[^]*?"type"\s*:\s*"FeatureCollection"[^]*?\})/i);
+        if(!m) throw new Error('GeoJSON nenašiel');
+        const raw = m[1].replace(/&quot;/g,'"').replace(/&apos;/g,"'").replace(/[\u0000-\u001F]/g,'');
+        const gj = JSON.parse(raw);
+        const items = (gj.features||[]).map(f=>f.properties||{}).map(p=>({
+          event: p.event || p.event_name || p.headline || '',
+          severity: (p.severity || p.level || p.color || ''),
+          onset: p.onset || p.starts || p.validFrom || p.valid_from || null,
+          expires: p.expires || p.ends || p.validTo || p.valid_to || null,
+          description: p.description || p.instruction || ''
+        }));
+        warningsCache = {source:'shmu', items};
+        renderAlerts(items, 'Zdroj: SHMÚ (parsované z webu)');
+      }catch(e){
+        if (!useFallbackIfNeeded) throw e;
+        // Fallback: Meteoalarm cez Open-Meteo warnings
+        try{
+          const url = new URL('https://api.open-meteo.com/v1/warnings');
+          url.searchParams.set('latitude', state.lat);
+          url.searchParams.set('longitude', state.lon);
+          url.searchParams.set('language', 'sk');
+          url.searchParams.set('v', APP_VERSION);
+          const r = await fetch(url); if(!r.ok) throw 0;
+          const j = await r.json();
+          const arr = (j?.warnings || j?.features || []).map(x=>x.properties?x.properties:x);
+          warningsCache = {source:'meteoalarm', items:arr};
+          renderAlerts(arr, 'Zdroj: Meteoalarm (národný poskytovateľ: SHMÚ)');
+        }catch{
+          $('#alerts').innerHTML = `<div class="alert sev-green"><div class="em">ℹ️</div><div><div class="t">Výstrahy sa nepodarilo načítať</div><div class="s">Skús neskôr</div></div></div>`;
+          $('#alerts-note').textContent = '—';
+        }
+      }
+    }
+
+    /* ==== Modely, história, vyhľadávanie – bez zmeny ==== */
     async function fetchModels(which){
       activeModel = which;
       ['ecmwf','icon','gfs'].forEach(id => { const btn = document.querySelector(`#tab-${id}`); if(!btn) return; btn.classList.toggle('active', id === which); });
@@ -571,169 +686,7 @@
       }catch{ document.getElementById('hist-extra').textContent = 'Históriu sa nepodarilo načítať.'; }
     }
 
-    /* ====== VÝSTRAHY: priame SHMÚ cez read-only relay + fallback Meteoalarm ====== */
-
-    const eventIcon = (ev) => {
-      const s = (ev||'').toLowerCase();
-      if (s.includes('búrk')) return '⛈️';
-      if (s.includes('vietor')) return '💨';
-      if (s.includes('teplot') || s.includes('horúč')) return '🥵';
-      if (s.includes('chlad') || s.includes('mráz')) return '🥶';
-      if (s.includes('dážď') || s.includes('zráž')) return '🌧️';
-      if (s.includes('sneh') || s.includes('ľad')) return '❄️';
-      if (s.includes('povode') || s.includes('záplav')) return '🌊';
-      if (s.includes('hmla')) return '🌫️';
-      return '⚠️';
-    };
-    const sevClass = (txt) => {
-      const x = (txt||'').toLowerCase();
-      if (x.includes('3') || x.includes('červe') || x.includes('red')) return 'sev-red';
-      if (x.includes('2') || x.includes('oran')  || x.includes('orange')) return 'sev-orange';
-      if (x.includes('1') || x.includes('žlt')   || x.includes('yellow')) return 'sev-yellow';
-      return 'sev-green';
-    };
-    const niceRange = (onset, expires) => {
-      const o = onset ? new Date(onset) : null, e = expires ? new Date(expires) : null;
-      const fmt = (d)=>d.toLocaleString('sk-SK',{weekday:'short',hour:'2-digit',minute:'2-digit',day:'2-digit',month:'2-digit'});
-      if (o && e) return `${fmt(o)} – ${fmt(e)}`; if (o) return `od ${fmt(o)}`; if (e) return `do ${fmt(e)}`; return '';
-    };
-
-    async function fetchWarningsSHMU(){
-      const box = $('#alerts');
-      try{
-        const url = `${RELAY_ORIGIN}/${SHMU_WARNINGS_PAGE}`;
-        const res = await fetch(url, {headers:{'Accept':'text/plain'}});
-        if (!res.ok) throw new Error('HTTP '+res.status);
-        const html = await res.text();
-
-        // 1) pokus: nájsť vložený GeoJSON (FeatureCollection) v skripte
-        let features = [];
-        const geojsonMatch = html.match(/(\{[^]*?"type"\s*:\s*"FeatureCollection"[^]*?\})/i);
-        if (geojsonMatch){
-          try{
-            const raw = geojsonMatch[1]
-              .replace(/&quot;/g,'"')
-              .replace(/&apos;/g,"'")
-              .replace(/[\u0000-\u001F]/g,''); // očisti netlačiteľné znaky
-            const j = JSON.parse(raw);
-            if (Array.isArray(j.features)) features = j.features.map(f=>f.properties||f);
-          }catch(e){ /* pád jsonu -> pokračuj fallbackom */ }
-        }
-
-        // 2) ak GeoJSON nie je, textový fallback: vytiahni riadky s názvom kraja
-        let lines = [];
-        if (!features.length){
-          const txt = html.replace(/\s+/g,' ').replace(/<[^>]+>/g,' ').trim();
-          const region = (state.admin1 && SK_REGIONS.includes(state.admin1)) ? state.admin1 : null;
-          const reEvent = /(Búrky|Vysoké teploty|Silný vietor|Dážď|Mrznúci dážď|Sneh|Hmla|Lavíny)/i;
-          const reLevel = /(1\.\s*stupeň|2\.\s*stupeň|3\.\s*stupeň|žltý|oranžový|červený)/i;
-          const parts = txt.split(/(?=Bratislavský kraj|Trnavský kraj|Trenčiansky kraj|Nitriansky kraj|Žilinský kraj|Banskobystrický kraj|Prešovský kraj|Košický kraj)/g);
-          const picks = region ? parts.filter(p=>p.startsWith(region)) : parts;
-          picks.forEach(p=>{
-            const ev = (p.match(reEvent)||[])[0] || 'Výstraha';
-            const lvl = (p.match(reLevel)||[])[0] || '';
-            lines.push({event:ev, level:lvl, onset:null, expires:null, note:''});
-          });
-          if (!lines.length) throw new Error('Nepodarilo sa nájsť žiadne výstrahy v HTML.');
-        }
-
-        // 3) zobraz
-        box.innerHTML = '';
-        if (features.length){
-          // pokús sa prefiltrovať podľa admin1 názvu (ak ho properties obsahujú)
-          const region = (state.admin1 && SK_REGIONS.includes(state.admin1)) ? state.admin1 : null;
-          const sel = features.filter(p=>{
-            const area = (p.areaName || p.area || p.region || p.description || '').toString();
-            return !region || area.includes(region) || area.includes(region?.split(' ')[0]||'');
-          });
-          const arr = sel.length ? sel : features;
-          arr.forEach(w=>{
-            const sevTxt = (w.severity || w.level || w.color || '').toString();
-            const cls = sevClass(sevTxt);
-            const ev  = w.event || w.event_name || w.headline || 'Výstraha';
-            const note = w.description || w.instruction || w.note || '';
-            const when = niceRange(w.onset, w.expires);
-            const lvlText = sevTxt.match(/[123]/)?.[0] ? `${sevTxt.match(/[123]/)[0]}. stupeň` : (sevTxt || '');
-            const el = document.createElement('div'); el.className = `alert ${cls}`;
-            el.innerHTML = `
-              <div class="em">${eventIcon(ev)}</div>
-              <div>
-                <div class="t">${ev}${lvlText ? ' • '+lvlText : ''}</div>
-                <div class="s">${when || ''}${when && note ? ' — ' : ''}${note ? (''+note).slice(0,160)+'…' : ''}</div>
-              </div>`;
-            box.appendChild(el);
-          });
-          $('#alerts-note').textContent = 'Zdroj: SHMÚ (parsované z webu)';
-          return;
-        }else{
-          // textový fallback z HTML
-          lines.forEach(w=>{
-            const cls = sevClass(w.level);
-            const el = document.createElement('div'); el.className = `alert ${cls}`;
-            el.innerHTML = `
-              <div class="em">${eventIcon(w.event)}</div>
-              <div>
-                <div class="t">${w.event}${w.level? ' • '+w.level : ''}</div>
-                <div class="s">Kraj: ${state.admin1 || '—'}</div>
-              </div>`;
-            box.appendChild(el);
-          });
-          $('#alerts-note').textContent = 'Zdroj: SHMÚ (textový fallback z webu)';
-          return;
-        }
-      }catch(err){
-        console.info('SHMU scrape zlyhal:', err?.message || err);
-        // posledná záchrana – Meteoalarm cez Open-Meteo warnings
-        try{
-          const url = new URL('https://api.open-meteo.com/v1/warnings');
-          url.searchParams.set('latitude', state.lat);
-          url.searchParams.set('longitude', state.lon);
-          url.searchParams.set('language', 'sk');
-          url.searchParams.set('v', APP_VERSION);
-          const res = await fetch(url.toString()); if(!res.ok) throw 0;
-          const data = await res.json();
-          renderAlertsFromMeteoalarm(data);
-          $('#alerts-note').textContent = 'Zdroj: Meteoalarm (národný poskytovateľ: SHMÚ) – fallback';
-        }catch{
-          box.innerHTML = `<div class="alert sev-green"><div class="em">ℹ️</div><div><div class="t">Výstrahy sa nepodarilo načítať</div><div class="s">Skús neskôr</div></div></div>`;
-        }
-      }
-    }
-
-    function renderAlertsFromMeteoalarm(j){
-      const box = $('#alerts'); box.innerHTML = '';
-      const arr = j?.warnings || j?.features || [];
-      let items = [];
-      if (Array.isArray(arr) && arr.length){
-        if (arr[0]?.properties){ items = arr.map(f=>f.properties); } else { items = arr; }
-      }
-      const now = Date.now();
-      const valid = items.filter(w=>{
-        const end = w.expires ? new Date(w.expires).getTime() : null;
-        return !end || now < end;
-      });
-      if (!valid.length){
-        box.innerHTML = `<div class="alert sev-green"><div class="em">✅</div><div><div class="t">Bez výstrah</div><div class="s">Žiadne aktívne upozornenia pre tvoju polohu</div></div></div>`;
-        return;
-      }
-      valid.forEach(w=>{
-        const sev = w.severity || w.severity_level || w.severity_color || '';
-        const cls = sevClass(sev);
-        const ev  = w.event || w.event_translation || w.event_name || 'Výstraha';
-        const note = w.description || w.instruction || '';
-        const when = niceRange(w.onset, w.expires);
-        const el = document.createElement('div'); el.className = `alert ${cls}`;
-        el.innerHTML = `
-          <div class="em">${eventIcon(ev)}</div>
-          <div>
-            <div class="t">${ev}</div>
-            <div class="s">${when || ''}${when && note ? ' — ' : ''}${note ? (''+note).slice(0,160)+'…' : ''}</div>
-          </div>`;
-        box.appendChild(el);
-      });
-    }
-
-    /* ====== vyhľadávanie ====== */
+    /* ==== vyhľadávanie ==== */
     let timer;
     $('#q').addEventListener('input', e => {
       const q = e.target.value.trim(); clearTimeout(timer);
@@ -765,16 +718,20 @@
     document.getElementById('tab-icon').addEventListener('click',  () => fetchModels('icon'));
     document.getElementById('tab-gfs').addEventListener('click',   () => fetchModels('gfs'));
 
+    /* ==== Prepínač Dnes/Zajtra ==== */
+    document.getElementById('day-0').addEventListener('click', ()=>{ alertsDay=0; document.getElementById('day-0').classList.add('active'); document.getElementById('day-1').classList.remove('active'); renderAlerts(warningsCache.items, document.getElementById('alerts-note').textContent); });
+    document.getElementById('day-1').addEventListener('click', ()=>{ alertsDay=1; document.getElementById('day-1').classList.add('active'); document.getElementById('day-0').classList.remove('active'); renderAlerts(warningsCache.items, document.getElementById('alerts-note').textContent); });
+
     document.getElementById('year').textContent = new Date().getFullYear();
 
     initGeolocation();
     window.addEventListener('resize', () => { if (state.last) { drawHourly(); renderMin15(); } });
-    setTimeout(() => { if (!state.last) { fetchWeather().catch(()=>{}); fetchWarningsSHMU().catch(()=>{}); } }, 1200);
+    setTimeout(() => { if (!state.last) { fetchWeather().catch(()=>{}); fetchWarningsSHMU(true).catch(()=>{}); } }, 1200);
     fetchModels('ecmwf');
 
     if (!window.__wx_auto_refresh){
       window.__wx_auto_refresh = setInterval(() => {
-        if (state.lat && state.lon) { fetchWeather().catch(()=>{}); fetchWarningsSHMU().catch(()=>{}); }
+        if (state.lat && state.lon) { fetchWeather().catch(()=>{}); fetchWarningsSHMU(true).catch(()=>{}); }
       }, 5 * 60 * 1000);
     }
   </script>
