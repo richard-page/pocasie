@@ -38,7 +38,7 @@
     margin:0;
     color:var(--txt);
     font-family:Poppins,system-ui,-apple-system,Segoe UI,Roboto,Arial;
-    background-color:var(--bg0); /* fallback */
+    background-color:var(--bg0);
     min-height:100dvh;
     display:flex;
     flex-direction:column;
@@ -46,11 +46,10 @@
     -webkit-tap-highlight-color:transparent;
     overflow-x:hidden;
   }
-  /* Fixná vrstva s netilujúcim sa gradientom (žiadne bugy pri zoomovaní) */
   body::before{
     content:"";
     position:fixed;
-    inset:-1px;         /* trošku cez okraj kvôli antialiasingu */
+    inset:-1px;
     z-index:-1;
     background:
       radial-gradient(120vw 80vh at 50% -10%, #102538 0%, #0f1a26 50%, #0b0f14 100%) no-repeat,
@@ -137,7 +136,6 @@
 
   footer{padding:14px 10px; text-align:center; color:#cfe8ff; font-size:14px; border-top:1px solid rgba(255,255,255,.12)}
 
-  /* Mobil – Predpoveď ako horizontálny posuvník */
   @media (max-width:900px){
     .partsWrap{display:flex; gap:10px; overflow-x:auto; padding-bottom:6px; scroll-snap-type:x mandatory}
     .part{min-width:150px; scroll-snap-align:start}
@@ -164,7 +162,6 @@
     </div>
 
     <div class="row">
-      <!-- Aktuálne -->
       <section class="card">
         <div class="gridInfo">
           <div>
@@ -185,27 +182,23 @@
           <div id="icon" class="icon">—</div>
         </div>
 
-        <!-- Centrovaný súhrn -->
         <div class="summarySection">
           <h3>Dnešný súhrn</h3>
           <p id="summary">—</p>
         </div>
       </section>
 
-      <!-- Graf 24h -->
       <section class="card">
         <h3>Teplota počas 24 hodín</h3>
         <div class="chartWrap"><canvas id="hourly"></canvas></div>
       </section>
     </div>
 
-    <!-- Predpoveď (4 časti) -->
     <section class="card" style="margin-top:12px">
       <h3>Predpoveď</h3>
       <div id="parts" class="partsWrap"></div>
     </section>
 
-    <!-- 7-dňová predpoveď + modely -->
     <section class="card" style="margin-top:12px">
       <h3 style="margin-bottom:8px">7-dňová predpoveď</h3>
       <div style="display:flex;justify-content:center;gap:8px;flex-wrap:wrap;margin-bottom:8px">
@@ -216,13 +209,11 @@
       <div id="days" class="hscroll"></div>
     </section>
 
-    <!-- 15-minútová predpoveď -->
     <section class="card" style="margin-top:12px">
       <h3>15-minútová predpoveď (6 h)</h3>
       <div id="min15" class="hscroll"></div>
     </section>
 
-    <!-- História -->
     <section class="card" style="margin-top:12px">
       <div class="head" style="text-align:center">
         <h3>Počasie presne pred rokom</h3>
@@ -241,7 +232,6 @@
   <footer>&copy; <span id="year"></span> Richard / Počasie</footer>
 
   <script>
-    // ========= UTIL & STAV =========
     const APP_VERSION = '2025-08-13-geo-nominatim-1';
 
     const $ = s => document.querySelector(s);
@@ -274,19 +264,16 @@
       return '🌤️';
     };
 
-    // default – Bratislava (fallback)
     let state = { place:'Bratislava, SK', lat:48.1486, lon:17.1077, last:null };
     let hourlyChart = null;
     let activeModel = 'ecmwf';
     const LS_KEY = 'wx_prefs_v3';
 
-    // verzovanie lokálnej cache
     try {
       const v = localStorage.getItem('app_version');
       if (v !== APP_VERSION) localStorage.setItem('app_version', APP_VERSION);
     } catch (_) {}
 
-    // načítanie preferencií
     (() => {
       try {
         const raw = localStorage.getItem(LS_KEY);
@@ -303,7 +290,6 @@
       try { localStorage.setItem(LS_KEY, JSON.stringify({lat:state.lat, lon:state.lon, place:state.place})); } catch (e) {}
     };
 
-    // ========= GEOLOKÁCIA + PRESNÉ MESTO/OBEC =========
     async function reverseGeocodeNominatim(lat, lon){
       try{
         const url = `https://nominatim.openstreetmap.org/reverse?lat=${lat}&lon=${lon}&format=json&accept-language=sk`;
@@ -372,7 +358,6 @@
       }, {enableHighAccuracy:true, timeout:10000, maximumAge:300000});
     }
 
-    // ========= FETCH & RENDER =========
     async function fetchWeather(){
       const tz = Intl.DateTimeFormat().resolvedOptions().timeZone;
       const p = new URLSearchParams({
@@ -446,7 +431,6 @@
       });
     }
 
-    // ======= Pomocné pre medzihodnoty =======
     function valueAtHour(timesISO, arr, targetISO){
       const idx = timesISO.findIndex(t => t.slice(0,13) === targetISO.slice(0,13));
       if (idx >= 0) return arr[idx];
@@ -482,7 +466,6 @@
       return codes[codes.length-1] ?? 0;
     }
 
-    // ======= Render „častí dňa“ + 15-min =======
     function renderParts(){
       const wrap = $('#parts'); wrap.innerHTML = '';
       const d = state.last; const base = new Date(d.current.time);
@@ -535,7 +518,6 @@
       }
     }
 
-    // ======= Modely (7 dní) =======
     async function fetchModels(which){
       activeModel = which;
       ['ecmwf','icon','gfs'].forEach(id => {
@@ -576,7 +558,6 @@
       }
     }
 
-    // ======= História =======
     async function fetchHistory(){
       const tz = Intl.DateTimeFormat().resolvedOptions().timeZone;
       const now = new Date(); const lastYear = new Date(now); lastYear.setFullYear(now.getFullYear()-1);
@@ -595,7 +576,6 @@
       $('#hist-extra').textContent = pr > 0 ? `Zrážky: ${fmt1(pr,' mm')}` : 'Bez zrážok.';
     }
 
-    // ======= Hľadanie miest =======
     let timer;
     $('#q').addEventListener('input', e => {
       const q = e.target.value.trim(); clearTimeout(timer);
@@ -622,22 +602,17 @@
       if (box && !box.contains(e.target) && e.target !== $('#q')) box.style.display = 'none';
     });
 
-    // ======= Tab tlačidlá =======
     document.getElementById('tab-ecmwf').addEventListener('click', () => fetchModels('ecmwf'));
     document.getElementById('tab-icon').addEventListener('click',  () => fetchModels('icon'));
     document.getElementById('tab-gfs').addEventListener('click',   () => fetchModels('gfs'));
 
-    // Footer rok
     document.getElementById('year').textContent = new Date().getFullYear();
 
-    // Init – najprv skús geolokáciu (HTTPS/localhost), inak pokračuj s poslednou/BR
     initGeolocation();
     window.addEventListener('resize', () => {
       if (state.last) { drawHourly(); renderMin15(); }
     });
-    // ak by geolokácia nevrátila nič, načítaj aspoň fallback
     setTimeout(() => { if (!state.last) fetchWeather().catch(()=>{}); }, 1200);
-    // predvolený model
     fetchModels('ecmwf');
   </script>
 </body>
