@@ -86,7 +86,7 @@
   .hscroll::-webkit-scrollbar-track{background:#0f1c2a; border-radius:10px}
   .hscroll::-webkit-scrollbar-thumb{background:#1e3c54; border-radius:10px}
 
-  /* Predpoveď (4 karty) – na desktope presne pasujú, na mobile scroll */
+  /* Predpoveď (4 karty) – desktop grid, mobil scroll */
   .partsWrap{display:grid; grid-template-columns:repeat(4,1fr); gap:12px}
   .part{background:#152433; border:1px solid var(--stroke); border-radius:12px; padding:10px; text-align:center}
   .part .lbl{opacity:.9; margin-bottom:4px}
@@ -105,7 +105,7 @@
   .chartWrap{height:200px}
   canvas{background:#0f1c2a; border:1px solid var(--stroke); border-radius:12px}
 
-  /* Súhrn – ozajstné centrovanie */
+  /* Súhrn */
   .summarySection{margin-top:12px}
   .summarySection h3{margin-bottom:8px}
   #summary{margin:0 auto; max-width:720px; color:#dbeeff; background:#0f1c2a; border:1px solid var(--stroke); border-radius:10px; padding:12px; text-align:center}
@@ -124,7 +124,6 @@
     .partsWrap{display:flex; gap:10px; overflow-x:auto; padding-bottom:6px; scroll-snap-type:x mandatory}
     .part{min-width:150px; scroll-snap-align:start}
   }
-
   @media (min-width:780px){
     .wrap{padding:22px 16px 36px}
     .row{grid-template-columns:1.05fr 1fr; gap:16px}
@@ -224,7 +223,7 @@
 
 <script>
   // ========= UTIL & STAV =========
-  const APP_VERSION = '2025-08-13-1';
+  const APP_VERSION = '2025-08-13-geo-1';
 
   const $ = s => document.querySelector(s);
   const fmt0 = (v, u = '') => (v == null || Number.isNaN(v)) ? '—' : `${Math.round(v)}${u}`;
@@ -256,8 +255,8 @@
     return '🌤️';
   };
 
-  // default – Bratislava
-  let state = { units:'c', place:'Bratislava, SK', lat:48.1486, lon:17.1077, last:null };
+  // default – Bratislava (fallback)
+  let state = { place:'Bratislava, SK', lat:48.1486, lon:17.1077, last:null };
   let hourlyChart = null;
   let activeModel = 'ecmwf';
   const LS_KEY = 'wx_prefs_v3';
@@ -285,6 +284,51 @@
     try { localStorage.setItem(LS_KEY, JSON.stringify({lat:state.lat, lon:state.lon, place:state.place})); } catch (e) {}
   };
 
+  // ========= GEOLOKÁCIA =========
+  async function reverseGeocode(lat, lon){
+    try{
+      const url = `https://geocoding-api.open-meteo.com/v1/reverse?latitude=${lat}&longitude=${lon}&language=sk&format=json`;
+      const j = await fetch(url).then(r=>r.json());
+      const r = j?.results?.[0];
+      if (r){
+        // uprednostni city/town/village name + admin1 + country_code
+        const name = r.name || r.city || r.town || r.village || '';
+        const admin = r.admin1 ? `, ${r.admin1}` : '';
+        const cc = r.country_code ? `, ${r.country_code}` : '';
+        return `${name}${admin}${cc}`.trim();
+      }
+    }catch(e){}
+    return null;
+  }
+
+  async function setLocation(lat, lon, labelOpt){
+    state.lat = lat; state.lon = lon;
+    let label = labelOpt || await reverseGeocode(lat, lon);
+    if (!label) label = `${lat.toFixed(3)}, ${lon.toFixed(3)}`;
+    state.place = label;
+    savePrefs();
+    await fetchWeather().catch(e => alert(e.message));
+  }
+
+  function initGeolocation(){
+    if (!('geolocation' in navigator)) return; // bez geolokácie – ostane fallback
+    // signalizácia načítania
+    const placeEl = $('#place');
+    const prev = placeEl.textContent;
+    placeEl.textContent = 'Zisťujem polohu…';
+    navigator.geolocation.getCurrentPosition(async pos=>{
+      const {latitude, longitude} = pos.coords;
+      await setLocation(latitude, longitude);
+    }, err=>{
+      // necháme pôvodný text a nič nevnucujeme
+      placeEl.textContent = prev;
+      // voliteľná nenásilná informácia
+      console.info('Geolokácia zlyhala alebo bola zamietnutá:', err?.message);
+      // pokračujeme s uloženou/štandardnou lokáciou
+      fetchWeather().catch(e=>alert(e.message));
+    }, {enableHighAccuracy:true, timeout:10000, maximumAge:300000});
+  }
+
   // ========= FETCH & RENDER =========
   async function fetchWeather(){
     const tz = Intl.DateTimeFormat().resolvedOptions().timeZone;
@@ -307,7 +351,7 @@
   function renderAll(){
     const d = state.last, cur = d.current, tz = d.timezone;
     $('#place').textContent = state.place;
-    $('#q').value = ''; // necháme iba placeholder
+    $('#q').value = '';
     $('#time').textContent = new Intl.DateTimeFormat('sk-SK',{dateStyle:'medium',timeStyle:'short',timeZone:tz}).format(new Date(cur.time));
     $('#temp').textContent = fmt0(cur.temperature_2m,'°');
     $('#apparent').textContent = fmt0(cur.apparent_temperature,'°');
@@ -523,8 +567,8 @@
         const b = document.createElement('div'); b.className = 'sugg';
         b.textContent = `${p.name}${p.admin1 ? `, ${p.admin1}` : ''}, ${p.country_code}`;
         b.addEventListener('click', () => {
-          state.lat = p.latitude; state.lon = p.longitude; state.place = b.textContent;
-          box.style.display = 'none'; savePrefs(); fetchWeather();
+          setLocation(p.latitude, p.longitude, b.textContent);
+          box.style.display = 'none';
         });
         box.appendChild(b);
       });
@@ -543,12 +587,14 @@
   // Footer rok
   document.getElementById('year').textContent = new Date().getFullYear();
 
-  // Init
-  fetchWeather().catch(e => alert(e.message));
+  // Init – najprv skús geolokáciu (HTTPS/localhost), inak pokračuj s poslednou/BR
+  initGeolocation();
   window.addEventListener('resize', () => {
     if (state.last) { drawHourly(); renderMin15(); }
   });
-  // predvolene načítaj model
+  // pre istotu – ak geolokácia zlyhá okamžite, nech sa tiež načíta
+  setTimeout(() => { if (!state.last) fetchWeather().catch(e => alert(e.message)); }, 1200);
+  // predvolený model
   fetchModels('ecmwf');
 </script>
 </body>
