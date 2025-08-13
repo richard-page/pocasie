@@ -195,18 +195,13 @@
     </section>
 
     <section class="card" style="margin-top:12px">
-      <h3 style="margin-bottom:8px">7-dňová predpoveď</h3>
-      <div style="display:flex;justify-content:center;gap:8px;flex-wrap:wrap;margin-bottom:8px">
-        <button class="pill" id="tab-ecmwf">ECMWF IFS</button>
-        <button class="pill" id="tab-icon">ICON (DWD)</button>
-        <button class="pill" id="tab-gfs">GFS (NOAA)</button>
-      </div>
-      <div id="days" class="hscroll"></div>
+      <h3>15-minútová predpoveď (6 h)</h3>
+      <div id="min15" class="hscroll"></div>
     </section>
 
     <section class="card" style="margin-top:12px">
-      <h3>15-minútová predpoveď (6 h)</h3>
-      <div id="min15" class="hscroll"></div>
+      <h3>Peľové správy</h3>
+      <div id="pollen" class="partsWrap"></div>
     </section>
 
     <section class="card" style="margin-top:12px">
@@ -227,7 +222,7 @@
   <footer>&copy; <span id="year"></span> Richard / Počasie</footer>
 
   <script>
-    const APP_VERSION = '2025-08-13-geo-nominatim-2';
+    const APP_VERSION = '2025-08-13-geo-nominatim-3';
 
     const $ = s => document.querySelector(s);
     const fmt0 = (v, u = '') => (v == null || Number.isNaN(v)) ? '—' : `${Math.round(v)}${u}`;
@@ -390,6 +385,7 @@
       drawHourly();
       fetchModels(activeModel);
       fetchHistory().catch(()=>{});
+      fetchPollen().catch(()=>{});
     }
 
     function renderAll(){
@@ -615,6 +611,55 @@
       }catch(e){
         document.getElementById('hist-extra').textContent = 'Históriu sa nepodarilo načítať.';
       }
+    }
+
+    function pollenCat(v){
+      if (v == null || Number.isNaN(v)) return '—';
+      const n = Number(v);
+      if (n <= 0) return 'žiadny';
+      if (n <= 1) return 'nízky';
+      if (n <= 2) return 'stredný';
+      if (n <= 3) return 'vysoký';
+      if (n <= 4) return 'veľmi vysoký';
+      return 'extrémny';
+    }
+
+    async function fetchPollen(){
+      try{
+        const tz = Intl.DateTimeFormat().resolvedOptions().timeZone;
+        const daily = 'alder_pollen,birch_pollen,grass_pollen,ragweed_pollen';
+        const p = new URLSearchParams({ latitude:state.lat, longitude:state.lon, timezone:tz, daily });
+        const r = await fetch(`https://api.open-meteo.com/v1/pollen?${p}&v=${APP_VERSION}`);
+        if (!r.ok) throw 0;
+        const j = await r.json();
+        renderPollen(j);
+      }catch(e){
+        const box = document.getElementById('pollen');
+        if (box) box.innerHTML = '<div style="opacity:.8;color:#bcd1e5;padding:8px 10px;">Peľové dáta nedostupné</div>';
+      }
+    }
+
+    function renderPollen(d){
+      const box = document.getElementById('pollen');
+      if (!box) return;
+      box.innerHTML = '';
+      const dd = d?.daily || {};
+      const rows = [
+        ['Lieska', dd.alder_pollen?.[0]],
+        ['Breza', dd.birch_pollen?.[0]],
+        ['Trávy', dd.grass_pollen?.[0]],
+        ['Ambrozia', dd.ragweed_pollen?.[0]]
+      ];
+      rows.forEach(([name,val])=>{
+        const el = document.createElement('div');
+        el.className = 'part';
+        el.innerHTML =
+          `<div class="lbl">${name}</div>
+           <div class="emoji">🌿</div>
+           <div class="val">${val!=null?val:'—'}</div>
+           <div class="sub">${val!=null?pollenCat(val):''}</div>`;
+        box.appendChild(el);
+      });
     }
 
     let timer;
