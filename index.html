@@ -469,25 +469,6 @@
          <div class="sub">${fmt1(prN,' mm/h')} • vietor ${fmt1(windN,' km/h')}</div>`;
       wrap.appendChild(el);
     }
-    function renderMin15(){
-      const d = state.last; const box = $('#min15'); box.innerHTML = '';
-      const start = new Date(d.current.time);
-      const m = start.getMinutes(); const add = (15 - (m % 15)) % 15; if (add > 0) start.setMinutes(m + add, 0, 0);
-      for (let k=0;k<24;k++){
-        const t = new Date(start.getTime() + k*15*60*1000);
-        const tmp  = valueAt15min(d.hourly.time, d.hourly.temperature_2m, t);
-        const prep = valueAt15min(d.hourly.time, d.hourly.precipitation, t);
-        const code = codeAt15min(d.hourly.time, d.hourly.weather_code, t);
-        const wind = valueAt15min(d.hourly.time, d.hourly.wind_speed_10m, t);
-        const el = document.createElement('div'); el.className = 'part'; el.style.minWidth = '130px';
-        el.innerHTML =
-          `<div class="lbl">${t.toLocaleTimeString('sk-SK',{hour:'2-digit',minute:'2-digit'})}</div>
-           <div class="emoji">${wmoEmoji(code)}</div>
-           <div class="val">${fmt0(tmp,'°')}</div>
-           <div class="sub">${prep!=null?fmt1(prep,' mm/h'):'—'} • vietor ${wind!=null?fmt1(wind,' km/h'):'—'}</div>`;
-        box.appendChild(el);
-      }
-    }
     async function fetchModels(which){
       activeModel = which;
       ['ecmwf','icon','gfs'].forEach(id => {
