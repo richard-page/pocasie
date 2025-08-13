@@ -164,10 +164,9 @@
             <div id="time" style="color:var(--muted);font-size:14px">—</div>
             <div class="tempNow" id="temp">—°</div>
 
-            <!-- UV + AQI vedľa seba -->
             <div class="chips" style="display:flex;gap:8px;flex-wrap:wrap">
-              <span class="chip" id="uv">UV —</span>
-              <span class="chip" id="aqi">AQI —</span>
+              <span class="chip" id="uv">UV index —</span>
+              <span class="chip" id="aqi">Kvalita ovzdušia —</span>
             </div>
 
             <div class="meta" style="margin-top:8px">
@@ -232,7 +231,7 @@
   <footer>&copy; <span id="year"></span> Richard / Počasie</footer>
 
   <script>
-    const APP_VERSION = '2025-08-13-geo-nominatim-2-aqi';
+    const APP_VERSION = '2025-08-13-uvindex-aqi-slovnik';
 
     const $ = s => document.querySelector(s);
     const fmt0 = (v, u = '') => (v == null || Number.isNaN(v)) ? '—' : `${Math.round(v)}${u}`;
@@ -250,15 +249,16 @@
       85:['Snehové prehánky'],86:['Silné snehové prehánky'],
       95:['Búrky'],96:['Búrky s krúpami'],99:['Silné búrky s krúpami']
     };
+
     const uvCat = u => u < 3 ? 'nízky' : u < 6 ? 'mierny' : u < 8 ? 'vysoký' : u < 11 ? 'veľmi vysoký' : 'extrémny';
 
-    // Európsky AQI – slovné kategórie
+    // EU AQI (0–100). Zmenené slovné kategórie.
     const euAqiCat = a =>
-      a < 20 ? 'dobrá' :
-      a < 40 ? 'prijateľná' :
-      a < 60 ? 'mierna' :
-      a < 80 ? 'zlá' :
-      a <= 100 ? 'veľmi zlá' : 'extrémne zlá';
+      a < 20 ? 'dobrý' :
+      a < 40 ? 'zhoršený' :
+      a < 60 ? 'zlý' :
+      a < 80 ? 'veľmi zlý' :
+      a <= 100 ? 'extrémne zlý' : 'nebezpečný';
 
     const wmoEmoji = code => {
       const k = Number(code);
@@ -328,7 +328,6 @@
       try{
         const url = `https://nominatim.openstreetmap.org/reverse?lat=${lat}&lon=${lon}&format=json&accept-language=sk`;
         const res = await fetch(url, {headers:{'Accept':'application/json'}});
-        if(!res.ok) throw new Error('Nominatim HTTP error');
         const data = await res.json();
         const a = data.address || {};
         let name = a.city || a.town || a.village || a.municipality || a.hamlet || a.suburb || '';
@@ -336,9 +335,7 @@
         if(name) return `${name}${country}`;
         name = a.county || a.state || a.region || '';
         if (name) return `${name}${country}`;
-      }catch(e){
-        console.info('Nominatim reverse geocoding neúspešné:', e?.message || e);
-      }
+      }catch(e){}
       return null;
     }
     async function reverseGeocodeOpenMeteo(lat, lon){
@@ -352,9 +349,7 @@
           if (name) return `${name}${cc}`;
           if (r.admin1) return `${r.admin1}${cc}`;
         }
-      }catch(e){
-        console.info('Open-Meteo reverse geocoding neúspešné:', e?.message || e);
-      }
+      }catch(e){}
       return null;
     }
     async function reverseGeocode(lat, lon){
@@ -383,7 +378,6 @@
         await setLocation(latitude, longitude);
       }, err=>{
         placeEl.textContent = prev;
-        console.info('Geolokácia zlyhala/odmietnutá:', err?.message);
         fetchWeather().catch(()=>{});
       }, {enableHighAccuracy:true, timeout:10000, maximumAge:300000});
     }
@@ -398,7 +392,6 @@
         forecast_days:'3'
       });
       const r = await fetch(`https://api.open-meteo.com/v1/forecast?${p}&v=${APP_VERSION}`);
-      if (!r.ok) throw new Error('Načítanie zlyhalo');
       state.last = await r.json();
       renderAll();
       drawHourly();
@@ -420,10 +413,9 @@
       $('#icon').textContent = wmoEmoji(cur.weather_code);
 
       const uvi = (cur.uv_index ?? d.daily?.uv_index_max?.[0] ?? null);
-      $('#uv').textContent = `UV ${uvi != null ? fmt1(uvi) : '—'} • ${uvi != null ? uvCat(uvi) : '—'}`;
+      $('#uv').textContent = `UV index ${uvi != null ? fmt1(uvi) : '—'} • ${uvi != null ? uvCat(uvi) : '—'}`;
 
-      // predvyplnenie AQI, reálne sa doplní vo fetchAirQuality()
-      $('#aqi').textContent = 'AQI —';
+      $('#aqi').textContent = 'Kvalita ovzdušia —';
 
       const dd = d.daily;
       const tmax = dd.temperature_2m_max[0];
@@ -461,7 +453,6 @@
           current: 'european_aqi'
         });
         const res = await fetch(`https://air-quality-api.open-meteo.com/v1/air-quality?${qp}&v=${APP_VERSION}`);
-        if(!res.ok) throw new Error('AQI nedostupné');
         const j = await res.json();
 
         let aqi = j?.current?.european_aqi;
@@ -470,10 +461,9 @@
         }
         if (aqi == null || Number.isNaN(aqi)) throw new Error('AQI bez dát');
 
-        $('#aqi').textContent = `AQI ${fmt1(aqi)} • ${euAqiCat(aqi)}`;
+        $('#aqi').textContent = `Kvalita ovzdušia ${fmt0(aqi)} • ${euAqiCat(aqi)}`;
       }catch(e){
-        $('#aqi').textContent = 'AQI —';
-        console.info('AQI zlyhalo:', e?.message || e);
+        $('#aqi').textContent = 'Kvalita ovzdušia —';
       }
     }
 
@@ -601,7 +591,7 @@
       if (which === 'gfs')   base = 'https://api.open-meteo.com/v1/gfs';
       const p = new URLSearchParams({ latitude:state.lat, longitude:state.lon, timezone:tz, daily, forecast_days:'7' });
       try{
-        const r = await fetch(`${base}?${p}&v=${APP_VERSION}`); if(!r.ok) throw 0;
+        const r = await fetch(`${base}?${p}&v=${APP_VERSION}`);
         const j = await r.json(); renderDays(j);
       }catch(e){
         $('#days').innerHTML = '<div style="color:#ffd4d4">Model sa nepodarilo načítať.</div>';
@@ -641,11 +631,8 @@
           start_date:day, end_date:day, daily, timezone:'auto'
         });
         const r = await fetch(`https://archive-api.open-meteo.com/v1/archive?${p}&v=${APP_VERSION}`);
-        if(!r.ok) throw new Error('HTTP '+r.status);
         const j = await r.json();
         const dd = j.daily;
-        if(!dd || !dd.time || !dd.time.length) throw new Error('Bez dát');
-
         const code = dd.weather_code[0];
         const tmax = dd.temperature_2m_max[0];
         const tmin = dd.temperature_2m_min[0];
