@@ -230,6 +230,30 @@
       if([95,96,99].includes(k)) return '⛈️';
       return '🌤️';
     };
+    function pickDayCondition(d){
+      const times = d.hourly.time || [];
+      const codes = d.hourly.weather_code || [];
+      const day = (d.current.time || '').slice(0,10);
+      let startH = 9, endH = 18;
+      const sr = d.daily?.sunrise?.[0], ss = d.daily?.sunset?.[0];
+      if (sr && ss){
+        const sh = new Date(sr).getHours();
+        const eh = new Date(ss).getHours();
+        if (!Number.isNaN(sh) && !Number.isNaN(eh) && sh < eh){ startH = sh; endH = eh; }
+      }
+      const freq = new Map();
+      for (let i=0;i<times.length;i++){
+        if (!times[i].startsWith(day)) continue;
+        const h = Number(times[i].slice(11,13));
+        if (h < startH || h > endH) continue;
+        const c = codes[i] ?? 0;
+        freq.set(c, (freq.get(c)||0)+1);
+      }
+      let best = d.daily?.weather_code?.[0] ?? codes[0] ?? 0;
+      let bestCnt = -1;
+      freq.forEach((cnt,code) => { if (cnt > bestCnt) { bestCnt = cnt; best = code; } });
+      return best;
+    }
     let state = { place:'Bratislava, SK', lat:48.1486, lon:17.1077, last:null };
     let hourlyChart = null;
     let activeModel = 'ecmwf';
@@ -349,7 +373,8 @@
       const ps   = dd.precipitation_sum[0];
       const pp   = dd.precipitation_probability_max?.[0];
       const wmax = dd.wind_speed_10m_max[0];
-      const condToday = (WMO[dd.weather_code?.[0]]?.[0]) || '—';
+      const condCode = pickDayCondition(d);
+      const condToday = (WMO[condCode]?.[0]) || '—';
       const rainTxt = ps < 0.1
         ? (pp && pp > 20 ? `bez výrazných zrážok (pravdepodobnosť ${pp}%)` : 'bez zrážok')
         : `zrážky do ${fmt1(ps,' mm')}`;
