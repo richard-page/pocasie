@@ -163,7 +163,12 @@
             <h3 id="place">Bratislava, SK</h3>
             <div id="time" style="color:var(--muted);font-size:14px">—</div>
             <div class="tempNow" id="temp">—°</div>
-            <div><span class="chip" id="uv">UV —</span></div>
+
+            <!-- UV + AQI vedľa seba -->
+            <div class="chips" style="display:flex;gap:8px;flex-wrap:wrap">
+              <span class="chip" id="uv">UV —</span>
+              <span class="chip" id="aqi">AQI —</span>
+            </div>
 
             <div class="meta" style="margin-top:8px">
               <div>Pocitová teplota: <strong id="apparent">—</strong></div>
@@ -227,7 +232,7 @@
   <footer>&copy; <span id="year"></span> Richard / Počasie</footer>
 
   <script>
-    const APP_VERSION = '2025-08-13-geo-nominatim-2';
+    const APP_VERSION = '2025-08-13-geo-nominatim-2-aqi';
 
     const $ = s => document.querySelector(s);
     const fmt0 = (v, u = '') => (v == null || Number.isNaN(v)) ? '—' : `${Math.round(v)}${u}`;
@@ -246,6 +251,15 @@
       95:['Búrky'],96:['Búrky s krúpami'],99:['Silné búrky s krúpami']
     };
     const uvCat = u => u < 3 ? 'nízky' : u < 6 ? 'mierny' : u < 8 ? 'vysoký' : u < 11 ? 'veľmi vysoký' : 'extrémny';
+
+    // Európsky AQI – slovné kategórie
+    const euAqiCat = a =>
+      a < 20 ? 'dobrá' :
+      a < 40 ? 'prijateľná' :
+      a < 60 ? 'mierna' :
+      a < 80 ? 'zlá' :
+      a <= 100 ? 'veľmi zlá' : 'extrémne zlá';
+
     const wmoEmoji = code => {
       const k = Number(code);
       if([0,1].includes(k)) return '☀️';
@@ -390,6 +404,7 @@
       drawHourly();
       fetchModels(activeModel);
       fetchHistory().catch(()=>{});
+      fetchAirQuality().catch(()=>{});
     }
 
     function renderAll(){
@@ -406,6 +421,9 @@
 
       const uvi = (cur.uv_index ?? d.daily?.uv_index_max?.[0] ?? null);
       $('#uv').textContent = `UV ${uvi != null ? fmt1(uvi) : '—'} • ${uvi != null ? uvCat(uvi) : '—'}`;
+
+      // predvyplnenie AQI, reálne sa doplní vo fetchAirQuality()
+      $('#aqi').textContent = 'AQI —';
 
       const dd = d.daily;
       const tmax = dd.temperature_2m_max[0];
@@ -431,6 +449,32 @@
 
       renderParts();
       renderMin15();
+    }
+
+    async function fetchAirQuality(){
+      try{
+        const tz = Intl.DateTimeFormat().resolvedOptions().timeZone;
+        const qp = new URLSearchParams({
+          latitude: state.lat,
+          longitude: state.lon,
+          timezone: tz,
+          current: 'european_aqi'
+        });
+        const res = await fetch(`https://air-quality-api.open-meteo.com/v1/air-quality?${qp}&v=${APP_VERSION}`);
+        if(!res.ok) throw new Error('AQI nedostupné');
+        const j = await res.json();
+
+        let aqi = j?.current?.european_aqi;
+        if (aqi == null && j?.hourly?.european_aqi?.length){
+          aqi = valueAtHour(j.hourly.time, j.hourly.european_aqi, new Date().toISOString());
+        }
+        if (aqi == null || Number.isNaN(aqi)) throw new Error('AQI bez dát');
+
+        $('#aqi').textContent = `AQI ${fmt1(aqi)} • ${euAqiCat(aqi)}`;
+      }catch(e){
+        $('#aqi').textContent = 'AQI —';
+        console.info('AQI zlyhalo:', e?.message || e);
+      }
     }
 
     function drawHourly(){
