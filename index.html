@@ -15,40 +15,22 @@
 
 <style>
   :root{
-    --bg0:#0b0f14;
-    --bg1:#0e1620;
-    --stroke:#233448;
-    --txt:#eaf3ff;
-    --muted:#a8bed5;
-    --accent:#3ad0e6;
-    --r:14px;
-    --shadow:0 10px 28px rgba(0,0,0,.28);
+    --bg0:#0b0f14; --bg1:#0e1620; --stroke:#233448; --txt:#eaf3ff; --muted:#a8bed5;
+    --accent:#3ad0e6; --r:14px; --shadow:0 10px 28px rgba(0,0,0,.28);
   }
   *{box-sizing:border-box}
   html,body{height:100%}
   body{
-    margin:0;
-    color:var(--txt);
-    font-family:Poppins,system-ui,-apple-system,Segoe UI,Roboto,Arial;
-    background-color:var(--bg0);
-    min-height:100dvh;
-    display:flex;
-    flex-direction:column;
-    -webkit-text-size-adjust:100%;
-    -webkit-tap-highlight-color:transparent;
-    overflow-x:hidden;
+    margin:0; color:var(--txt); font-family:Poppins,system-ui,-apple-system,Segoe UI,Roboto,Arial;
+    background-color:var(--bg0); min-height:100dvh; display:flex; flex-direction:column;
+    -webkit-text-size-adjust:100%; -webkit-tap-highlight-color:transparent; overflow-x:hidden;
   }
   body::before{
-    content:"";
-    position:fixed;
-    inset:-1px;
-    z-index:-1;
+    content:""; position:fixed; inset:-1px; z-index:-1;
     background:
       radial-gradient(120vw 80vh at 50% -10%, #102538 0%, #0f1a26 50%, #0b0f14 100%) no-repeat,
       linear-gradient(180deg, var(--bg1), var(--bg0)) no-repeat;
-    background-attachment:fixed,fixed;
-    background-size:160vw 120vh, 100% 100%;
-    background-position:center top, center top;
+    background-attachment:fixed,fixed; background-size:160vw 120vh, 100% 100%; background-position:center top, center top;
   }
 
   .wrap{width:100%; max-width:1120px; margin-inline:auto; padding:16px 12px 28px; flex:1}
@@ -67,16 +49,10 @@
   }
   .sugg{background:#13263a; border:1px solid var(--stroke); border-radius:10px; padding:10px 12px; cursor:pointer}
 
-  .pill{
-    background:#1b2c3d; border:1px solid var(--stroke); color:#dfeaff; border-radius:12px;
-    padding:10px 12px; font-weight:600; cursor:pointer; min-height:40px; font-size:14px; text-align:center
-  }
+  .pill{background:#1b2c3d; border:1px solid var(--stroke); color:#dfeaff; border-radius:12px; padding:10px 12px; font-weight:600; cursor:pointer; min-height:40px; font-size:14px; text-align:center}
   .pill.active{background:var(--accent); border-color:#2abbd0; color:#002a32}
 
-  .card{
-    background:linear-gradient(180deg, rgba(255,255,255,.06), rgba(255,255,255,.03));
-    border:1px solid var(--stroke); border-radius:var(--r); box-shadow:var(--shadow); padding:14px;
-  }
+  .card{background:linear-gradient(180deg, rgba(255,255,255,.06), rgba(255,255,255,.03)); border:1px solid var(--stroke); border-radius:var(--r); box-shadow:var(--shadow); padding:14px;}
   .card h3{margin:0 0 10px; text-align:center; font-size:18px}
 
   .row{display:grid; grid-template-columns:1fr; gap:12px; margin-top:4px}
@@ -150,7 +126,7 @@
       <section class="card">
         <div class="gridInfo">
           <div>
-            <h3 id="place">Bratislava, SK</h3>
+            <h3 id="place">Bratislavský kraj, Bratislava, SK</h3>
             <div id="time" style="color:var(--muted);font-size:14px">—</div>
             <div class="tempNow" id="temp">—°</div>
             <div><span class="chip" id="uv">UV —</span></div>
@@ -217,7 +193,7 @@
   <footer>&copy; <span id="year"></span> Richard / Počasie</footer>
 
   <script>
-    const APP_VERSION = '2025-08-13-geo-nominatim-2';
+    const APP_VERSION = '2025-08-13-place-from-region';
 
     const $ = s => document.querySelector(s);
     const fmt0 = (v, u = '') => (v == null || Number.isNaN(v)) ? '—' : `${Math.round(v)}${u}`;
@@ -274,7 +250,7 @@
       return best;
     }
 
-    let state = { place:'Bratislava, SK', lat:48.1486, lon:17.1077, last:null };
+    let state = { place:'Bratislavský kraj, Bratislava, SK', lat:48.1486, lon:17.1077, last:null };
     let hourlyChart = null;
     let activeModel = 'ecmwf';
     const LS_KEY = 'wx_prefs_v3';
@@ -300,6 +276,15 @@
       try { localStorage.setItem(LS_KEY, JSON.stringify({lat:state.lat, lon:state.lon, place:state.place})); } catch (e) {}
     };
 
+    const formatPlace = (kraj, mesto, cc) => {
+      const K = (kraj||'').trim(), M = (mesto||'').trim();
+      const country = cc ? `, ${cc.toUpperCase()}` : '';
+      if (K && M && K.toLowerCase() !== M.toLowerCase()) return `${K}, ${M}${country}`;
+      if (K) return `${K}${country}`;
+      if (M) return `${M}${country}`;
+      return null;
+    };
+
     async function reverseGeocodeNominatim(lat, lon){
       try{
         const url = `https://nominatim.openstreetmap.org/reverse?lat=${lat}&lon=${lon}&format=json&accept-language=sk`;
@@ -307,32 +292,35 @@
         if(!res.ok) throw new Error('Nominatim HTTP error');
         const data = await res.json();
         const a = data.address || {};
-        let name = a.city || a.town || a.village || a.municipality || a.hamlet || a.suburb || '';
-        const country = a.country_code ? `, ${a.country_code.toUpperCase()}` : '';
-        if(name) return `${name}${country}`;
-        name = a.county || a.state || a.region || '';
-        if (name) return `${name}${country}`;
+        const kraj = a.state || a.region || a.county || '';
+        const mesto = a.city || a.town || a.village || a.municipality || a.hamlet || a.suburb || '';
+        const cc = a.country_code || '';
+        const label = formatPlace(kraj, mesto, cc);
+        if (label) return label;
       }catch(e){
         console.info('Nominatim reverse geocoding neúspešné:', e?.message || e);
       }
       return null;
     }
+
     async function reverseGeocodeOpenMeteo(lat, lon){
       try{
         const url = `https://geocoding-api.open-meteo.com/v1/reverse?latitude=${lat}&longitude=${lon}&language=sk&format=json`;
         const j = await fetch(url).then(r=>r.json());
         const r = j?.results?.[0];
         if (r){
-          const name = r.name || r.city || r.town || r.village || '';
-          const cc = r.country_code ? `, ${r.country_code}` : '';
-          if (name) return `${name}${cc}`;
-          if (r.admin1) return `${r.admin1}${cc}`;
+          const kraj = r.admin1 || r.admin2 || '';
+          const mesto = r.name || r.city || r.town || r.village || '';
+          const cc = r.country_code || '';
+          const label = formatPlace(kraj, mesto, cc);
+          if (label) return label;
         }
       }catch(e){
         console.info('Open-Meteo reverse geocoding neúspešné:', e?.message || e);
       }
       return null;
     }
+
     async function reverseGeocode(lat, lon){
       const a = await reverseGeocodeNominatim(lat, lon);
       if (a) return a;
@@ -343,7 +331,7 @@
 
     async function setLocation(lat, lon, labelOpt){
       state.lat = lat; state.lon = lon;
-      let label = labelOpt || await reverseGeocode(lat, lon);
+      const label = labelOpt || await reverseGeocode(lat, lon);
       state.place = label;
       savePrefs();
       await fetchWeather().catch(e => alert(e.message));
@@ -436,7 +424,7 @@
           responsive:true, maintainAspectRatio:false,
           interaction:{mode:'nearest', intersect:false},
           scales:{x:{grid:{color:'rgba(255,255,255,.08)'}}, y:{grid:{color:'rgba(255,255,255,.08)'}}},
-          plugins:{legend:{labels:{color:'#fff'}, onClick:(e,li)=>{}, onHover:(e)=>{ if(e&&e.native) e.native.target.style.cursor='default'; }}}
+          plugins:{legend:{labels:{color:'#fff'}, onClick:()=>{}, onHover:(e)=>{ if(e&&e.native) e.native.target.style.cursor='default'; }}}
         }
       });
     }
@@ -549,7 +537,7 @@
       try{
         const r = await fetch(`${base}?${p}&v=${APP_VERSION}`); if(!r.ok) throw 0;
         const j = await r.json(); renderDays(j);
-      }catch(e){
+      }catch{
         $('#days').innerHTML = '<div style="color:#ffd4d4">Model sa nepodarilo načítať.</div>';
       }
     }
@@ -607,6 +595,7 @@
       }
     }
 
+    // Vyhľadávanie – návrhy zobraz „KRAJ, Mesto, CC“
     let timer;
     $('#q').addEventListener('input', e => {
       const q = e.target.value.trim(); clearTimeout(timer);
@@ -618,10 +607,11 @@
         const box = $('#suggestions'); box.innerHTML = ''; box.style.display = 'grid';
         if (!arr.length){ box.innerHTML = '<div class="sugg">Nič sa nenašlo</div>'; return; }
         arr.forEach(p => {
+          const label = `${p.admin1 ? `${p.admin1}, ` : ''}${p.name}, ${p.country_code}`;
           const b = document.createElement('div'); b.className = 'sugg';
-          b.textContent = `${p.name}${p.admin1 ? `, ${p.admin1}` : ''}, ${p.country_code}`;
+          b.textContent = label;
           b.addEventListener('click', () => {
-            setLocation(p.latitude, p.longitude, b.textContent);
+            setLocation(p.latitude, p.longitude, label);
             box.style.display = 'none';
           });
           box.appendChild(b);
@@ -644,7 +634,6 @@
       if (state.last) { drawHourly(); renderMin15(); }
     });
     setTimeout(() => { if (!state.last) fetchWeather().catch(()=>{}); }, 1200);
-    fetchModels('ecmwf');
 
     if (!window.__wx_auto_refresh){
       window.__wx_auto_refresh = setInterval(() => {
