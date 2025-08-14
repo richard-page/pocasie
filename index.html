@@ -12,6 +12,7 @@
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
 <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;600;700&display=swap" rel="stylesheet" />
 <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.3/dist/chart.umd.min.js"></script>
+
 <style>
   :root{
     --bg0:#0b0f14;
@@ -165,12 +166,10 @@
             <h3 id="place">Bratislava, SK</h3>
             <div id="time" style="color:var(--muted);font-size:14px">—</div>
             <div class="tempNow" id="temp">—°</div>
-
             <div class="chipRow">
               <span class="chip" id="uv">UV index —</span>
               <span class="chip" id="aqi">Kvalita ovzdušia —</span>
             </div>
-
             <div class="meta" style="margin-top:8px">
               <div>Pocitová teplota: <strong id="apparent">—</strong></div>
               <div>Vietor: <strong id="wind">—</strong></div>
@@ -254,17 +253,59 @@
 
     const uvCat = u => u < 3 ? 'nízky' : u < 6 ? 'mierny' : u < 8 ? 'vysoký' : u < 11 ? 'veľmi vysoký' : 'extrémny';
 
-    function wmoEmoji(code, isNight=false){
+    // === EMOJI podľa WMO + noc/deň ===
+    function wmoEmoji(code, isNight = false){
       const k = Number(code);
-      if([0,1].includes(k)) return isNight ? '🌙' : '☀️';
-      if([2].includes(k))  return isNight ? '🌙' : '⛅';
-      if([3].includes(k))  return '☁️';
-      if([45,48].includes(k)) return '🌫️';
-      if([51,53,55].includes(k)) return '🌦️';
-      if([61,63,65,80,81,82].includes(k)) return '🌧️';
-      if([71,73,75,77,85,86].includes(k)) return '❄️';
-      if([95,96,99].includes(k)) return '⛈️';
-      return isNight ? '🌙' : '🌤️';
+      if ([0,1].includes(k)) return isNight ? '🌙' : '☀️';        // jasno
+      if (k === 2)              return isNight ? '🌙' : '⛅';      // polojasno
+      if (k === 3)              return '☁️';                      // zamračené
+      if ([45,48].includes(k))  return '🌫️';                      // hmla
+      if ([51,53,55].includes(k)) return '🌦️';                    // mrholenie
+      if ([61,63,65,80,81,82].includes(k)) return '🌧️';           // dážď/prehánky
+      if ([71,73,75,77,85,86].includes(k)) return '❄️';           // sneh
+      if ([95,96,99].includes(k)) return '⛈️';                    // búrky
+      return isNight ? '🌙' : '🌤️';                               // fallback
+    }
+
+    // Noc podľa východu/západu
+    function isNightAt(dtLike, daily){
+      const dt = typeof dtLike === 'string' ? new Date(dtLike) : dtLike;
+      try{
+        const dayStr = dt.toISOString().slice(0,10);
+        const i = daily?.time?.indexOf(dayStr);
+        if (i >= 0 && daily.sunrise?.[i] && daily.sunset?.[i]){
+          const sr = new Date(daily.sunrise[i]);
+          const ss = new Date(daily.sunset[i]);
+          return (dt < sr || dt >= ss);
+        }
+      }catch(_){}
+      const h = dt.getHours();
+      return (h < 6 || h >= 21);
+    }
+
+    function pickDayCondition(d){
+      const times = d.hourly?.time || [];
+      const codes = d.hourly?.weather_code || [];
+      const day = (d.current?.time || '').slice(0,10);
+      let startH = 9, endH = 18;
+      const sr = d.daily?.sunrise?.[0], ss = d.daily?.sunset?.[0];
+      if (sr && ss){
+        const sh = new Date(sr).getHours();
+        const eh = new Date(ss).getHours();
+        if (!Number.isNaN(sh) && !Number.isNaN(eh) && sh < eh){ startH = sh; endH = eh; }
+      }
+      const freq = new Map();
+      for (let i=0;i<times.length;i++){
+        if (!times[i].startsWith(day)) continue;
+        const h = Number(times[i].slice(11,13));
+        if (h < startH || h > endH) continue;
+        const c = codes[i] ?? 0;
+        freq.set(c, (freq.get(c)||0)+1);
+      }
+      let best = d.daily?.weather_code?.[0] ?? codes[0] ?? 0;
+      let bestCnt = -1;
+      freq.forEach((cnt,code) => { if (cnt > bestCnt) { bestCnt = cnt; best = code; } });
+      return best;
     }
 
     function aqiCat(v){
@@ -275,21 +316,6 @@
       if(v <= 200) return 'zlá';
       if(v <= 300) return 'veľmi zlá';
       return 'nebezpečná';
-    }
-
-    function isNightAt(dt, daily){
-      try{
-        const days = daily?.time || [];
-        const ymd = dt.toISOString().slice(0,10);
-        const i = days.indexOf(ymd);
-        if (i >= 0){
-          const sr = new Date(daily.sunrise[i]);
-          const ss = new Date(daily.sunset[i]);
-          return (dt < sr || dt >= ss);
-        }
-      }catch(_){}
-      const h = dt.getHours();
-      return (h < 6 || h >= 21);
     }
 
     let state = { place:'Bratislava, SK', lat:48.1486, lon:17.1077, last:null };
@@ -413,7 +439,8 @@
       $('#hum').textContent = fmt0(cur.relative_humidity_2m,'%');
       $('#press').textContent = fmt0(cur.pressure_msl,' hPa');
 
-      const nightNow = isNightAt(new Date(cur.time), d.daily);
+      // Hlavná ikona – berie do úvahy noc/deň
+      const nightNow = isNightAt(cur.time, d.daily);
       $('#icon').textContent = wmoEmoji(cur.weather_code, nightNow);
 
       const uvi = (cur.uv_index ?? d.daily?.uv_index_max?.[0] ?? null);
@@ -426,31 +453,7 @@
       const pp   = dd.precipitation_probability_max?.[0];
       const wmax = dd.wind_speed_10m_max[0];
 
-      const condCode = (function(){
-        const times = d.hourly?.time || [];
-        const codes = d.hourly?.weather_code || [];
-        const day = (d.current?.time || '').slice(0,10);
-        let startH = 9, endH = 18;
-        const sr = d.daily?.sunrise?.[0], ss = d.daily?.sunset?.[0];
-        if (sr && ss){
-          const sh = new Date(sr).getHours();
-          const eh = new Date(ss).getHours();
-          if (!Number.isNaN(sh) && !Number.isNaN(eh) && sh < eh){ startH = sh; endH = eh; }
-        }
-        const freq = new Map();
-        for (let i=0;i<times.length;i++){
-          if (!times[i].startsWith(day)) continue;
-          const h = Number(times[i].slice(11,13));
-          if (h < startH || h > endH) continue;
-          const c = codes[i] ?? 0;
-          freq.set(c, (freq.get(c)||0)+1);
-        }
-        let best = d.daily?.weather_code?.[0] ?? codes[0] ?? 0;
-        let bestCnt = -1;
-        freq.forEach((cnt,code) => { if (cnt > bestCnt) { bestCnt = cnt; best = code; } });
-        return best;
-      })();
-
+      const condCode = pickDayCondition(d);
       const condToday = (WMO[condCode]?.[0]) || '—';
 
       const rainTxt = ps < 0.1
