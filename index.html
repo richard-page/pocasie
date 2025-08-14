@@ -92,13 +92,14 @@
   .row{display:grid; grid-template-columns:1fr; gap:12px; margin-top:4px}
   .meta{display:grid; grid-template-columns:1fr; gap:8px; color:var(--muted); font-size:14px}
   .meta strong{color:#fff}
+
+  .chipRow{display:inline-flex; gap:8px; flex-wrap:wrap; align-items:center; margin-top:4px}
   .chip{display:inline-flex; gap:8px; align-items:center; background:#143344; border:1px solid var(--stroke); color:#d8f7ff; border-radius:999px; padding:6px 10px; font-size:12px}
+  #uv,#aqi{white-space:nowrap}
+
   .tempNow{font-size:44px; font-weight:700; line-height:1; margin:6px 0}
   .icon{width:64px; height:64px; display:flex; align-items:center; justify-content:center; font-size:48px}
   .gridInfo{display:grid; grid-template-columns:1fr auto; gap:14px; align-items:start}
-
-  .chipRow{display:flex; gap:8px; flex-wrap:wrap; align-items:center; margin-top:4px}
-  #uv,#aqi{white-space:nowrap}
 
   .hscroll{display:flex; gap:10px; overflow-x:auto; padding:6px 2px 8px; scroll-snap-type:x mandatory; -webkit-overflow-scrolling:touch}
   .hscroll::-webkit-scrollbar{height:8px}
@@ -166,10 +167,12 @@
             <h3 id="place">Bratislava, SK</h3>
             <div id="time" style="color:var(--muted);font-size:14px">—</div>
             <div class="tempNow" id="temp">—°</div>
+
             <div class="chipRow">
               <span class="chip" id="uv">UV index —</span>
               <span class="chip" id="aqi">Kvalita ovzdušia —</span>
             </div>
+
             <div class="meta" style="margin-top:8px">
               <div>Pocitová teplota: <strong id="apparent">—</strong></div>
               <div>Vietor: <strong id="wind">—</strong></div>
@@ -253,21 +256,19 @@
 
     const uvCat = u => u < 3 ? 'nízky' : u < 6 ? 'mierny' : u < 8 ? 'vysoký' : u < 11 ? 'veľmi vysoký' : 'extrémny';
 
-    // === EMOJI podľa WMO + noc/deň ===
     function wmoEmoji(code, isNight = false){
       const k = Number(code);
-      if ([0,1].includes(k)) return isNight ? '🌙' : '☀️';        // jasno
-      if (k === 2)              return isNight ? '🌙' : '⛅';      // polojasno
-      if (k === 3)              return '☁️';                      // zamračené
-      if ([45,48].includes(k))  return '🌫️';                      // hmla
-      if ([51,53,55].includes(k)) return '🌦️';                    // mrholenie
-      if ([61,63,65,80,81,82].includes(k)) return '🌧️';           // dážď/prehánky
-      if ([71,73,75,77,85,86].includes(k)) return '❄️';           // sneh
-      if ([95,96,99].includes(k)) return '⛈️';                    // búrky
-      return isNight ? '🌙' : '🌤️';                               // fallback
+      if ([0,1].includes(k)) return isNight ? '🌙' : '☀️';
+      if (k === 2)              return isNight ? '🌙' : '⛅';
+      if (k === 3)              return '☁️';
+      if ([45,48].includes(k))  return '🌫️';
+      if ([51,53,55].includes(k)) return '🌦️';
+      if ([61,63,65,80,81,82].includes(k)) return '🌧️';
+      if ([71,73,75,77,85,86].includes(k)) return '❄️';
+      if ([95,96,99].includes(k)) return '⛈️';
+      return isNight ? '🌙' : '🌤️';
     }
 
-    // Noc podľa východu/západu
     function isNightAt(dtLike, daily){
       const dt = typeof dtLike === 'string' ? new Date(dtLike) : dtLike;
       try{
@@ -439,12 +440,11 @@
       $('#hum').textContent = fmt0(cur.relative_humidity_2m,'%');
       $('#press').textContent = fmt0(cur.pressure_msl,' hPa');
 
-      // Hlavná ikona – berie do úvahy noc/deň
       const nightNow = isNightAt(cur.time, d.daily);
       $('#icon').textContent = wmoEmoji(cur.weather_code, nightNow);
 
       const uvi = (cur.uv_index ?? d.daily?.uv_index_max?.[0] ?? null);
-      $('#uv').textContent = `UV index ${uvi != null ? fmt1(uvi) : '—'} • ${uvi != null ? uvCat(uvi) : '—'}`;
+      $('#uv').textContent = `UV index ${uvi != null ? fmt1(uvi) : '—'} ${nightNow ? '🌙' : '☀️'} • ${uvi != null ? uvCat(uvi) : '—'}`;
 
       const dd = d.daily;
       const tmax = dd.temperature_2m_max[0];
