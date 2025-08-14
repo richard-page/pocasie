@@ -259,9 +259,9 @@
     function wmoEmoji(code, isNight = false){
       const k = Number(code);
       if ([0,1].includes(k)) return isNight ? '🌙' : '☀️';
-      if (k === 2)              return isNight ? '🌙' : '⛅';
-      if (k === 3)              return '☁️';
-      if ([45,48].includes(k))  return '🌫️';
+      if (k === 2) return isNight ? '🌙' : '⛅';
+      if (k === 3) return '☁️';
+      if ([45,48].includes(k)) return '🌫️';
       if ([51,53,55].includes(k)) return '🌦️';
       if ([61,63,65,80,81,82].includes(k)) return '🌧️';
       if ([71,73,75,77,85,86].includes(k)) return '❄️';
@@ -357,9 +357,7 @@
         if(name) return `${name}${country}`;
         name = a.county || a.state || a.region || '';
         if (name) return `${name}${country}`;
-      }catch(e){
-        console.info('Nominatim reverse geocoding neúspešné:', e?.message || e);
-      }
+      }catch(e){}
       return null;
     }
     async function reverseGeocodeOpenMeteo(lat, lon){
@@ -373,9 +371,7 @@
           if (name) return `${name}${cc}`;
           if (r.admin1) return `${r.admin1}${cc}`;
         }
-      }catch(e){
-        console.info('Open-Meteo reverse geocoding neúspešné:', e?.message || e);
-      }
+      }catch(e){}
       return null;
     }
     async function reverseGeocode(lat, lon){
@@ -404,7 +400,6 @@
         await setLocation(latitude, longitude);
       }, err=>{
         placeEl.textContent = prev;
-        console.info('Geolokácia zlyhala/odmietnutá:', err?.message);
         fetchWeather().catch(()=>{});
       }, {enableHighAccuracy:true, timeout:10000, maximumAge:300000});
     }
@@ -444,7 +439,9 @@
       $('#icon').textContent = wmoEmoji(cur.weather_code, nightNow);
 
       const uvi = (cur.uv_index ?? d.daily?.uv_index_max?.[0] ?? null);
-      $('#uv').textContent = `UV index ${uvi != null ? fmt1(uvi) : '—'} ${nightNow ? '🌙' : '☀️'} • ${uvi != null ? uvCat(uvi) : '—'}`;
+      $('#uv').textContent = uvi != null
+        ? `UV index ${fmt1(uvi)} • ${uvCat(uvi)}`
+        : 'UV index —';
 
       const dd = d.daily;
       const tmax = dd.temperature_2m_max[0];
@@ -480,7 +477,6 @@
           hourly:'us_aqi,pm2_5,pm10'
         });
         const r = await fetch(`https://air-quality-api.open-meteo.com/v1/air-quality?${p}&v=${APP_VERSION}`);
-        if(!r.ok) throw new Error('HTTP');
         const j = await r.json();
         const t = (state?.last?.current?.time) || j.hourly.time[0];
         const aqi  = valueAtHour(j.hourly.time, j.hourly.us_aqi, t);
@@ -551,12 +547,12 @@
       const wrap = $('#parts'); wrap.innerHTML = '';
       const d = state.last; const base = new Date(d.current.time);
 
-      const add = (h, label) => {
-        const dt = new Date(base); dt.setHours(h,0,0,0);
-        const temp = valueAtHour(d.hourly.time, d.hourly.temperature_2m, dt.toISOString());
-        const pr   = valueAtHour(d.hourly.time, d.hourly.precipitation, dt.toISOString());
-        const wind = valueAtHour(d.hourly.time, d.hourly.wind_speed_10m, dt.toISOString());
-        const code = valueAtHour(d.hourly.time, d.hourly.weather_code, dt.toISOString());
+      function slot(dt, label){
+        const iso = dt.toISOString();
+        const temp = valueAtHour(d.hourly.time, d.hourly.temperature_2m, iso);
+        const pr   = valueAtHour(d.hourly.time, d.hourly.precipitation, iso);
+        const wind = valueAtHour(d.hourly.time, d.hourly.wind_speed_10m, iso);
+        const code = valueAtHour(d.hourly.time, d.hourly.weather_code, iso);
         const el = document.createElement('div'); el.className = 'part';
         el.innerHTML =
           `<div class="lbl">${label}</div>
@@ -564,22 +560,16 @@
            <div class="val">${fmt0(temp,'°')}</div>
            <div class="sub">${fmt1(pr,' mm/h')} • vietor ${fmt1(wind,' km/h')}</div>`;
         wrap.appendChild(el);
-      };
+      }
 
-      add(10,'Doobeda'); add(15,'Poobede'); add(20,'Večer');
+      const doobeda = new Date(base); doobeda.setHours(10,0,0,0); slot(doobeda,'Doobeda');
+      const poobede = new Date(base); poobede.setHours(15,0,0,0); slot(poobede,'Poobede');
 
-      const nx = new Date(base); nx.setDate(base.getDate()+1); nx.setHours(2,0,0,0);
-      const tempN = valueAtHour(d.hourly.time, d.hourly.temperature_2m, nx.toISOString());
-      const prN   = valueAtHour(d.hourly.time, d.hourly.precipitation, nx.toISOString());
-      const windN = valueAtHour(d.hourly.time, d.hourly.wind_speed_10m, nx.toISOString());
-      const codeN = valueAtHour(d.hourly.time, d.hourly.weather_code, nx.toISOString());
-      const el = document.createElement('div'); el.className = 'part';
-      el.innerHTML =
-        `<div class="lbl">Noc</div>
-         <div class="emoji">${wmoEmoji(codeN, isNightAt(nx, d.daily))}</div>
-         <div class="val">${fmt0(tempN,'°')}</div>
-         <div class="sub">${fmt1(prN,' mm/h')} • vietor ${fmt1(windN,' km/h')}</div>`;
-      wrap.appendChild(el);
+      const sunset = d.daily?.sunset?.[0] ? new Date(d.daily.sunset[0]) : null;
+      const vecer  = sunset ? new Date(sunset.getTime() + 30*60*1000) : (function(){ const t=new Date(base); t.setHours(21,0,0,0); return t; }());
+      slot(vecer,'Večer');
+
+      const noc = new Date(base); noc.setDate(base.getDate()+1); noc.setHours(2,0,0,0); slot(noc,'Noc');
     }
 
     function renderMin15(){
@@ -622,7 +612,7 @@
       if (which === 'gfs')   base = 'https://api.open-meteo.com/v1/gfs';
       const p = new URLSearchParams({ latitude:state.lat, longitude:state.lon, timezone:tz, daily, forecast_days:'7' });
       try{
-        const r = await fetch(`${base}?${p}&v=${APP_VERSION}`); if(!r.ok) throw 0;
+        const r = await fetch(`${base}?${p}&v=${APP_VERSION}`);
         const j = await r.json(); renderDays(j);
       }catch(e){
         $('#days').innerHTML = '<div style="color:#ffd4d4">Model sa nepodarilo načítať.</div>';
@@ -662,11 +652,8 @@
           start_date:day, end_date:day, daily, timezone:'auto'
         });
         const r = await fetch(`https://archive-api.open-meteo.com/v1/archive?${p}&v=${APP_VERSION}`);
-        if(!r.ok) throw new Error('HTTP '+r.status);
         const j = await r.json();
         const dd = j.daily;
-        if(!dd || !dd.time || !dd.time.length) throw new Error('Bez dát');
-
         const code = dd.weather_code[0];
         const tmax = dd.temperature_2m_max[0];
         const tmin = dd.temperature_2m_min[0];
