@@ -60,8 +60,7 @@
   .card h3{margin:0 0 10px; text-align:center; font-size:18px}
 
   #place{
-    white-space:nowrap; overflow:hidden; text-overflow:ellipsis;
-    text-align:left; margin:0
+    white-space:nowrap; overflow:hidden; text-overflow:ellipsis; text-align:left; margin:0
   }
 
   .row{display:grid; grid-template-columns:1fr; gap:12px; margin-top:4px}
@@ -70,10 +69,9 @@
 
   .chipRow{display:flex; flex-direction:column; gap:10px; align-items:flex-start}
   .chip{
-    display:inline-flex; align-items:center; justify-content:flex-start; gap:8px;
+    display:inline-flex; align-items:center; gap:8px;
     background:#143344; border:1px solid var(--stroke); color:#d8f7ff; border-radius:999px;
-    padding:8px 14px; font-size:13px; line-height:1; width:auto; max-width:100%;
-    white-space:nowrap; overflow:hidden; text-overflow:ellipsis; text-align:left
+    padding:8px 14px; font-size:13px; line-height:1;
   }
   @media (min-width:900px){ .chipRow{flex-direction:row; flex-wrap:wrap} }
 
@@ -105,32 +103,36 @@
     overflow-x:auto; overflow-y:hidden;
     scrollbar-gutter: stable both-edges;
     -webkit-overflow-scrolling:touch;
+    touch-action: pan-y;             /* vertikálny scroll stránky zostáva plynulý */
+    overscroll-behavior-x: contain;
     cursor:grab;
     padding-bottom:8px;
   }
   .colset.dragging{cursor:grabbing; user-select:none}
+
   .col{
     background:var(--panel); border:1px solid var(--stroke); border-radius:12px; padding:10px;
     display:grid; grid-template-rows:auto auto auto auto auto auto; align-items:center; justify-items:center;
-    text-align:center; overflow:hidden; min-height:176px; contain:content;
+    text-align:center; min-height:176px; contain:content;
   }
-  .c-top,.c-row{white-space:nowrap; overflow:hidden; text-overflow:ellipsis}
-  .c-top{opacity:.9}
+  .c-top{opacity:.9; white-space:nowrap; overflow:hidden; text-overflow:ellipsis}
+  /* ⬇ texty sa môžu zalomiť – žiadne orezávanie */
+  .c-row{
+    color:#cfe6ff; font-size:11.5px; line-height:1.25; margin-top:6px;
+    white-space:normal; overflow:visible; text-overflow:clip; word-break:break-word;
+  }
   .c-max{font-size:26px; font-weight:700; color:#ff6c6c; margin-top:6px; line-height:1}
   .c-min{font-size:16px; color:#ffbb7c; margin-top:2px; line-height:1}
   .c-ico{font-size:26px; margin-top:6px}
-  .c-row{color:#cfe6ff; font-size:12px; margin-top:6px; line-height:1.15}
 
   /* rovnaký posuvník pre všetky .colset (Chromium/WebKit) */
   .colset::-webkit-scrollbar{height:12px}
   .colset::-webkit-scrollbar-track{background:#0f1c2a; border-radius:8px}
   .colset::-webkit-scrollbar-thumb{background:#33516f; border-radius:8px}
   .colset::-webkit-scrollbar-thumb:hover{background:#3f6b94}
-
   /* rovnaký posuvník pre Firefox */
   .colset{scrollbar-width:thin; scrollbar-color:#33516f #0f1c2a}
 
-  /* na väčších obrazovkách nech sú karty širšie, ale stále s rovnakým posuvníkom */
   @media (min-width:900px){
     #parts.colset{--cols:4}
     #days.colset{--cols:7}
@@ -232,9 +234,10 @@
   <footer>&copy; <span id="year"></span> Richard / Počasie</footer>
 
   <script>
-    const APP_VERSION = '2025-08-14-uniform-scrollbars-drag';
+    const APP_VERSION = '2025-08-14-uniform-scrollbars-drag-v2';
     const $ = s => document.querySelector(s);
 
+    const NBSP_NARROW = '\u202F'; // úzka nezalomiteľná medzera
     const fmt0 = (v,u='') => (v==null || Number.isNaN(v)) ? '—' : (Math.round(v) + u);
     const fmt1 = (v,u='') => (v==null || Number.isNaN(v)) ? '—' : ((Math.round(v*10)/10).toFixed(1) + u);
 
@@ -247,7 +250,7 @@
 
     const uvCat = u => u<3?'nízky':u<6?'mierny':u<8?'vysoký':u<11?'veľmi vysoký':'extrémny';
 
-    function wmoEmoji(code, night=false){
+    const wmoEmoji = (code, night=false)=>{
       const k = Number(code);
       if ([0,1].includes(k)) return night ? '🌙' : '☀️';
       if (k===2) return night ? '🌙' : '⛅';
@@ -258,7 +261,7 @@
       if ([71,73,75,77,85,86].includes(k)) return '❄️';
       if ([95,96,99].includes(k)) return '⛈️';
       return night ? '🌙' : '🌤️';
-    }
+    };
 
     function isNightAt(dtLike, daily){
       const dt = typeof dtLike==='string' ? new Date(dtLike) : dtLike;
@@ -276,10 +279,10 @@
     }
 
     const pad = n => String(n).padStart(2,'0');
-    function localHourKey(date){
+    const localHourKey = (date)=>{
       const d = typeof date==='string' ? new Date(date) : new Date(date);
       return d.getFullYear() + '-' + pad(d.getMonth()+1) + '-' + pad(d.getDate()) + 'T' + pad(d.getHours());
-    }
+    };
 
     function valueAtHourLocal(timesISO, arr, date){
       const key = localHourKey(date);
@@ -331,12 +334,12 @@
       return best;
     }
 
-    function aqiCat(v){
+    const aqiCat = (v)=>{
       if(v==null||Number.isNaN(v)) return '—';
       if(v<=50) return 'dobrá'; if(v<=100) return 'mierne zhoršená';
       if(v<=150) return 'riziková'; if(v<=200) return 'zlá';
       if(v<=300) return 'veľmi zlá'; return 'nebezpečná';
-    }
+    };
 
     let state={place:'—', lat:48.1486, lon:17.1077, last:null};
     let hourlyChart=null, activeModel='ecmwf';
@@ -425,9 +428,9 @@
       $('#place').textContent=state.place;
       $('#temp').textContent=fmt0(cur.temperature_2m,'°');
       $('#apparent').textContent=fmt0(cur.apparent_temperature,'°');
-      $('#wind').textContent=fmt1(cur.wind_speed_10m,' km/h');
-      $('#hum').textContent=fmt0(cur.relative_humidity_2m,'%');
-      $('#press').textContent=fmt0(cur.pressure_msl,' hPa');
+      $('#wind').textContent=fmt1(cur.wind_speed_10m, NBSP_NARROW+'km/h');
+      $('#hum').textContent=fmt0(cur.relative_humidity_2m, NBSP_NARROW+'%');
+      $('#press').textContent=fmt0(cur.pressure_msl, NBSP_NARROW+'hPa');
       $('#icon').textContent=wmoEmoji(cur.weather_code, isNightAt(cur.time, d.daily));
 
       const uvi=(cur.uv_index ?? d.daily?.uv_index_max?.[0] ?? null);
@@ -435,9 +438,9 @@
 
       const dd=d.daily, tmax=dd.temperature_2m_max[0], tmin=dd.temperature_2m_min[0], ps=dd.precipitation_sum[0], pp=dd.precipitation_probability_max?.[0], wmax=dd.wind_speed_10m_max[0];
       const condToday=(WMO[pickDayCondition(d)]?.[0])||'—';
-      const rainTxt = ps < 0.1 ? (pp && pp>20 ? `bez výrazných zrážok (pravdepodobnosť ${pp}%)` : 'bez zrážok') : `zrážky do ${fmt1(ps,' mm')}`;
+      const rainTxt = ps < 0.1 ? (pp && pp>20 ? `bez výrazných zrážok (pravdepodobnosť ${pp}%)` : 'bez zrážok') : `zrážky do ${fmt1(ps, NBSP_NARROW+'mm')}`;
       const uvTxt = dd.uv_index_max?.[0]!=null ? `UV ${uvCat(dd.uv_index_max[0])} (max ${fmt1(dd.uv_index_max[0])})` : 'UV údaj nedostupný';
-      $('#summary').innerHTML=`Dnes <strong>${condToday.toLowerCase()}</strong>, max <strong>${fmt0(tmax,'°')}</strong>, min <strong>${fmt0(tmin,'°')}</strong>, ${rainTxt}, vietor do <strong>${fmt1(wmax,' km/h')}</strong>, ${uvTxt}.`;
+      $('#summary').innerHTML=`Dnes <strong>${condToday.toLowerCase()}</strong>, max <strong>${fmt0(tmax,'°')}</strong>, min <strong>${fmt0(tmin,'°')}</strong>, ${rainTxt}, vietor do <strong>${fmt1(wmax, NBSP_NARROW+'km/h')}</strong>, ${uvTxt}.`;
 
       const sr=dd.sunrise?.[0]?new Date(dd.sunrise[0]):null, ss=dd.sunset?.[0]?new Date(dd.sunset[0]):null;
       $('#sunrise').textContent=sr?sr.toLocaleTimeString('sk-SK',{hour:'2-digit',minute:'2-digit'}):'—';
@@ -476,6 +479,7 @@
     function renderParts(){
       const wrap=$('#parts'); wrap.innerHTML='';
       const d=state.last; const base=new Date(d.current.time);
+      const rowTxt = (label, val, unit) => `${label} ${fmt0(val, NBSP_NARROW+unit)}`;
       function slot(dt,label){
         const temp=valueAtHourLocal(d.hourly.time, d.hourly.temperature_2m, dt);
         const pr=valueAtHourLocal(d.hourly.time, d.hourly.precipitation, dt);
@@ -486,8 +490,8 @@
                       <div class="c-max">${fmt0(temp,'°')}</div>
                       <div class="c-min">${temp!=null?fmt0(temp-5,'°'):'—'}</div>
                       <div class="c-ico">${wmoEmoji(code, isNightAt(dt, d.daily))}</div>
-                      <div class="c-row">Zrážky ${fmt0(pr,' mm/h')}</div>
-                      <div class="c-row">Vietor ${fmt0(wind,' km/h')}</div>`;
+                      <div class="c-row">${rowTxt('Zrážky', pr, 'mm/h')}</div>
+                      <div class="c-row">${rowTxt('Vietor', wind, 'km/h')}</div>`;
         wrap.appendChild(el);
       }
       const doobeda=new Date(base); doobeda.setHours(10,0,0,0); slot(doobeda,'Doobeda');
@@ -530,23 +534,23 @@
                       <div class="c-max">${fmt0(tmp,'°')}</div>
                       <div class="c-min">${tmp!=null?fmt0(tmp-5,'°'):'—'}</div>
                       <div class="c-ico">${wmoEmoji(code, isNightAt(t,d.daily))}</div>
-                      <div class="c-row">Zrážky ${prep!=null?fmt0(prep,' mm/h'):'—'}</div>
-                      <div class="c-row">Vietor ${wind!=null?fmt0(wind,' km/h'):'—'}</div>`;
+                      <div class="c-row">Zrážky ${prep!=null?fmt0(prep, NBSP_NARROW+'mm/h'):'—'}</div>
+                      <div class="c-row">Vietor ${wind!=null?fmt0(wind, NBSP_NARROW+'km/h'):'—'}</div>`;
         box.appendChild(el);
       }
     }
 
-    /* --- Lepší horizontálny scroll na PC: drag + zotrvačnosť + kolečko -> horizontálne --- */
+    /* --- Jemný horizontálny scroll na PC: drag + tlmená zotrvačnosť + koliesko --- */
     function enableDragScroll(el){
       let isDown=false, startX=0, startScroll=0;
-      let recent=[]; // posledné body pre výpočet rýchlosti
+      let lastX=0, lastT=0, vx=0; // píxely za ms
 
       el.addEventListener('pointerdown', e=>{
         if(e.button!==0) return;
         isDown=true;
         startX=e.clientX;
         startScroll=el.scrollLeft;
-        recent=[{t:performance.now(), x:e.clientX}];
+        lastX=e.clientX; lastT=performance.now(); vx=0;
         el.classList.add('dragging');
         el.setPointerCapture(e.pointerId);
         e.preventDefault();
@@ -554,21 +558,28 @@
 
       el.addEventListener('pointermove', e=>{
         if(!isDown) return;
+        const now=performance.now();
         const dx=e.clientX-startX;
         el.scrollLeft = startScroll - dx;
-        const now=performance.now();
-        recent.push({t:now, x:e.clientX});
-        if(recent.length>8) recent.shift();
+
+        // okamžitá rýchlosť pre zotrvačnosť
+        const ddx = e.clientX - lastX;
+        const dt  = Math.max(1, now - lastT);
+        vx = -(ddx/dt);                  // záporná => scroll doprava
+        lastX=e.clientX; lastT=now;
         e.preventDefault();
       });
 
-      function momentum(el, v){
-        // v = px/frame (cca 60fps)
-        const friction = 0.95;
+      function momentum(v){
+        // v = px/ms (malé číslo). Tlmenie = 0.92 a menší koeficient => jemné.
+        let velocity = v * 14;          // prevod na „px/snímok“ ~16ms * 0.9
+        const friction = 0.92;
         function step(){
-          if(Math.abs(v) < 0.3) return;
-          el.scrollLeft += v;
-          v *= friction;
+          if(Math.abs(velocity) < 0.25) return;
+          el.scrollLeft += velocity;
+          velocity *= friction;
+          // zastav, ak sme na kraji
+          if(el.scrollLeft<=0 || Math.ceil(el.scrollLeft)>=el.scrollWidth-el.clientWidth) return;
           requestAnimationFrame(step);
         }
         requestAnimationFrame(step);
@@ -578,30 +589,16 @@
         if(!isDown) return;
         isDown=false;
         el.classList.remove('dragging');
-        el.releasePointerCapture(e.pointerId);
-
-        // rýchlosť z posledných ~100ms
-        const now=performance.now();
-        const recentWin = recent.filter(p=> now - p.t <= 120);
-        if(recentWin.length>=2){
-          const dx = recentWin[recentWin.length-1].x - recentWin[0].x;
-          const dt = (recentWin[recentWin.length-1].t - recentWin[0].t) || 16;
-          const pxPerMs = dx/dt;
-          const pxPerFrame = -pxPerMs * 16; // prevod na ~px/frame
-          momentum(el, pxPerFrame*10); // mierna zotrvačnosť
-        }
-        recent=[];
+        try{ el.releasePointerCapture(e.pointerId); }catch(_){}
+        momentum(vx); // jemná zotrvačnosť
       });
-
       el.addEventListener('pointercancel', ()=>{ isDown=false; el.classList.remove('dragging'); });
 
-      // zvislé kolečko -> horizontálne posúvanie (lepší pocit na PC myši)
+      // koliesko myši -> horizontálne posúvanie s tlmičom
       el.addEventListener('wheel', (e)=>{
-        // ak už používateľ skroluje do strán, necháme to tak
-        if(Math.abs(e.deltaY) > Math.abs(e.deltaX)){
-          el.scrollLeft += e.deltaY;
-          e.preventDefault();
-        }
+        const delta = Math.abs(e.deltaY) > Math.abs(e.deltaX) ? e.deltaY : e.deltaX;
+        el.scrollLeft += delta * 0.6;   // tlmič citlivosti
+        e.preventDefault();
       }, {passive:false});
     }
 
@@ -630,7 +627,7 @@
         const dd=j.daily, code=dd.weather_code[0], tmax=dd.temperature_2m_max[0], tmin=dd.temperature_2m_min[0], pr=dd.precipitation_sum?.[0]??0;
         $('#hist-emoji').textContent=wmoEmoji(code,false); $('#hist-text').textContent=(WMO[code]?.[0])||'—';
         $('#hist-max').textContent=`${fmt1(tmax)}°C`; $('#hist-min').textContent=`${fmt1(tmin)}°C`;
-        $('#hist-extra').textContent=pr>0?`Zrážky: ${fmt1(pr,' mm')}`:'Bez zrážok.';
+        $('#hist-extra').textContent=pr>0?`Zrážky: ${fmt1(pr, NBSP_NARROW+'mm')}`:'Bez zrážok.';
       }catch(_){ $('#hist-extra').textContent='Históriu sa nepodarilo načítať.'; }
     }
 
