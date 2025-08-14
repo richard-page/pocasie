@@ -135,10 +135,22 @@
 
   footer{padding:14px 10px; text-align:center; color:#cfe8ff; font-size:14px; border-top:1px solid rgba(255,255,255,.12)}
 
+  /* --- MOBIL: všetko do stĺpca --- */
   @media (max-width:900px){
-    .partsWrap{display:flex; gap:10px; overflow-x:auto; padding-bottom:6px; scroll-snap-type:x mandatory}
-    .part{min-width:150px; scroll-snap-align:start}
+    /* "Predpoveď" (Doobeda/Poobede/Večer/Noc) stacked */
+    .partsWrap{display:grid; grid-template-columns:1fr; gap:10px}
+    .part{min-width:unset}
+
+    /* 7-dňová predpoveď + 15-minútová predpoveď stacked list */
+    .hscroll{flex-direction:column; overflow-x:hidden; overflow-y:auto; max-height:65vh; padding:0}
+    .hscroll .day, .hscroll .part{width:100%; min-width:unset}
+    .day{min-width:unset; text-align:left}
+    .day .top{margin-bottom:2px}
+    .day .em{font-size:20px}
+    .day .max,.day .min{display:inline-block; margin:0 8px 0 0}
+    .day .pp{margin-top:4px}
   }
+
   @media (min-width:780px){
     .wrap{padding:22px 16px 36px}
     .row{grid-template-columns:1.05fr 1fr; gap:16px}
@@ -349,7 +361,6 @@
       try{
         const url = `https://nominatim.openstreetmap.org/reverse?lat=${lat}&lon=${lon}&format=json&accept-language=sk`;
         const res = await fetch(url, {headers:{'Accept':'application/json'}});
-        if(!res.ok) throw new Error('Nominatim HTTP error');
         const data = await res.json();
         const a = data.address || {};
         let name = a.city || a.town || a.village || a.municipality || a.hamlet || a.suburb || '';
@@ -414,7 +425,6 @@
         forecast_days:'3'
       });
       const r = await fetch(`https://api.open-meteo.com/v1/forecast?${p}&v=${APP_VERSION}`);
-      if (!r.ok) throw new Error('Načítanie zlyhalo');
       state.last = await r.json();
       renderAll();
       drawHourly();
@@ -502,7 +512,7 @@
           responsive:true, maintainAspectRatio:false,
           interaction:{mode:'nearest', intersect:false},
           scales:{x:{grid:{color:'rgba(255,255,255,.08)'}}, y:{grid:{color:'rgba(255,255,255,.08)'}}},
-          plugins:{legend:{labels:{color:'#fff'}, onClick:(e,li)=>{}, onHover:(e)=>{ if(e&&e.native) e.native.target.style.cursor='default'; }}}
+          plugins:{legend:{labels:{color:'#fff'}, onClick:()=>{}, onHover:(e)=>{ if(e&&e.native) e.native.target.style.cursor='default'; }}}
         }
       });
     }
