@@ -27,7 +27,7 @@
     background:linear-gradient(180deg,var(--bg1),var(--bg0));
     overflow-x:hidden; overflow-y:auto;
     -webkit-text-size-adjust:100%; -webkit-tap-highlight-color:transparent;
-    min-height:100vh;
+    min-height:100dvh;
   }
 
   .wrap{width:100%; max-width:1120px; margin-inline:auto; padding:16px 12px 28px}
@@ -59,26 +59,21 @@
   .card h3{margin:0 0 10px; text-align:center; font-size:18px}
 
   #place{
-    white-space:nowrap; overflow:hidden; text-overflow:ellipsis;
-    text-align:left; margin:0
+    white-space:nowrap; overflow:hidden; text-overflow:ellipsis; text-align:left; margin:0
   }
 
   .row{display:grid; grid-template-columns:1fr; gap:12px; margin-top:4px}
   .meta{display:grid; grid-template-columns:1fr; gap:8px; color:var(--muted); font-size:14px}
   .meta strong{color:#fff}
 
-  .chipRow{
-    display:flex; flex-direction:column; gap:10px; align-items:flex-start
-  }
+  .chipRow{display:flex; flex-direction:column; gap:10px; align-items:flex-start}
   .chip{
     display:inline-flex; align-items:center; justify-content:flex-start; gap:8px;
     background:#143344; border:1px solid var(--stroke); color:#d8f7ff; border-radius:999px;
     padding:8px 14px; font-size:13px; line-height:1; width:auto; max-width:100%;
     white-space:nowrap; overflow:hidden; text-overflow:ellipsis; text-align:left
   }
-  @media (min-width:900px){
-    .chipRow{flex-direction:row; flex-wrap:wrap}
-  }
+  @media (min-width:900px){ .chipRow{flex-direction:row; flex-wrap:wrap} }
 
   .tempNow{font-size:44px; font-weight:700; line-height:1; margin:6px 0}
   .icon{width:64px; height:64px; display:flex; align-items:center; justify-content:center; font-size:48px}
@@ -99,11 +94,21 @@
 
   footer{padding:14px 10px; text-align:center; color:#cfe8ff; font-size:14px; border-top:1px solid rgba(255,255,255,.12)}
 
-  .colset{display:grid; gap:12px}
+  .colset{
+    display:grid; gap:12px;
+    grid-auto-flow:column;
+    grid-auto-columns:minmax(140px,1fr);
+    overflow-x:auto; overflow-y:hidden;
+    -webkit-overflow-scrolling:touch;
+    cursor:grab;
+    scroll-snap-type:x proximity;
+    padding-bottom:8px;
+  }
+  .colset.dragging{cursor:grabbing}
   .col{
     background:var(--panel); border:1px solid var(--stroke); border-radius:12px; padding:10px;
     display:grid; grid-template-rows:auto auto auto auto auto auto; align-items:center; justify-items:center;
-    text-align:center; overflow:hidden; min-height:176px; contain:content
+    text-align:center; overflow:hidden; min-height:176px; contain:content; scroll-snap-align:start;
   }
   .c-top,.c-row{white-space:nowrap; overflow:hidden; text-overflow:ellipsis}
   .c-top{opacity:.9}
@@ -113,30 +118,18 @@
   .c-row{color:#cfe6ff; font-size:12px; margin-top:6px; line-height:1.15}
 
   @media (max-width:900px){
-    .colset{
-      --gap:8px; --cols:4; gap:var(--gap);
-      grid-auto-flow:column;
-      grid-auto-columns: calc((100% - (var(--cols) - 1)*var(--gap))/var(--cols));
-      overflow-x:auto; padding:0 2px 8px;
-      scroll-snap-type:x proximity; scroll-padding-inline:2px;
-      -webkit-overflow-scrolling:touch; touch-action:auto; overscroll-behavior-x:contain; scrollbar-width:none
-    }
-    .colset::-webkit-scrollbar{display:none}
-    .col{scroll-snap-align:start; padding:8px}
-    .c-top{font-size:13px}
-    .c-max{font-size:22px}
-    .c-min{font-size:14px}
-    .c-ico{font-size:22px}
-    .c-row{font-size:11px}
+    .colset{grid-auto-columns:calc((100% - 3*8px)/4); scrollbar-width:thin}
   }
 
-  @media (min-width:900.1px){
-    #parts.colset{grid-template-columns:repeat(4,minmax(0,1fr))}
-    #days.colset{grid-template-columns:repeat(7,minmax(0,1fr))}
-    #min15.colset{grid-auto-flow:column; grid-auto-columns:minmax(110px,1fr);
-                  overflow-x:auto; padding-bottom:6px; scroll-snap-type:x proximity; touch-action:auto}
-    #min15.colset::-webkit-scrollbar{height:8px}
-  }
+  #parts.colset::-webkit-scrollbar,
+  #days.colset::-webkit-scrollbar,
+  #min15.colset::-webkit-scrollbar{height:10px}
+  #parts.colset::-webkit-scrollbar-track,
+  #days.colset::-webkit-scrollbar-track,
+  #min15.colset::-webkit-scrollbar-track{background:#0f1c2a; border-radius:8px}
+  #parts.colset::-webkit-scrollbar-thumb,
+  #days.colset::-webkit-scrollbar-thumb,
+  #min15.colset::-webkit-scrollbar-thumb{background:#33516f; border-radius:8px}
 
   @media (min-width:780px){
     .wrap{padding:22px 16px 36px}
@@ -233,7 +226,7 @@
   <footer>&copy; <span id="year"></span> Richard / Počasie</footer>
 
   <script>
-    const APP_VERSION = '2025-08-14-scroll-fixed-2';
+    const APP_VERSION = '2025-08-14-scrollbar-and-drag';
     const $ = s => document.querySelector(s);
     const fmt0 = (v,u='') => (v==null || Number.isNaN(v)) ? '—' : (Math.round(v) + u);
     const fmt1 = (v,u='') => (v==null || Number.isNaN(v)) ? '—' : ((Math.round(v*10)/10).toFixed(1) + u);
@@ -291,7 +284,6 @@
     }
 
     const lerp=(a,b,t)=>a+(b-a)*t;
-
     function valueAt15min(timesISO, arr, date){
       const ts=timesISO.map(t=>new Date(t));
       for(let i=0;i<ts.length-1;i++){
@@ -304,7 +296,6 @@
       }
       return null;
     }
-
     function codeAt15min(timesISO, codes, date){
       const ts=timesISO.map(t=>new Date(t));
       for(let i=0;i<ts.length-1;i++){
@@ -538,6 +529,29 @@
       }
     }
 
+    function enableDragScroll(el){
+      let isDown=false, startX=0, scrollX=0;
+      el.addEventListener('mousedown', e=>{
+        if(e.button!==0) return;
+        isDown=true;
+        el.classList.add('dragging');
+        startX=e.clientX;
+        scrollX=el.scrollLeft;
+        e.preventDefault();
+      });
+      document.addEventListener('mousemove', e=>{
+        if(!isDown) return;
+        const dx=e.clientX-startX;
+        el.scrollLeft=scrollX-dx;
+      });
+      document.addEventListener('mouseup', ()=>{
+        if(isDown){ isDown=false; el.classList.remove('dragging'); }
+      });
+      el.addEventListener('mouseleave', ()=>{
+        if(isDown){ isDown=false; el.classList.remove('dragging'); }
+      });
+    }
+
     async function fetchModels(which){
       activeModel=which;
       ['ecmwf','icon','gfs'].forEach(id=>{ const btn=document.querySelector(`#tab-${id}`); if(btn) btn.classList.toggle('active', id===which); });
@@ -592,10 +606,18 @@
 
     document.getElementById('year').textContent=new Date().getFullYear();
 
+    function initDragBars(){
+      ['parts','days','min15'].forEach(id=>{
+        const el=document.getElementById(id);
+        if(el){ enableDragScroll(el); }
+      });
+    }
+
     initGeolocation();
     window.addEventListener('resize', ()=>{ if(state.last){ drawHourly(); renderMin15(); }});
     setTimeout(()=>{ if(!state.last) fetchWeather().catch(()=>{}); },1200);
     fetchModels('ecmwf');
+    initDragBars();
 
     if(!window.__wx_auto_refresh){
       window.__wx_auto_refresh=setInterval(()=>{
