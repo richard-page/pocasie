@@ -72,13 +72,13 @@
     min-height:calc(var(--chip-h)*2 + 8px);
   }
   .chip{
-    display:flex; align-items:center; justify-content:center; gap:8px;
+    display:flex; align-items:center; justify-content:flex-start; gap:8px;
     background:#143344; border:1px solid var(--stroke); color:#d8f7ff; border-radius:999px;
-    padding:6px 10px; font-size:12px; min-height:var(--chip-h);
-    white-space:nowrap; overflow:hidden; text-overflow:ellipsis; min-width:0
+    padding:6px 12px; font-size:12px; min-height:var(--chip-h);
+    width:100%; min-width:0; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; text-align:left
   }
   #uv,#aqi{min-width:0}
-  @media (min-width:700px){
+  @media (min-width:900px){
     .chipRow{grid-template-columns:1fr 1fr; min-height:var(--chip-h)}
   }
 
@@ -116,9 +116,9 @@
 
   @media (max-width:900px){
     .colset{
-      --gap:8px; --cols:5; gap:var(--gap);
+      --gap:8px; --cols:4; gap:var(--gap);
       grid-auto-flow:column;
-      grid-auto-columns:max(112px, calc((100% - (var(--cols) - 1)*var(--gap))/var(--cols)));
+      grid-auto-columns: calc((100% - (var(--cols) - 1)*var(--gap))/var(--cols));
       overflow-x:auto; padding:0 2px 8px;
       scroll-snap-type:x mandatory; scroll-padding-inline:2px;
       -webkit-overflow-scrolling:touch; touch-action:pan-x; overscroll-behavior-x:contain; scrollbar-width:none
@@ -236,7 +236,7 @@
   <footer>&copy; <span id="year"></span> Richard / Počasie</footer>
 
   <script>
-    const APP_VERSION = '2025-08-14-aqi-fixed-place';
+    const APP_VERSION = '2025-08-14-mobile-cols-4-leftchips';
     const $ = s => document.querySelector(s);
     const fmt0 = (v,u='') => (v==null || Number.isNaN(v)) ? '—' : `${Math.round(v)}${u}`;
     const fmt1 = (v,u='') => (v==null || Number.isNaN(v)) ? '—' : `${(Math.round(v*10)/10).toFixed(1)}${u}`;
