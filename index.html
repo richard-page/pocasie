@@ -58,9 +58,7 @@
   }
   .card h3{margin:0 0 10px; text-align:center; font-size:18px}
 
-  #place{
-    white-space:nowrap; overflow:hidden; text-overflow:ellipsis; text-align:left; margin:0
-  }
+  #place{white-space:nowrap; overflow:hidden; text-overflow:ellipsis; text-align:left; margin:0}
 
   .row{display:grid; grid-template-columns:1fr; gap:12px; margin-top:4px}
   .meta{display:grid; grid-template-columns:1fr; gap:8px; color:var(--muted); font-size:14px}
@@ -237,7 +235,7 @@
   <footer>&copy; <span id="year"></span> Richard / Počasie</footer>
 
   <script>
-    const APP_VERSION = '2025-08-14-rain-badge-final';
+    const APP_VERSION = '2025-08-14-rain-icon-fix';
     const $ = s => document.querySelector(s);
 
     const NBSP_NARROW = '\u202F';
@@ -531,14 +529,16 @@
         const dt=new Date(days.time[i]+'T00:00:00');
         const top=`${dt.toLocaleDateString('sk-SK',{weekday:'short'})} ${dt.toLocaleDateString('sk-SK',{day:'2-digit',month:'2-digit'})}`;
         const code=days.weather_code?.[i], max=days.temperature_2m_max[i], min=days.temperature_2m_min[i], pp=days.precipitation_probability_max?.[i];
+        const will = willRain({code, prob:pp});
+        const rowRain = pp!=null ? (will ? `💧 ${pp} %` : `${pp} %`) : '—';
         const el=document.createElement('div'); el.className='col';
         el.innerHTML=`<div class="c-top">${top}</div>
                       <div class="c-max">${fmt0(max,'°')}</div>
                       <div class="c-min">${fmt0(min,'°')}</div>
                       <div class="c-ico">${wmoEmoji(code,false)}</div>
-                      <div class="c-row">💧 ${pp!=null?pp+' %':'—'}</div>
+                      <div class="c-row">${rowRain}</div>
                       <div class="c-row"></div>`;
-        if (willRain({code, prob:pp})) addRainBadge(el);
+        if (will) addRainBadge(el);
         box.appendChild(el);
       }
     }
