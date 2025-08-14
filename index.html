@@ -101,6 +101,25 @@
   .icon{width:64px; height:64px; display:flex; align-items:center; justify-content:center; font-size:48px}
   .gridInfo{display:grid; grid-template-columns:1fr auto; gap:14px; align-items:start}
 
+  .hscroll{display:flex; gap:10px; overflow-x:auto; padding:6px 2px 8px; scroll-snap-type:x mandatory; -webkit-overflow-scrolling:touch}
+  .hscroll::-webkit-scrollbar{height:8px}
+  .hscroll::-webkit-scrollbar-track{background:#0f1c2a; border-radius:10px}
+  .hscroll::-webkit-scrollbar-thumb{background:#1e3c54; border-radius:10px}
+
+  .partsWrap{display:grid; grid-template-columns:repeat(4,1fr); gap:12px}
+  .part{background:#152433; border:1px solid var(--stroke); border-radius:12px; padding:10px; text-align:center}
+  .part .lbl{opacity:.9; margin-bottom:4px}
+  .part .emoji{font-size:22px}
+  .part .val{font-weight:700; font-size:22px; margin-top:6px}
+  .part .sub{color:#bcd1e5; font-size:12px; margin-top:4px}
+
+  .day{min-width:170px; background:#152433; border:1px solid var(--stroke); border-radius:12px; padding:12px; text-align:center; scroll-snap-align:start}
+  .day .top{opacity:.9; margin-bottom:6px}
+  .day .em{font-size:22px}
+  .day .max{font-weight:700; font-size:22px; margin:6px 0 2px}
+  .day .min{opacity:.85}
+  .day .pp{color:#bcd1e5; font-size:12px; margin-top:6px}
+
   .chartWrap{height:200px}
   canvas{background:#0f1c2a; border:1px solid var(--stroke); border-radius:12px}
 
@@ -114,37 +133,42 @@
   .badge.min{background:#ffd265; color:#2b2300}
   .histSub{color:#a8bed5; font-size:12px; margin-top:6px; text-align:center}
 
-  .partsList{display:grid; grid-template-columns:1fr; gap:10px}
-  .partsCard{background:#152433; border:1px solid var(--stroke); border-radius:12px; padding:10px; text-align:center}
-  .partsCard .lbl{opacity:.9; margin-bottom:4px}
-  .partsCard .emoji{font-size:22px}
-  .partsCard .val{font-weight:700; font-size:22px; margin-top:6px}
-  .partsCard .sub{color:#bcd1e5; font-size:12px; margin-top:4px}
+  footer{padding:14px 10px; text-align:center; color:#cfe8ff; font-size:14px; border-top:1px solid rgba(255,255,255,.12)}
 
-  .daysGrid{display:grid; gap:10px}
-  .day{background:#152433; border:1px solid var(--stroke); border-radius:12px; padding:12px; text-align:center}
-  .day .top{opacity:.9; margin-bottom:6px}
-  .day .em{font-size:26px; margin:6px 0}
-  .day .tmax{font-weight:700; font-size:22px; margin:2px 0}
-  .day .tmin{opacity:.9; margin-bottom:6px}
-  .day .row{display:flex; justify-content:center; gap:10px; font-size:12px; color:#bcd1e5}
+  /* ------- MOBIL: zobraz v STĹPCOCH (2 stĺpce) ------- */
+  @media (max-width:900px){
+    /* Predpoveď (Doobeda/Poobede/Večer/Noc) – 2 stĺpce */
+    .partsWrap{grid-template-columns:repeat(2,1fr); gap:10px}
 
-  .listCol{display:grid; grid-template-columns:1fr; gap:10px; max-height:65vh; overflow:auto}
+    /* 7-dňová predpoveď – na mobile urob z horizontálneho scrolu 2-stĺpcovú mriežku */
+    #days{
+      display:grid !important;
+      grid-template-columns:repeat(2,1fr);
+      gap:10px;
+      overflow:visible;
+      padding:0;
+    }
+    #days .day{min-width:unset}
 
-  @media (min-width:600px){
-    .daysGrid{grid-template-columns:repeat(2,1fr)}
+    /* 15-minútová predpoveď – 2 stĺpce, nech sa zmestí viac kariet */
+    #min15{
+      display:grid !important;
+      grid-template-columns:repeat(2,1fr);
+      gap:10px;
+      overflow:visible;
+      padding:0;
+      max-height:unset;
+    }
+    #min15 .part{min-width:unset}
   }
-  @media (min-width:900px){
+
+  @media (min-width:780px){
     .wrap{padding:22px 16px 36px}
     .row{grid-template-columns:1.05fr 1fr; gap:16px}
     .meta{grid-template-columns:repeat(2,minmax(0,1fr))}
     .chartWrap{height:240px}
-    .daysGrid{grid-template-columns:repeat(4,1fr)}
   }
-  @media (min-width:1200px){
-    .chartWrap{height:280px}
-    .daysGrid{grid-template-columns:repeat(6,1fr)}
-  }
+  @media (min-width:1100px){ .chartWrap{height:280px} }
 </style>
 </head>
 
@@ -166,10 +190,12 @@
             <h3 id="place">Bratislava, SK</h3>
             <div id="time" style="color:var(--muted);font-size:14px">—</div>
             <div class="tempNow" id="temp">—°</div>
+
             <div class="chipRow">
               <span class="chip" id="uv">UV index —</span>
               <span class="chip" id="aqi">Kvalita ovzdušia —</span>
             </div>
+
             <div class="meta" style="margin-top:8px">
               <div>Pocitová teplota: <strong id="apparent">—</strong></div>
               <div>Vietor: <strong id="wind">—</strong></div>
@@ -196,7 +222,7 @@
 
     <section class="card" style="margin-top:12px">
       <h3>Predpoveď</h3>
-      <div id="parts" class="partsList"></div>
+      <div id="parts" class="partsWrap"></div>
     </section>
 
     <section class="card" style="margin-top:12px">
@@ -206,12 +232,12 @@
         <button class="pill" id="tab-icon">ICON (DWD)</button>
         <button class="pill" id="tab-gfs">GFS (NOAA)</button>
       </div>
-      <div id="days" class="daysGrid"></div>
+      <div id="days" class="hscroll"></div>
     </section>
 
     <section class="card" style="margin-top:12px">
       <h3>15-minútová predpoveď (6 h)</h3>
-      <div id="min15" class="listCol"></div>
+      <div id="min15" class="hscroll"></div>
     </section>
 
     <section class="card" style="margin-top:12px">
@@ -319,7 +345,6 @@
     let state = { place:'Bratislava, SK', lat:48.1486, lon:17.1077, last:null };
     let hourlyChart = null;
     let activeModel = 'ecmwf';
-    let sunFor7 = null;
     const LS_KEY = 'wx_prefs_v3';
 
     try {
@@ -415,7 +440,6 @@
       renderAll();
       drawHourly();
       await fetchAQ().catch(()=>{});
-      await fetchSunFor7().catch(()=>{ sunFor7=null; });
       fetchModels(activeModel);
       fetchHistory().catch(()=>{});
     }
@@ -550,7 +574,7 @@
         const pr   = valueAtHour(d.hourly.time, d.hourly.precipitation, iso);
         const wind = valueAtHour(d.hourly.time, d.hourly.wind_speed_10m, iso);
         const code = valueAtHour(d.hourly.time, d.hourly.weather_code, iso);
-        const el = document.createElement('div'); el.className = 'partsCard';
+        const el = document.createElement('div'); el.className = 'part';
         el.innerHTML =
           `<div class="lbl">${label}</div>
            <div class="emoji">${wmoEmoji(code, isNightAt(dt, d.daily))}</div>
@@ -585,7 +609,7 @@
         const code = codeAt15min(d.hourly.time, d.hourly.weather_code, t);
         const wind = valueAt15min(d.hourly.time, d.hourly.wind_speed_10m, t);
 
-        const el = document.createElement('div'); el.className = 'partsCard';
+        const el = document.createElement('div'); el.className = 'part'; el.style.minWidth = '130px';
         el.innerHTML =
           `<div class="lbl">${t.toLocaleTimeString('sk-SK',{hour:'2-digit',minute:'2-digit'})}</div>
            <div class="emoji">${wmoEmoji(code, isNightAt(t, d.daily))}</div>
@@ -610,19 +634,13 @@
       const p = new URLSearchParams({ latitude:state.lat, longitude:state.lon, timezone:tz, daily, forecast_days:'7' });
       try{
         const r = await fetch(`${base}?${p}&v=${APP_VERSION}`);
-        const j = await r.json(); renderDays(j, sunFor7);
+        const j = await r.json(); renderDays(j);
       }catch(e){
         $('#days').innerHTML = '<div style="color:#ffd4d4">Model sa nepodarilo načítať.</div>';
       }
     }
 
-    function daylightHours(srISO, ssISO){
-      if(!srISO || !ssISO) return null;
-      const h = (new Date(ssISO) - new Date(srISO)) / 3600000;
-      return Math.round(h);
-    }
-
-    function renderDays(d, sun){
+    function renderDays(d){
       const box = $('#days'); box.innerHTML = '';
       const days = d.daily; const n = Math.min(7, days.time.length);
       for (let i=0;i<n;i++){
@@ -630,18 +648,13 @@
         const code = days.weather_code?.[i];
         const max = days.temperature_2m_max[i], min = days.temperature_2m_min[i];
         const pp = days.precipitation_probability_max?.[i];
-        const sunH = sun ? daylightHours(sun.sunrise[i], sun.sunset[i]) : null;
-
         const el = document.createElement('div'); el.className = 'day';
         el.innerHTML =
           `<div class="top">${lab}</div>
-           <div class="tmax" style="color:#ff7777">${fmt0(max,'°')}</div>
-           <div class="tmin" style="color:#ffd265">${fmt0(min,'°')}</div>
            <div class="em">${wmoEmoji(code,false)}</div>
-           <div class="row">
-             <span>☀️ ${sunH!=null?sunH+' h':'—'}</span>
-             <span>💧 ${pp!=null?pp+' %':'—'}</span>
-           </div>`;
+           <div class="max">${fmt0(max,'°')}</div>
+           <div class="min">${fmt0(min,'°')}</div>
+           <div class="pp">Zrážky: ${pp!=null?pp+'%':'—'}</div>`;
         box.appendChild(el);
       }
     }
@@ -662,7 +675,6 @@
         const r = await fetch(`https://archive-api.open-meteo.com/v1/archive?${p}&v=${APP_VERSION}`);
         const j = await r.json();
         const dd = j.daily;
-
         const code = dd.weather_code[0];
         const tmax = dd.temperature_2m_max[0];
         const tmin = dd.temperature_2m_min[0];
@@ -676,17 +688,6 @@
       }catch(e){
         document.getElementById('hist-extra').textContent = 'Históriu sa nepodarilo načítať.';
       }
-    }
-
-    async function fetchSunFor7(){
-      const tz = Intl.DateTimeFormat().resolvedOptions().timeZone;
-      const p = new URLSearchParams({
-        latitude:state.lat, longitude:state.lon, timezone:tz,
-        daily:'sunrise,sunset', forecast_days:'7'
-      });
-      const r = await fetch(`https://api.open-meteo.com/v1/forecast?${p}&v=${APP_VERSION}`);
-      const j = await r.json();
-      sunFor7 = { sunrise:j?.daily?.sunrise||[], sunset:j?.daily?.sunset||[] };
     }
 
     let timer;
