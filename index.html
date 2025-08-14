@@ -32,6 +32,7 @@
   }
   .wrap{width:100%; max-width:1120px; margin-inline:auto; padding:16px 12px 28px}
   header h1{margin:0 0 10px; text-align:center; font-size:28px; letter-spacing:.3px}
+
   .toolbar{display:grid; grid-template-columns:1fr; gap:10px; margin:10px 0 12px}
   .searchCol{display:flex; flex-direction:column; gap:6px; position:relative}
   .search{
@@ -110,7 +111,7 @@
   .col{
     background:var(--panel); border:1px solid var(--stroke); border-radius:12px; padding:10px;
     display:grid; grid-template-rows:auto auto auto auto auto auto; align-items:center; justify-items:center;
-    text-align:center; min-height:176px; contain:content;
+    text-align:center; min-height:176px; contain:content; position:relative;
   }
   .c-top{opacity:.9; white-space:nowrap; overflow:hidden; text-overflow:ellipsis}
   .c-row{
@@ -120,6 +121,14 @@
   .c-max{font-size:26px; font-weight:700; color:#ff6c6c; margin-top:6px; line-height:1}
   .c-min{font-size:16px; color:#ffbb7c; margin-top:2px; line-height:1}
   .c-ico{font-size:26px; margin-top:6px}
+
+  .rain-badge{
+    position:absolute; top:6px; right:6px; font-size:18px; line-height:1;
+    filter: drop-shadow(0 1px 2px rgba(0,0,0,.6));
+    background:rgba(13,24,36,.6);
+    border:1px solid rgba(255,255,255,.1);
+    border-radius:10px; padding:2px 6px;
+  }
 
   .colset::-webkit-scrollbar{height:12px}
   .colset::-webkit-scrollbar-track{background:#0f1c2a; border-radius:8px}
@@ -199,8 +208,8 @@
       <h3 style="margin-bottom:8px">7-dňová predpoveď</h3>
       <div style="display:flex;justify-content:center;gap:8px;flex-wrap:wrap;margin-bottom:8px">
         <button class="pill" id="tab-ecmwf">ECMWF IFS</button>
-        <button class="pill" id="tab-icon">ICON (DWD)</button>
-        <button class="pill" id="tab-gfs">GFS (NOAA)</button>
+        <button class="pill" id="tab-icon">DWD ICON</button>
+        <button class="pill" id="tab-gfs">NOAA GFS</button>
       </div>
       <div id="days" class="colset"></div>
     </section>
@@ -228,7 +237,7 @@
   <footer>&copy; <span id="year"></span> Richard / Počasie</footer>
 
   <script>
-    const APP_VERSION = '2025-08-14-uniform-scrollbars-drag-v2';
+    const APP_VERSION = '2025-08-14-rain-badge-no-slashes';
     const $ = s => document.querySelector(s);
 
     const NBSP_NARROW = '\u202F';
@@ -241,6 +250,10 @@
       71:['Slabé sneženie'],73:['Sneženie'],75:['Silné sneženie'],77:['Snehové zrná'],
       80:['Prehánky'],81:['Prehánky'],82:['Silné prehánky'],85:['Snehové prehánky'],86:['Silné snehové prehánky'],
       95:['Búrky'],96:['Búrky s krúpami'],99:['Silné búrky s krúpami']};
+
+    const RAIN_CODES = new Set([51,53,55,61,63,65,66,67,80,81,82,95,96,99]);
+    const RAIN_MM_H_THRESHOLD = 0.1;
+    const RAIN_PROB_THRESHOLD = 35;
 
     const uvCat = u => u<3?'nízky':u<6?'mierny':u<8?'vysoký':u<11?'veľmi vysoký':'extrémny';
 
@@ -256,6 +269,19 @@
       if ([95,96,99].includes(k)) return '⛈️';
       return night ? '🌙' : '🌤️';
     };
+
+    function willRain({code=null, precip=null, temp=null, prob=null}={}){
+      if (prob!=null && prob>=RAIN_PROB_THRESHOLD) return true;
+      if (code!=null && RAIN_CODES.has(Number(code))) return true;
+      if (precip!=null && precip>=RAIN_MM_H_THRESHOLD){
+        if (temp==null) return true;
+        return temp>1;
+      }
+      return false;
+    }
+    function addRainBadge(el){
+      el.insertAdjacentHTML('beforeend', `<div class="rain-badge" aria-label="Zrážky" title="Zrážky">💧</div>`);
+    }
 
     function isNightAt(dtLike, daily){
       const dt = typeof dtLike==='string' ? new Date(dtLike) : dtLike;
@@ -321,7 +347,7 @@
       for(let i=0;i<times.length;i++){
         if(!times[i].startsWith(day)) continue;
         const h=Number(times[i].slice(11,13)); if(h<startH || h>endH) continue;
-        const c=codes[i]??0; freq.set(c,(freq.get(c)||0)+1);
+        const c=(codes[i]??0); freq.set(c,(freq.get(c)||0)+1);
       }
       let best=d.daily?.weather_code?.[0] ?? codes[0] ?? 0, bestCnt=-1;
       freq.forEach((cnt,code)=>{ if(cnt>bestCnt){bestCnt=cnt;best=code;} });
@@ -474,6 +500,7 @@
       const wrap=$('#parts'); wrap.innerHTML='';
       const d=state.last; const base=new Date(d.current.time);
       const rowTxt = (label, val, unit) => `${label} ${fmt0(val, NBSP_NARROW+unit)}`;
+
       function slot(dt,label){
         const temp=valueAtHourLocal(d.hourly.time, d.hourly.temperature_2m, dt);
         const pr=valueAtHourLocal(d.hourly.time, d.hourly.precipitation, dt);
@@ -486,8 +513,10 @@
                       <div class="c-ico">${wmoEmoji(code, isNightAt(dt, d.daily))}</div>
                       <div class="c-row">${rowTxt('Zrážky', pr, 'mm/h')}</div>
                       <div class="c-row">${rowTxt('Vietor', wind, 'km/h')}</div>`;
+        if (willRain({code, precip:pr, temp})) addRainBadge(el);
         wrap.appendChild(el);
       }
+
       const doobeda=new Date(base); doobeda.setHours(10,0,0,0); slot(doobeda,'Doobeda');
       const poobede=new Date(base); poobede.setHours(15,0,0,0); slot(poobede,'Poobede');
       const sunset=d.daily?.sunset?.[0]?new Date(d.daily.sunset[0]):null;
@@ -509,6 +538,7 @@
                       <div class="c-ico">${wmoEmoji(code,false)}</div>
                       <div class="c-row">💧 ${pp!=null?pp+' %':'—'}</div>
                       <div class="c-row"></div>`;
+        if (willRain({code, prob:pp})) addRainBadge(el);
         box.appendChild(el);
       }
     }
@@ -530,6 +560,7 @@
                       <div class="c-ico">${wmoEmoji(code, isNightAt(t,d.daily))}</div>
                       <div class="c-row">Zrážky ${prep!=null?fmt0(prep, NBSP_NARROW+'mm/h'):'—'}</div>
                       <div class="c-row">Vietor ${wind!=null?fmt0(wind, NBSP_NARROW+'km/h'):'—'}</div>`;
+        if (willRain({code, precip:prep, temp:tmp})) addRainBadge(el);
         box.appendChild(el);
       }
     }
