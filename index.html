@@ -12,50 +12,33 @@
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
 <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;600;700&display=swap" rel="stylesheet" />
 <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.3/dist/chart.umd.min.js"></script>
-
 <style>
   :root{
     --bg0:#0b0f14; --bg1:#0e1620; --panel:#152433; --stroke:#233448;
     --txt:#eaf3ff; --muted:#a8bed5; --accent:#3ad0e6;
-    --r:14px; --shadow:0 10px 28px rgba(0,0,0,.28);
-    --gap:8px;
+    --r:14px; --shadow:0 10px 28px rgba(0,0,0,.28); --gap:8px
   }
   *{box-sizing:border-box}
   html,body{min-height:100%; margin:0; padding:0}
   body{
-    color:var(--txt);
-    font-family:Poppins,system-ui,-apple-system,Segoe UI,Roboto,Arial;
+    color:var(--txt); font-family:Poppins,system-ui,-apple-system,Segoe UI,Roboto,Arial;
     background:linear-gradient(180deg,var(--bg1),var(--bg0));
-    overflow-x:hidden; overflow-y:auto;
-    -webkit-text-size-adjust:100%; -webkit-tap-highlight-color:transparent;
-    min-height:100dvh;
+    overflow-x:hidden; overflow-y:auto; -webkit-text-size-adjust:100%; -webkit-tap-highlight-color:transparent; min-height:100dvh
   }
   .wrap{width:100%; max-width:1120px; margin-inline:auto; padding:16px 12px 28px}
   header h1{margin:0 0 10px; text-align:center; font-size:28px; letter-spacing:.3px}
 
   .toolbar{display:grid; grid-template-columns:1fr; gap:10px; margin:10px 0 12px}
   .searchCol{display:flex; flex-direction:column; gap:6px; position:relative}
-  .search{
-    width:100%; background:#152535; border:1px solid var(--stroke); color:#fff;
-    border-radius:12px; padding:12px 14px; outline:none; font-size:16px; min-height:46px;
-  }
+  .search{width:100%; background:#152535; border:1px solid var(--stroke); color:#fff; border-radius:12px; padding:12px 14px; outline:none; font-size:16px; min-height:46px}
   .search:focus{border-color:#2e4a67}
-  #suggestions{
-    display:none; gap:6px; position:absolute; top:calc(100% + 6px); left:0; right:0; z-index:40;
-    background:#0f1c2a; border:1px solid var(--stroke); border-radius:12px; padding:8px; max-height:55vh; overflow:auto;
-  }
+  #suggestions{display:none; gap:6px; position:absolute; top:calc(100% + 6px); left:0; right:0; z-index:40; background:#0f1c2a; border:1px solid var(--stroke); border-radius:12px; padding:8px; max-height:55vh; overflow:auto}
   .sugg{background:#13263a; border:1px solid var(--stroke); border-radius:10px; padding:10px 12px; cursor:pointer}
 
-  .pill{
-    background:#1b2c3d; border:1px solid var(--stroke); color:#dfeaff; border-radius:12px;
-    padding:10px 12px; font-weight:600; cursor:pointer; min-height:40px; font-size:14px; text-align:center
-  }
+  .pill{background:#1b2c3d; border:1px solid var(--stroke); color:#dfeaff; border-radius:12px; padding:10px 12px; font-weight:600; cursor:pointer; min-height:40px; font-size:14px; text-align:center}
   .pill.active{background:var(--accent); border-color:#2abbd0; color:#002a32}
 
-  .card{
-    background:linear-gradient(180deg, rgba(255,255,255,.06), rgba(255,255,255,.03));
-    border:1px solid var(--stroke); border-radius:var(--r); box-shadow:var(--shadow); padding:14px;
-  }
+  .card{background:linear-gradient(180deg, rgba(255,255,255,.06), rgba(255,255,255,.03)); border:1px solid var(--stroke); border-radius:var(--r); box-shadow:var(--shadow); padding:14px}
   .card h3{margin:0 0 10px; text-align:center; font-size:18px}
 
   #place{white-space:nowrap; overflow:hidden; text-overflow:ellipsis; text-align:left; margin:0}
@@ -65,11 +48,7 @@
   .meta strong{color:#fff}
 
   .chipRow{display:flex; flex-direction:column; gap:10px; align-items:flex-start}
-  .chip{
-    display:inline-flex; align-items:center; gap:8px;
-    background:#143344; border:1px solid var(--stroke); color:#d8f7ff; border-radius:999px;
-    padding:8px 14px; font-size:13px; line-height:1;
-  }
+  .chip{display:inline-flex; align-items:center; gap:8px; background:#143344; border:1px solid var(--stroke); color:#d8f7ff; border-radius:999px; padding:8px 14px; font-size:13px; line-height:1}
   @media (min-width:900px){ .chipRow{flex-direction:row; flex-wrap:wrap} }
 
   .tempNow{font-size:44px; font-weight:700; line-height:1; margin:6px 0}
@@ -92,44 +71,27 @@
   footer{padding:14px 10px; text-align:center; color:#cfe8ff; font-size:14px; border-top:1px solid rgba(255,255,255,.12)}
 
   .colset{
-    --cols:4;
-    display:grid; gap:var(--gap);
-    grid-auto-flow:column;
+    --cols:4; display:grid; gap:var(--gap); grid-auto-flow:column;
     grid-auto-columns: calc((100% - (var(--cols) - 1)*var(--gap)) / var(--cols));
-    overflow-x:auto; overflow-y:hidden;
-    scrollbar-gutter:stable both-edges;
-    -webkit-overflow-scrolling:touch;
-    touch-action:pan-y;
-    overscroll-behavior-x:contain;
-    cursor:grab;
-    padding-bottom:8px;
+    overflow-x:auto; overflow-y:hidden; scrollbar-gutter:stable both-edges;
+    -webkit-overflow-scrolling:touch; touch-action:pan-y; overscroll-behavior-x:contain;
+    cursor:grab; padding-bottom:8px
   }
   .colset.dragging{cursor:grabbing; user-select:none}
 
   .col{
     background:var(--panel); border:1px solid var(--stroke); border-radius:12px; padding:10px;
     display:grid; grid-template-rows:auto auto auto auto auto auto; align-items:center; justify-items:center;
-    text-align:center; min-height:176px; contain:content; position:relative;
+    text-align:center; min-height:176px; contain:content; position:relative
   }
   .c-top{opacity:.9; white-space:nowrap; overflow:hidden; text-overflow:ellipsis}
-  .c-row{
-    color:#cfe6ff; font-size:11.5px; line-height:1.25; margin-top:6px;
-    white-space:normal; overflow:visible; text-overflow:clip; word-break:break-word;
-  }
+  .c-row{color:#cfe6ff; font-size:11.5px; line-height:1.25; margin-top:6px; white-space:normal; overflow:visible; text-overflow:clip; word-break:break-word}
   .c-max{font-size:26px; font-weight:700; color:#ff6c6c; margin-top:6px; line-height:1}
   .c-min{font-size:16px; color:#ffbb7c; margin-top:2px; line-height:1}
   .c-ico{font-size:26px; margin-top:6px}
 
-  .rain-badge{
-    position:absolute; top:6px; right:6px; font-size:18px; line-height:1;
-    filter:drop-shadow(0 1px 2px rgba(0,0,0,.6));
-    background:rgba(13,24,36,.6);
-    border:1px solid rgba(255,255,255,.1);
-    border-radius:10px; padding:2px 6px;
-  }
-  @media (max-width:720px){
-    .rain-badge{top:auto; bottom:6px; right:6px}
-  }
+  .rain-badge{position:absolute; top:6px; right:6px; font-size:18px; line-height:1; filter:drop-shadow(0 1px 2px rgba(0,0,0,.6)); background:rgba(13,24,36,.6); border:1px solid rgba(255,255,255,.1); border-radius:10px; padding:2px 6px}
+  @media (max-width:720px){ .rain-badge{top:auto; bottom:6px; right:6px} }
 
   .colset::-webkit-scrollbar{height:12px}
   .colset::-webkit-scrollbar-track{background:#0f1c2a; border-radius:8px}
@@ -142,7 +104,6 @@
     #days.colset{--cols:7}
     #min15.colset{--cols:6}
   }
-
   @media (min-width:780px){
     .wrap{padding:22px 16px 36px}
     .row{grid-template-columns:1.05fr 1fr; gap:16px}
@@ -152,7 +113,6 @@
   @media (min-width:1100px){ .chartWrap{height:300px} }
 </style>
 </head>
-
 <body>
   <div class="wrap">
     <header><h1>Počasie</h1></header>
@@ -170,12 +130,10 @@
           <div>
             <h3 id="place">—</h3>
             <div class="tempNow" id="temp">—°</div>
-
             <div class="chipRow">
               <span class="chip" id="uv">UV index —</span>
               <span class="chip" id="aqi">Kvalita ovzdušia —</span>
             </div>
-
             <div class="meta" style="margin-top:8px">
               <div>Pocitová teplota: <strong id="apparent">—</strong></div>
               <div>Vietor: <strong id="wind">—</strong></div>
@@ -238,7 +196,7 @@
   <footer>&copy; <span id="year"></span> Richard / Počasie</footer>
 
   <script>
-    const APP_VERSION = '2025-08-14-stable-no-optional-chaining';
+    const APP_VERSION = '2025-08-14-one-drop-daily';
     const $ = s => document.querySelector(s);
     const NBSP_NARROW = '\u202F';
     const fmt0 = (v,u='') => (v==null || Number.isNaN(v)) ? '—' : (Math.round(v) + u);
@@ -273,15 +231,10 @@
       const prob = args && args.prob!=null ? Number(args.prob) : null;
       if (prob!=null && prob > 0) return true;
       if (code!=null && RAIN_CODES.has(code)) return true;
-      if (precip!=null && precip > 0){
-        if (temp==null) return true;
-        return temp>1;
-      }
+      if (precip!=null && precip > 0){ if (temp==null) return true; return temp>1 }
       return false;
     }
-    function addRainBadge(el){
-      el.insertAdjacentHTML('beforeend', '<div class="rain-badge" aria-label="Zrážky" title="Zrážky">💧</div>');
-    }
+    function addRainBadge(el){ el.insertAdjacentHTML('beforeend', '<div class="rain-badge" aria-label="Zrážky" title="Zrážky">💧</div>') }
 
     function isNightAt(dtLike, daily){
       const dt = typeof dtLike==='string' ? new Date(dtLike) : dtLike;
@@ -564,7 +517,6 @@
                     +'<div class="c-ico">'+wmoEmoji(code,false)+'</div>'
                     +'<div class="c-row">'+rowRain+'</div>'
                     +'<div class="c-row"></div>';
-        if (will) addRainBadge(el);
         box.appendChild(el);
       }
     }
@@ -593,69 +545,30 @@
     }
 
     function enableDragScroll(el){
-      let isDown=false, startX=0, startScroll=0;
-      let lastX=0, lastT=0, vx=0;
+      let isDown=false, startX=0, startScroll=0, lastX=0, lastT=0, vx=0;
       el.addEventListener('pointerdown', e=>{
-        if(e.button!==0) return;
-        isDown=true;
-        startX=e.clientX;
-        startScroll=el.scrollLeft;
-        lastX=e.clientX; lastT=performance.now(); vx=0;
-        el.classList.add('dragging');
-        el.setPointerCapture(e.pointerId);
-        e.preventDefault();
+        if(e.button!==0) return; isDown=true; startX=e.clientX; startScroll=el.scrollLeft; lastX=e.clientX; lastT=performance.now(); vx=0; el.classList.add('dragging'); el.setPointerCapture(e.pointerId); e.preventDefault()
       });
       el.addEventListener('pointermove', e=>{
-        if(!isDown) return;
-        const now=performance.now();
-        const dx=e.clientX-startX;
-        el.scrollLeft = startScroll - dx;
-        const ddx = e.clientX - lastX;
-        const dt  = Math.max(1, now - lastT);
-        vx = -(ddx/dt);
-        lastX=e.clientX; lastT=now;
-        e.preventDefault();
+        if(!isDown) return; const now=performance.now(); const dx=e.clientX-startX; el.scrollLeft = startScroll - dx; const ddx = e.clientX - lastX; const dt  = Math.max(1, now - lastT); vx = -(ddx/dt); lastX=e.clientX; lastT=now; e.preventDefault()
       });
-      function momentum(v){
-        let velocity = v * 14;
-        const friction = 0.92;
-        function step(){
-          if(Math.abs(velocity) < 0.25) return;
-          el.scrollLeft += velocity;
-          velocity *= friction;
-          if(el.scrollLeft<=0 || Math.ceil(el.scrollLeft)>=el.scrollWidth-el.clientWidth) return;
-          requestAnimationFrame(step);
-        }
-        requestAnimationFrame(step);
-      }
-      el.addEventListener('pointerup', e=>{
-        if(!isDown) return;
-        isDown=false;
-        el.classList.remove('dragging');
-        try{ el.releasePointerCapture(e.pointerId); }catch(e){}
-        momentum(vx);
-      });
-      el.addEventListener('pointercancel', ()=>{ isDown=false; el.classList.remove('dragging'); });
-      el.addEventListener('wheel', (e)=>{
-        const delta = Math.abs(e.deltaY) > Math.abs(e.deltaX) ? e.deltaY : e.deltaX;
-        el.scrollLeft += delta * 0.6;
-        e.preventDefault();
-      }, {passive:false});
+      function momentum(v){ let velocity = v * 14; const friction = 0.92; function step(){ if(Math.abs(velocity) < 0.25) return; el.scrollLeft += velocity; velocity *= friction; if(el.scrollLeft<=0 || Math.ceil(el.scrollLeft)>=el.scrollWidth-el.clientWidth) return; requestAnimationFrame(step) } requestAnimationFrame(step) }
+      el.addEventListener('pointerup', e=>{ if(!isDown) return; isDown=false; el.classList.remove('dragging'); try{ el.releasePointerCapture(e.pointerId) }catch(_){} momentum(vx) });
+      el.addEventListener('pointercancel', ()=>{ isDown=false; el.classList.remove('dragging') });
+      el.addEventListener('wheel', (e)=>{ const delta = Math.abs(e.deltaY) > Math.abs(e.deltaX) ? e.deltaY : e.deltaX; el.scrollLeft += delta * 0.6; e.preventDefault() }, {passive:false});
     }
 
     async function fetchModels(which){
       activeModel=which;
-      ['ecmwf','icon','gfs'].forEach(id=>{ const btn=document.querySelector('#tab-'+id); if(btn) btn.classList.toggle('active', id===which); });
+      ['ecmwf','icon','gfs'].forEach(id=>{ const btn=document.querySelector('#tab-'+id); if(btn) btn.classList.toggle('active', id===which) });
       const tz=Intl.DateTimeFormat().resolvedOptions().timeZone;
       const daily='weather_code,temperature_2m_max,temperature_2m_min,precipitation_probability_max';
-      const base = which==='ecmwf' ? 'https://api.open-meteo.com/v1/ecmwf'
-                 : which==='icon'  ? 'https://api.open-meteo.com/v1/dwd-icon'
-                 : 'https://api.open-meteo.com/v1/gfs';
+      const base = which==='ecmwf' ? 'https://api.open-meteo.com/v1/ecmwf' : which==='icon' ? 'https://api.open-meteo.com/v1/dwd-icon' : 'https://api.open-meteo.com/v1/gfs';
       try{
         const url = base+'?'+new URLSearchParams({latitude:state.lat, longitude:state.lon, timezone:tz, daily, forecast_days:'7'})+'&v='+APP_VERSION;
         const j=await fetch(url).then(r=>r.json());
         renderDays(j);
-      }catch(e){ $('#days').innerHTML='<div style="color:#ffd4d4">Model sa nepodarilo načítať.</div>'; }
+      }catch(e){ $('#days').innerHTML='<div style="color:#ffd4d4">Model sa nepodarilo načítať.</div>' }
     }
 
     async function fetchHistory(){
@@ -673,28 +586,28 @@
         $('#hist-emoji').textContent=wmoEmoji(code,false); $('#hist-text').textContent=(WMO[code] && WMO[code][0])||'—';
         $('#hist-max').textContent=fmt1(tmax)+'°C'; $('#hist-min').textContent=fmt1(tmin)+'°C';
         $('#hist-extra').textContent=pr>0?('Zrážky: '+fmt1(pr, NBSP_NARROW+'mm')):'Bez zrážok.';
-      }catch(e){ $('#hist-extra').textContent='Históriu sa nepodarilo načítať.'; }
+      }catch(e){ $('#hist-extra').textContent='Históriu sa nepodarilo načítať.' }
     }
 
     let timer;
     $('#q').addEventListener('input', e=>{
       const q=e.target.value.trim(); clearTimeout(timer);
-      if(q.length<2){ $('#suggestions').style.display='none'; return; }
+      if(q.length<2){ $('#suggestions').style.display='none'; return }
       timer=setTimeout(async ()=>{
         const url='https://geocoding-api.open-meteo.com/v1/search?name='+encodeURIComponent(q)+'&count=6&language=sk&format=json';
         const res=await fetch(url).then(r=>r.json()).catch(()=>({}));
         const arr=res.results||[];
         const box=$('#suggestions'); box.innerHTML=''; box.style.display='grid';
-        if(!arr.length){ box.innerHTML='<div class="sugg">Nič sa nenašlo</div>'; return; }
+        if(!arr.length){ box.innerHTML='<div class="sugg">Nič sa nenašlo</div>'; return }
         arr.forEach(p=>{
           const b=document.createElement('div'); b.className='sugg';
           b.textContent=p.name+(p.admin1?(', '+p.admin1):'')+', '+p.country_code;
-          b.addEventListener('click', ()=>{ setLocation(p.latitude,p.longitude,b.textContent); box.style.display='none'; });
+          b.addEventListener('click', ()=>{ setLocation(p.latitude,p.longitude,b.textContent); box.style.display='none' });
           box.appendChild(b);
         });
       },250);
     });
-    document.addEventListener('click', e=>{ const box=$('#suggestions'); if(box && !box.contains(e.target) && e.target!==$('#q')) box.style.display='none'; });
+    document.addEventListener('click', e=>{ const box=$('#suggestions'); if(box && !box.contains(e.target) && e.target!==$('#q')) box.style.display='none' });
 
     document.getElementById('tab-ecmwf').addEventListener('click', ()=>fetchModels('ecmwf'));
     document.getElementById('tab-icon').addEventListener('click',  ()=>fetchModels('icon'));
@@ -702,22 +615,17 @@
 
     document.getElementById('year').textContent=new Date().getFullYear();
 
-    function initDragBars(){
-      ['parts','days','min15'].forEach(id=>{
-        const el=document.getElementById(id);
-        if(el){ enableDragScroll(el); }
-      });
-    }
+    function initDragBars(){ ['parts','days','min15'].forEach(id=>{ const el=document.getElementById(id); if(el){ enableDragScroll(el) } }) }
 
     initGeolocation();
-    window.addEventListener('resize', ()=>{ if(state.last){ drawHourly(); renderMin15(); }});
-    setTimeout(()=>{ if(!state.last) fetchWeather().catch(()=>{}); },1200);
+    window.addEventListener('resize', ()=>{ if(state.last){ drawHourly(); renderMin15() }});
+    setTimeout(()=>{ if(!state.last) fetchWeather().catch(()=>{}) },1200);
     fetchModels('ecmwf');
     initDragBars();
 
     if(!window.__wx_auto_refresh){
       window.__wx_auto_refresh=setInterval(()=>{
-        if(state.lat && state.lon){ fetchWeather().catch(()=>{}); fetchAQ().catch(()=>{}); }
+        if(state.lat && state.lon){ fetchWeather().catch(()=>{}); fetchAQ().catch(()=>{}) }
       }, 5*60*1000);
     }
   </script>
