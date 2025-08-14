@@ -168,7 +168,7 @@
   <footer>&copy; <span id="year"></span> Richard / Počasie</footer>
 
   <script>
-    const APP_VERSION = '2025-08-14-fix';
+    const APP_VERSION = '2025-08-14-fix2';
 
     const $ = s => document.querySelector(s);
     const fmt0 = (v,u='') => (v==null||Number.isNaN(v)) ? '—' : `${Math.round(v)}${u}`;
@@ -236,10 +236,9 @@
 
     const savePrefs=()=>{ try{ localStorage.setItem(LS_KEY, JSON.stringify({lat:state.lat, lon:state.lon, place:state.place})); }catch(_){} };
 
-    // fetch s timeoutom – stabilnejšie
     async function fetchJSON(url, timeoutMs=12000){
       const ctrl=new AbortController(); const t=setTimeout(()=>ctrl.abort(), timeoutMs);
-      try{ const r=await fetch(url,{signal:ctrl.signal}); clearTimeout(t); if(!r.ok) throw new Error('HTTP '+r.status); return await r.json(); }
+      try{ const r=await fetch(url,{signal:ctrl.signal}); if(!r.ok) throw new Error('HTTP '+r.status); return await r.json(); }
       finally{ clearTimeout(t); }
     }
 
@@ -263,8 +262,7 @@
     }
 
     function initGeolocation(){
-      // najprv hneď načítaj podľa uložených súradníc (žiadne čakanie)
-      fetchWeather().catch(()=>{});
+      fetchWeather().catch(()=>{});               // ihneď niečo zobraz
       if(!('geolocation' in navigator)) return;
       const placeEl=$('#place'); const prev=placeEl.textContent; placeEl.textContent='Zisťujem polohu…';
       navigator.geolocation.getCurrentPosition(async pos=>{
@@ -275,22 +273,21 @@
 
     async function fetchWeather(){
       const tz=Intl.DateTimeFormat().resolvedOptions().timeZone;
+      const dailyList = 'weather_code,temperature_2m_max,temperature_2m_min,precipitation_probability_max,precipitation_sum,uv_index_max,wind_speed_10m_max,sunrise,sunset';
       const p=new URLSearchParams({
         latitude:state.lat, longitude:state.lon, timezone:tz,
         current:'temperature_2m,apparent_temperature,relative_humidity_2m,pressure_msl,wind_speed_10m,weather_code,uv_index',
         hourly:'temperature_2m,precipitation,weather_code,wind_speed_10m',
-        daily:'time,weather_code,temperature_2m_max,temperature_2m_min,precipitation_probability_max,precipitation_sum,uv_index_max,wind_speed_10m_max,sunrise,sunset',
-        forecast_days:'7'   /* -> vždy máme 7 dní aj bez modelu */
+        daily: dailyList,
+        forecast_days:'7'
       });
       const url=`https://api.open-meteo.com/v1/forecast?${p}&v=${APP_VERSION}`;
       state.last = await fetchJSON(url);
       renderAll();
       drawHourly();
       fetchAQ().catch(()=>{});
-      // zobraz aspoň základ z „last.daily“
-      renderDays(state.last.daily);
-      // potom skús modely (ak padnú, nič sa nedeje)
-      fetchModels(activeModel);
+      renderDays(state.last.daily);   // vždy aspoň základ
+      fetchModels(activeModel);       // modely len vylepšia
     }
 
     function renderAll(){
@@ -376,7 +373,6 @@
       return codes[codes.length-1]??0;
     }
 
-    // FIX: sloty berú priamo Date -> „Noc“ je skutočne nasledujúci deň
     function renderParts(){
       const wrap=$('#parts'); wrap.innerHTML='';
       const d=state.last; const base=new Date(d.current.time);
@@ -401,7 +397,6 @@
       const noc = new Date(base); noc.setDate(noc.getDate()+1); noc.setHours(2,0,0,0); addSlot(noc,'Noc');
     }
 
-    // 7-dňové „stĺpce“ – príjme daily objekt
     function renderDays(dd){
       const box=$('#days'); box.innerHTML='';
       if(!dd?.time?.length){ box.innerHTML='<div style="color:#ffd4d4">Bez dát.</div>'; return; }
@@ -437,40 +432,20 @@
       }
     }
 
-    function renderMin15(){
-      const d=state.last; const box=$('#min15'); box.innerHTML='';
-      if(!d?.hourly?.time?.length){ box.innerHTML='<div style="opacity:.8;color:#bcd1e5;padding:8px 10px;">Bez dát</div>'; return; }
-      const start=new Date(d.current.time);
-      const m=start.getMinutes(); const add=(15-(m%15))%15; if(add>0) start.setMinutes(m+add,0,0);
-      for(let k=0;k<96;k++){
-        const t=new Date(start.getTime()+k*15*60*1000);
-        const tmp=valueAt15min(d.hourly.time,d.hourly.temperature_2m,t);
-        const prep=valueAt15min(d.hourly.time,d.hourly.precipitation,t);
-        const code=codeAt15min(d.hourly.time,d.hourly.weather_code,t);
-        const wind=valueAt15min(d.hourly.time,d.hourly.wind_speed_10m,t);
-        const el=document.createElement('div'); el.className='part'; el.style.minWidth='140px';
-        el.innerHTML=`<div class="lbl">${t.toLocaleTimeString('sk-SK',{hour:'2-digit',minute:'2-digit'})}</div>
-                      <div class="emoji">${wmoEmoji(code,isNightAt(t,d.daily))}</div>
-                      <div class="val">${fmt0(tmp,'°')}</div>
-                      <div class="sub">Zrážky ${prep!=null?fmt1(prep,' mm/h'):'—'} · Vietor ${wind!=null?fmt1(wind,' km/h'):'—'}</div>`;
-        box.appendChild(el);
-      }
-    }
-
     async function fetchModels(which){
       activeModel=which;
       ['ecmwf','icon','gfs'].forEach(id=>{const b=document.querySelector(`#tab-${id}`); if(b) b.classList.toggle('active', id===which);});
       const tz=Intl.DateTimeFormat().resolvedOptions().timeZone;
-      const daily='time,weather_code,temperature_2m_max,temperature_2m_min,precipitation_probability_max,sunrise,sunset';
+      const dailyList = 'weather_code,temperature_2m_max,temperature_2m_min,precipitation_probability_max,sunrise,sunset';
       let base=''; if(which==='ecmwf') base='https://api.open-meteo.com/v1/ecmwf';
       if(which==='icon') base='https://api.open-meteo.com/v1/dwd-icon';
       if(which==='gfs') base='https://api.open-meteo.com/v1/gfs';
-      const p=new URLSearchParams({latitude:state.lat, longitude:state.lon, timezone:tz, daily, forecast_days:'7'});
+      const p=new URLSearchParams({latitude:state.lat, longitude:state.lon, timezone:tz, daily:dailyList, forecast_days:'7'});
       try{
         const j=await fetchJSON(`${base}?${p}&v=${APP_VERSION}`);
         renderDays(j.daily);
       }catch(_){
-        // necháme zobrazený základ bez chybovej hlášky
+        /* necháme zobrazený základ bez chybovej hlášky */
       }
     }
 
@@ -502,7 +477,7 @@
 
     document.getElementById('year').textContent=new Date().getFullYear();
 
-    initGeolocation();           // okamžite fetch + následne presná poloha
+    initGeolocation();
   </script>
 </body>
 </html>
