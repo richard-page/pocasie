@@ -18,6 +18,7 @@
     --bg0:#0b0f14; --bg1:#0e1620; --panel:#152433; --stroke:#233448;
     --txt:#eaf3ff; --muted:#a8bed5; --accent:#3ad0e6;
     --r:14px; --shadow:0 10px 28px rgba(0,0,0,.28);
+    --chip-h:32px;
   }
   *{box-sizing:border-box}
   html,body{height:100%}
@@ -62,12 +63,24 @@
   .meta{display:grid; grid-template-columns:1fr; gap:8px; color:var(--muted); font-size:14px}
   .meta strong{color:#fff}
 
-  /* Stabilné chipy AQI/UV */
-  .chipRow{display:grid; grid-template-columns:1fr 1fr; gap:8px; align-items:center; min-height:34px}
-  .chip{display:flex; align-items:center; justify-content:center; gap:8px;
-        background:#143344; border:1px solid var(--stroke); color:#d8f7ff; border-radius:999px;
-        padding:6px 10px; font-size:12px; min-height:28px; white-space:nowrap}
+  .chipRow{
+    display:grid;
+    grid-template-columns:1fr;
+    grid-auto-rows:var(--chip-h);
+    gap:8px;
+    align-items:stretch;
+    min-height:calc(var(--chip-h)*2 + 8px);
+  }
+  .chip{
+    display:flex; align-items:center; justify-content:center; gap:8px;
+    background:#143344; border:1px solid var(--stroke); color:#d8f7ff; border-radius:999px;
+    padding:6px 10px; font-size:12px; min-height:var(--chip-h);
+    white-space:nowrap; overflow:hidden; text-overflow:ellipsis; min-width:0
+  }
   #uv,#aqi{min-width:0}
+  @media (min-width:700px){
+    .chipRow{grid-template-columns:1fr 1fr; min-height:var(--chip-h)}
+  }
 
   .tempNow{font-size:44px; font-weight:700; line-height:1; margin:6px 0}
   .icon{width:64px; height:64px; display:flex; align-items:center; justify-content:center; font-size:48px}
@@ -88,12 +101,11 @@
 
   footer{padding:14px 10px; text-align:center; color:#cfe8ff; font-size:14px; border-top:1px solid rgba(255,255,255,.12)}
 
-  /* === STĹPCE === */
   .colset{display:grid; gap:12px}
   .col{
     background:var(--panel); border:1px solid var(--stroke); border-radius:12px; padding:10px;
     display:grid; grid-template-rows:auto auto auto auto auto auto; align-items:center; justify-items:center;
-    text-align:center; overflow:hidden; min-height:176px; contain:content;
+    text-align:center; overflow:hidden; min-height:176px; contain:content
   }
   .c-top,.c-row{white-space:nowrap; overflow:hidden; text-overflow:ellipsis}
   .c-top{opacity:.9}
@@ -102,7 +114,6 @@
   .c-ico{font-size:26px; margin-top:6px}
   .c-row{color:#cfe6ff; font-size:12px; margin-top:6px; line-height:1.15}
 
-  /* Mobil: viac stĺpcov + scroll, nič nie je orezané */
   @media (max-width:900px){
     .colset{
       --gap:8px; --cols:5; gap:var(--gap);
@@ -121,7 +132,6 @@
     .c-row{font-size:11px}
   }
 
-  /* Desktop rozloženie */
   @media (min-width:900.1px){
     #parts.colset{grid-template-columns:repeat(4,minmax(0,1fr))}
     #days.colset{grid-template-columns:repeat(7,minmax(0,1fr))}
@@ -155,7 +165,7 @@
       <section class="card">
         <div class="gridInfo">
           <div>
-            <h3 id="place">Bratislava, SK</h3>
+            <h3 id="place">—</h3>
             <div id="time" style="color:var(--muted);font-size:14px">—</div>
             <div class="tempNow" id="temp">—°</div>
 
@@ -226,7 +236,7 @@
   <footer>&copy; <span id="year"></span> Richard / Počasie</footer>
 
   <script>
-    const APP_VERSION = '2025-08-14-fixes-v2';
+    const APP_VERSION = '2025-08-14-aqi-fixed-place';
     const $ = s => document.querySelector(s);
     const fmt0 = (v,u='') => (v==null || Number.isNaN(v)) ? '—' : `${Math.round(v)}${u}`;
     const fmt1 = (v,u='') => (v==null || Number.isNaN(v)) ? '—' : `${(Math.round(v*10)/10).toFixed(1)}${u}`;
@@ -264,10 +274,10 @@
           return (dt < sr || dt >= ss);
         }
       }catch(_){}
-      const h = dt.getHours(); return (h<6 || h>=21);
+      const h = dt.getHours();
+      return (h<6 || h>=21);
     }
 
-    // ***** DÔLEŽITÉ: kľúč hodiny v LOKÁLNOM čase (nie UTC) *****
     const pad = n => String(n).padStart(2,'0');
     function localHourKey(date){
       const d = typeof date==='string' ? new Date(date) : new Date(date);
@@ -277,13 +287,10 @@
       const key = localHourKey(date);
       let idx = timesISO.findIndex(t => t.slice(0,13) === key);
       if (idx >= 0) return arr[idx];
-      // fallback – najbližšia hodina
       let best=0, bestDiff=1e18;
       timesISO.forEach((t,i)=>{ const diff=Math.abs(new Date(t)-new Date(date)); if(diff<bestDiff){best=i;bestDiff=diff;}});
       return arr[best];
     }
-
-    // 15-min interpolácia
     const lerp=(a,b,t)=>a+(b-a)*t;
     function valueAt15min(timesISO, arr, date){
       const ts=timesISO.map(t=>new Date(t));
@@ -310,7 +317,7 @@
       const times=d.hourly?.time||[], codes=d.hourly?.weather_code||[];
       const day=(d.current?.time||'').slice(0,10); let startH=9,endH=18;
       const sr=d.daily?.sunrise?.[0], ss=d.daily?.sunset?.[0];
-      if(sr && ss){ const sh=new Date(sr).getHours(), eh=new Date(ss).getHours(); if(sh<eh){startH=sh;endH=eh;} }
+      if(sr && ss){ const sh=new Date(sr).getHours(), eh=new Date(ss).getHours(); if(!Number.isNaN(sh) && !Number.isNaN(eh) && sh<eh){startH=sh;endH=eh;} }
       const freq=new Map();
       for(let i=0;i<times.length;i++){
         if(!times[i].startsWith(day)) continue;
@@ -329,27 +336,66 @@
       if(v<=300) return 'veľmi zlá'; return 'nebezpečná';
     }
 
-    let state={place:'Bratislava, SK', lat:48.1486, lon:17.1077, last:null};
+    let state={place:'—', lat:48.1486, lon:17.1077, last:null};
     let hourlyChart=null, activeModel='ecmwf';
     const LS_KEY='wx_prefs_v3';
 
-    // obnova preferencií
     try{ const raw=localStorage.getItem(LS_KEY); if(raw){ const p=JSON.parse(raw); if(+p.lat && +p.lon && p.place){ state={...state, ...p}; } } }catch(_){}
     const savePrefs=()=>{ try{ localStorage.setItem(LS_KEY, JSON.stringify({lat:state.lat, lon:state.lon, place:state.place})); }catch(_){} };
 
-    async function reverseGeocode(lat,lon){
+    async function reverseGeocodeOpenMeteo(lat, lon){
       try{
-        const j = await fetch(`https://geocoding-api.open-meteo.com/v1/reverse?latitude=${lat}&longitude=${lon}&language=sk&format=json`).then(r=>r.json());
-        const r=j?.results?.[0]; if(r){ return `${r.name || r.admin1 || ''}${r.country_code?`, ${r.country_code}`:''}`.trim(); }
+        const url = `https://geocoding-api.open-meteo.com/v1/reverse?latitude=${lat}&longitude=${lon}&language=sk&format=json`;
+        const j = await fetch(url).then(r=>r.json());
+        const r = j?.results?.[0];
+        if (r){
+          const name = r.name || r.city || r.town || r.village || '';
+          const admin = r.admin1 ? `, ${r.admin1}` : '';
+          const cc = r.country_code ? `, ${r.country_code}` : '';
+          if (name) return `${name}${admin}${cc}`;
+          if (r.admin1) return `${r.admin1}${cc}`;
+        }
       }catch(_){}
-      return `${lat.toFixed(3)}, ${lon.toFixed(3)}`;
+      return null;
     }
-    async function setLocation(lat,lon,labelOpt){ state.lat=lat; state.lon=lon; state.place=labelOpt || await reverseGeocode(lat,lon); savePrefs(); await fetchWeather().catch(e=>alert(e.message)); }
+    async function reverseGeocodeNominatim(lat, lon){
+      try{
+        const url = `https://nominatim.openstreetmap.org/reverse?lat=${lat}&lon=${lon}&format=json&accept-language=sk`;
+        const res = await fetch(url, {headers:{'Accept':'application/json'}});
+        const data = await res.json();
+        const a = data.address || {};
+        const name = a.city || a.town || a.village || a.municipality || a.hamlet || a.suburb || '';
+        const admin = a.state || a.county || a.region || '';
+        const cc = a.country_code ? `, ${a.country_code.toUpperCase()}` : '';
+        if (name) return `${name}${admin?`, ${admin}`:''}${cc}`;
+        if (admin) return `${admin}${cc}`;
+      }catch(_){}
+      return null;
+    }
+    async function reverseGeocode(lat, lon){
+      const a = await reverseGeocodeOpenMeteo(lat, lon);
+      if (a) return a;
+      const b = await reverseGeocodeNominatim(lat, lon);
+      if (b) return b;
+      return 'Moja poloha';
+    }
+
+    async function setLocation(lat,lon,labelOpt){
+      state.lat=lat; state.lon=lon;
+      state.place = labelOpt || await reverseGeocode(lat, lon) || 'Moja poloha';
+      savePrefs();
+      await fetchWeather().catch(e=>alert(e.message));
+    }
 
     function initGeolocation(){
       if(!('geolocation'in navigator)){ fetchWeather().catch(()=>{}); return; }
-      const placeEl=$('#place'); const prev=placeEl.textContent; placeEl.textContent='Zisťujem polohu…';
-      navigator.geolocation.getCurrentPosition(async pos=>{ const {latitude,longitude}=pos.coords; await setLocation(latitude,longitude); }, _=>{ placeEl.textContent=prev; fetchWeather().catch(()=>{}); }, {enableHighAccuracy:true, timeout:10000, maximumAge:300000});
+      const placeEl=$('#place'); placeEl.textContent='Zisťujem polohu…';
+      navigator.geolocation.getCurrentPosition(async pos=>{
+        const {latitude, longitude} = pos.coords;
+        await setLocation(latitude, longitude);
+      }, _=>{
+        fetchWeather().catch(()=>{});
+      }, {enableHighAccuracy:true, timeout:10000, maximumAge:300000});
     }
 
     async function fetchWeather(){
@@ -382,7 +428,7 @@
 
       const dd=d.daily, tmax=dd.temperature_2m_max[0], tmin=dd.temperature_2m_min[0], ps=dd.precipitation_sum[0], pp=dd.precipitation_probability_max?.[0], wmax=dd.wind_speed_10m_max[0];
       const condToday=(WMO[pickDayCondition(d)]?.[0])||'—';
-      const rainTxt = ps < 0.1 ? (pp && pp>20 ? `bez výraznych zrážok (pravdepodobnosť ${pp}%)` : 'bez zrážok') : `zrážky do ${fmt1(ps,' mm')}`;
+      const rainTxt = ps < 0.1 ? (pp && pp>20 ? `bez výrazných zrážok (pravdepodobnosť ${pp}%)` : 'bez zrážok') : `zrážky do ${fmt1(ps,' mm')}`;
       const uvTxt = dd.uv_index_max?.[0]!=null ? `UV ${uvCat(dd.uv_index_max[0])} (max ${fmt1(dd.uv_index_max[0])})` : 'UV údaj nedostupný';
       $('#summary').innerHTML=`Dnes <strong>${condToday.toLowerCase()}</strong>, max <strong>${fmt0(tmax,'°')}</strong>, min <strong>${fmt0(tmin,'°')}</strong>, ${rainTxt}, vietor do <strong>${fmt1(wmax,' km/h')}</strong>, ${uvTxt}.`;
 
@@ -440,7 +486,7 @@
       const doobeda=new Date(base); doobeda.setHours(10,0,0,0); slot(doobeda,'Doobeda');
       const poobede=new Date(base); poobede.setHours(15,0,0,0); slot(poobede,'Poobede');
       const sunset=d.daily?.sunset?.[0]?new Date(d.daily.sunset[0]):null;
-      const vecer=sunset?new Date(sunset.getTime()+30*60*1000):(h=>{const t=new Date(base); t.setHours(21,0,0,0); return t;})();
+      const vecer=sunset?new Date(sunset.getTime()+30*60*1000):(function(){const t=new Date(base); t.setHours(21,0,0,0); return t;})();
       slot(vecer,'Večer');
       const noc=new Date(base); noc.setDate(base.getDate()+1); noc.setHours(2,0,0,0); slot(noc,'Noc');
     }
@@ -510,7 +556,6 @@
       }catch(_){ $('#hist-extra').textContent='Históriu sa nepodarilo načítať.'; }
     }
 
-    // vyhľadávanie miest
     let timer;
     $('#q').addEventListener('input', e=>{
       const q=e.target.value.trim(); clearTimeout(timer);
@@ -530,7 +575,6 @@
     });
     document.addEventListener('click', e=>{ const box=$('#suggestions'); if(box && !box.contains(e.target) && e.target!==$('#q')) box.style.display='none'; });
 
-    // prepínače modelov
     document.getElementById('tab-ecmwf').addEventListener('click', ()=>fetchModels('ecmwf'));
     document.getElementById('tab-icon').addEventListener('click',  ()=>fetchModels('icon'));
     document.getElementById('tab-gfs').addEventListener('click',   ()=>fetchModels('gfs'));
