@@ -235,7 +235,7 @@
   <footer>&copy; <span id="year"></span> Richard / Počasie</footer>
 
   <script>
-    const APP_VERSION = '2025-08-14-rain-icon-fix';
+    const APP_VERSION = '2025-08-14-rain-icon-any-positive';
     const $ = s => document.querySelector(s);
 
     const NBSP_NARROW = '\u202F';
@@ -250,8 +250,6 @@
       95:['Búrky'],96:['Búrky s krúpami'],99:['Silné búrky s krúpami']};
 
     const RAIN_CODES = new Set([51,53,55,61,63,65,66,67,80,81,82,95,96,99]);
-    const RAIN_MM_H_THRESHOLD = 0.1;
-    const RAIN_PROB_THRESHOLD = 35;
 
     const uvCat = u => u<3?'nízky':u<6?'mierny':u<8?'vysoký':u<11?'veľmi vysoký':'extrémny';
 
@@ -269,9 +267,9 @@
     };
 
     function willRain({code=null, precip=null, temp=null, prob=null}={}){
-      if (prob!=null && prob>=RAIN_PROB_THRESHOLD) return true;
+      if (prob!=null && prob > 0) return true;
       if (code!=null && RAIN_CODES.has(Number(code))) return true;
-      if (precip!=null && precip>=RAIN_MM_H_THRESHOLD){
+      if (precip!=null && precip > 0){
         if (temp==null) return true;
         return temp>1;
       }
