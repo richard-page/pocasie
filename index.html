@@ -101,6 +101,7 @@
   .icon{width:64px; height:64px; display:flex; align-items:center; justify-content:center; font-size:48px}
   .gridInfo{display:grid; grid-template-columns:1fr auto; gap:14px; align-items:start}
 
+  /* horizontálny scroll pre rady stĺpcov */
   .hscroll{display:flex; gap:10px; overflow-x:auto; padding:6px 2px 8px; scroll-snap-type:x mandatory; -webkit-overflow-scrolling:touch}
   .hscroll::-webkit-scrollbar{height:8px}
   .hscroll::-webkit-scrollbar-track{background:#0f1c2a; border-radius:10px}
@@ -135,31 +136,21 @@
 
   footer{padding:14px 10px; text-align:center; color:#cfe8ff; font-size:14px; border-top:1px solid rgba(255,255,255,.12)}
 
-  /* ------- MOBIL: zobraz v STĹPCOCH (2 stĺpce) ------- */
+  /* --- MOBIL: všetky predpovede ako úzke stĺpce vedľa seba --- */
   @media (max-width:900px){
-    /* Predpoveď (Doobeda/Poobede/Večer/Noc) – 2 stĺpce */
-    .partsWrap{grid-template-columns:repeat(2,1fr); gap:10px}
+    /* Predpoveď (Doobeda/Poobede/Večer/Noc) ako stĺpce s posúvaním */
+    .partsWrap{display:flex; gap:10px; overflow-x:auto; padding-bottom:6px; scroll-snap-type:x mandatory}
+    .partsWrap .part{min-width:110px; scroll-snap-align:start}
 
-    /* 7-dňová predpoveď – na mobile urob z horizontálneho scrolu 2-stĺpcovú mriežku */
-    #days{
-      display:grid !important;
-      grid-template-columns:repeat(2,1fr);
-      gap:10px;
-      overflow:visible;
-      padding:0;
-    }
-    #days .day{min-width:unset}
+    /* 7-dňová predpoveď – úzke stĺpce */
+    #days.hscroll{gap:8px}
+    .day{min-width:110px; padding:10px 8px}
+    .day .em{font-size:20px}
+    .day .max{font-size:20px}
+    .day .min{font-size:14px}
 
-    /* 15-minútová predpoveď – 2 stĺpce, nech sa zmestí viac kariet */
-    #min15{
-      display:grid !important;
-      grid-template-columns:repeat(2,1fr);
-      gap:10px;
-      overflow:visible;
-      padding:0;
-      max-height:unset;
-    }
-    #min15 .part{min-width:unset}
+    /* 15-minútová – už stĺpce je, len zúžiť */
+    #min15 .part{min-width:110px}
   }
 
   @media (min-width:780px){
@@ -633,7 +624,7 @@
       if (which === 'gfs')   base = 'https://api.open-meteo.com/v1/gfs';
       const p = new URLSearchParams({ latitude:state.lat, longitude:state.lon, timezone:tz, daily, forecast_days:'7' });
       try{
-        const r = await fetch(`${base}?${p}&v=${APP_VERSION}`);
+        const r = await fetch(`${base}?${p}&v=${APP_VERSION}`); 
         const j = await r.json(); renderDays(j);
       }catch(e){
         $('#days').innerHTML = '<div style="color:#ffd4d4">Model sa nepodarilo načítať.</div>';
