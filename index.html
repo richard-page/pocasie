@@ -18,6 +18,7 @@
     --bg0:#0b0f14; --bg1:#0e1620; --panel:#152433; --stroke:#233448;
     --txt:#eaf3ff; --muted:#a8bed5; --accent:#3ad0e6;
     --r:14px; --shadow:0 10px 28px rgba(0,0,0,.28);
+    --gap:8px;
   }
   *{box-sizing:border-box}
   html,body{min-height:100%; margin:0; padding:0}
@@ -59,7 +60,8 @@
   .card h3{margin:0 0 10px; text-align:center; font-size:18px}
 
   #place{
-    white-space:nowrap; overflow:hidden; text-overflow:ellipsis; text-align:left; margin:0
+    white-space:nowrap; overflow:hidden; text-overflow:ellipsis;
+    text-align:left; margin:0
   }
 
   .row{display:grid; grid-template-columns:1fr; gap:12px; margin-top:4px}
@@ -94,21 +96,23 @@
 
   footer{padding:14px 10px; text-align:center; color:#cfe8ff; font-size:14px; border-top:1px solid rgba(255,255,255,.12)}
 
+  /* --- UNIVERZÁLNY HORIZONTÁLNY LIST PRE PREDPOVEDE --- */
   .colset{
-    display:grid; gap:12px;
+    --cols:4; /* na mobile presne 4 karty bez orezania */
+    display:grid; gap:var(--gap);
     grid-auto-flow:column;
-    grid-auto-columns:minmax(140px,1fr);
+    grid-auto-columns: calc((100% - (var(--cols) - 1)*var(--gap)) / var(--cols));
     overflow-x:auto; overflow-y:hidden;
+    scrollbar-gutter: stable both-edges;
     -webkit-overflow-scrolling:touch;
     cursor:grab;
-    scroll-snap-type:x proximity;
     padding-bottom:8px;
   }
-  .colset.dragging{cursor:grabbing}
+  .colset.dragging{cursor:grabbing; user-select:none}
   .col{
     background:var(--panel); border:1px solid var(--stroke); border-radius:12px; padding:10px;
     display:grid; grid-template-rows:auto auto auto auto auto auto; align-items:center; justify-items:center;
-    text-align:center; overflow:hidden; min-height:176px; contain:content; scroll-snap-align:start;
+    text-align:center; overflow:hidden; min-height:176px; contain:content;
   }
   .c-top,.c-row{white-space:nowrap; overflow:hidden; text-overflow:ellipsis}
   .c-top{opacity:.9}
@@ -117,19 +121,21 @@
   .c-ico{font-size:26px; margin-top:6px}
   .c-row{color:#cfe6ff; font-size:12px; margin-top:6px; line-height:1.15}
 
-  @media (max-width:900px){
-    .colset{grid-auto-columns:calc((100% - 3*8px)/4); scrollbar-width:thin}
-  }
+  /* rovnaký posuvník pre všetky .colset (Chromium/WebKit) */
+  .colset::-webkit-scrollbar{height:12px}
+  .colset::-webkit-scrollbar-track{background:#0f1c2a; border-radius:8px}
+  .colset::-webkit-scrollbar-thumb{background:#33516f; border-radius:8px}
+  .colset::-webkit-scrollbar-thumb:hover{background:#3f6b94}
 
-  #parts.colset::-webkit-scrollbar,
-  #days.colset::-webkit-scrollbar,
-  #min15.colset::-webkit-scrollbar{height:10px}
-  #parts.colset::-webkit-scrollbar-track,
-  #days.colset::-webkit-scrollbar-track,
-  #min15.colset::-webkit-scrollbar-track{background:#0f1c2a; border-radius:8px}
-  #parts.colset::-webkit-scrollbar-thumb,
-  #days.colset::-webkit-scrollbar-thumb,
-  #min15.colset::-webkit-scrollbar-thumb{background:#33516f; border-radius:8px}
+  /* rovnaký posuvník pre Firefox */
+  .colset{scrollbar-width:thin; scrollbar-color:#33516f #0f1c2a}
+
+  /* na väčších obrazovkách nech sú karty širšie, ale stále s rovnakým posuvníkom */
+  @media (min-width:900px){
+    #parts.colset{--cols:4}
+    #days.colset{--cols:7}
+    #min15.colset{--cols:6}
+  }
 
   @media (min-width:780px){
     .wrap{padding:22px 16px 36px}
@@ -226,8 +232,9 @@
   <footer>&copy; <span id="year"></span> Richard / Počasie</footer>
 
   <script>
-    const APP_VERSION = '2025-08-14-scrollbar-and-drag';
+    const APP_VERSION = '2025-08-14-uniform-scrollbars-drag';
     const $ = s => document.querySelector(s);
+
     const fmt0 = (v,u='') => (v==null || Number.isNaN(v)) ? '—' : (Math.round(v) + u);
     const fmt1 = (v,u='') => (v==null || Number.isNaN(v)) ? '—' : ((Math.round(v*10)/10).toFixed(1) + u);
 
@@ -529,27 +536,73 @@
       }
     }
 
+    /* --- Lepší horizontálny scroll na PC: drag + zotrvačnosť + kolečko -> horizontálne --- */
     function enableDragScroll(el){
-      let isDown=false, startX=0, scrollX=0;
-      el.addEventListener('mousedown', e=>{
+      let isDown=false, startX=0, startScroll=0;
+      let recent=[]; // posledné body pre výpočet rýchlosti
+
+      el.addEventListener('pointerdown', e=>{
         if(e.button!==0) return;
         isDown=true;
-        el.classList.add('dragging');
         startX=e.clientX;
-        scrollX=el.scrollLeft;
+        startScroll=el.scrollLeft;
+        recent=[{t:performance.now(), x:e.clientX}];
+        el.classList.add('dragging');
+        el.setPointerCapture(e.pointerId);
         e.preventDefault();
       });
-      document.addEventListener('mousemove', e=>{
+
+      el.addEventListener('pointermove', e=>{
         if(!isDown) return;
         const dx=e.clientX-startX;
-        el.scrollLeft=scrollX-dx;
+        el.scrollLeft = startScroll - dx;
+        const now=performance.now();
+        recent.push({t:now, x:e.clientX});
+        if(recent.length>8) recent.shift();
+        e.preventDefault();
       });
-      document.addEventListener('mouseup', ()=>{
-        if(isDown){ isDown=false; el.classList.remove('dragging'); }
+
+      function momentum(el, v){
+        // v = px/frame (cca 60fps)
+        const friction = 0.95;
+        function step(){
+          if(Math.abs(v) < 0.3) return;
+          el.scrollLeft += v;
+          v *= friction;
+          requestAnimationFrame(step);
+        }
+        requestAnimationFrame(step);
+      }
+
+      el.addEventListener('pointerup', e=>{
+        if(!isDown) return;
+        isDown=false;
+        el.classList.remove('dragging');
+        el.releasePointerCapture(e.pointerId);
+
+        // rýchlosť z posledných ~100ms
+        const now=performance.now();
+        const recentWin = recent.filter(p=> now - p.t <= 120);
+        if(recentWin.length>=2){
+          const dx = recentWin[recentWin.length-1].x - recentWin[0].x;
+          const dt = (recentWin[recentWin.length-1].t - recentWin[0].t) || 16;
+          const pxPerMs = dx/dt;
+          const pxPerFrame = -pxPerMs * 16; // prevod na ~px/frame
+          momentum(el, pxPerFrame*10); // mierna zotrvačnosť
+        }
+        recent=[];
       });
-      el.addEventListener('mouseleave', ()=>{
-        if(isDown){ isDown=false; el.classList.remove('dragging'); }
-      });
+
+      el.addEventListener('pointercancel', ()=>{ isDown=false; el.classList.remove('dragging'); });
+
+      // zvislé kolečko -> horizontálne posúvanie (lepší pocit na PC myši)
+      el.addEventListener('wheel', (e)=>{
+        // ak už používateľ skroluje do strán, necháme to tak
+        if(Math.abs(e.deltaY) > Math.abs(e.deltaX)){
+          el.scrollLeft += e.deltaY;
+          e.preventDefault();
+        }
+      }, {passive:false});
     }
 
     async function fetchModels(which){
