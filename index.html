@@ -81,8 +81,14 @@
   .meta{display:grid; grid-template-columns:1fr; gap:8px; color:var(--muted); font-size:14px}
   .meta strong{color:#fff}
 
-  .chipRow{display:inline-flex; gap:8px; flex-wrap:wrap; align-items:center; margin-top:4px}
-  .chip{display:inline-flex; gap:8px; align-items:center; background:#143344; border:1px solid var(--stroke); color:#d8f7ff; border-radius:999px; padding:6px 10px; font-size:12px}
+  .chipRow{
+    display:flex; gap:8px; flex-wrap:wrap; align-items:center; margin-top:4px; min-height:34px
+  }
+  .chip{
+    display:flex; align-items:center; justify-content:center; gap:8px;
+    background:#143344; border:1px solid var(--stroke); color:#d8f7ff; border-radius:999px;
+    padding:6px 10px; font-size:12px; min-height:28px; white-space:nowrap
+  }
   #uv,#aqi{white-space:nowrap}
 
   .tempNow{font-size:44px; font-weight:700; line-height:1; margin:6px 0}
@@ -108,38 +114,43 @@
   .col{
     background:var(--panel); border:1px solid var(--stroke); border-radius:12px; padding:10px;
     display:grid; grid-template-rows:auto auto auto auto auto auto; align-items:center; justify-items:center;
-    text-align:center
+    text-align:center; overflow:hidden; min-height:170px
   }
+  .c-top,.c-row{white-space:nowrap; overflow:hidden; text-overflow:ellipsis}
   .c-top{opacity:.9}
-  .c-max{font-size:26px; font-weight:700; color:#ff6c6c; margin-top:6px}
-  .c-min{font-size:16px; color:#ffbb7c; margin-top:2px}
+  .c-max{font-size:26px; font-weight:700; color:#ff6c6c; margin-top:6px; line-height:1}
+  .c-min{font-size:16px; color:#ffbb7c; margin-top:2px; line-height:1}
   .c-ico{font-size:26px; margin-top:6px}
   .c-row{color:#cfe6ff; font-size:12px; margin-top:6px}
 
   @media (max-width:900px){
-    .colset{--gap:8px; --cols:4; gap:var(--gap);
+    .chipRow{display:grid; grid-template-columns:1fr 1fr}
+    .chip{width:100%}
+    #aqi,#uv{min-width:0}
+
+    .colset{
+      --gap:8px; --cols:5; gap:var(--gap);
       grid-auto-flow:column;
-      grid-auto-columns: calc((100% - (var(--cols) - 1)*var(--gap))/var(--cols));
+      grid-auto-columns:max(110px, calc((100% - (var(--cols) - 1)*var(--gap))/var(--cols)));
       overflow-x:auto; padding:0 2px 8px;
-      scroll-snap-type:x mandatory; scroll-padding-inline:2px; -webkit-overflow-scrolling:touch; scrollbar-width:none
+      scroll-snap-type:x mandatory; scroll-padding-inline:2px;
+      -webkit-overflow-scrolling:touch; touch-action:pan-x; overscroll-behavior-x:contain; scrollbar-width:none
     }
     .colset::-webkit-scrollbar{display:none}
-    .col{scroll-snap-align:start; padding:8px 8px}
+    .col{scroll-snap-align:start; padding:8px}
+    .c-top{font-size:13px}
     .c-max{font-size:22px}
     .c-min{font-size:14px}
     .c-ico{font-size:22px}
     .c-row{font-size:11px}
-  }
-  @media (min-width:500px) and (max-width:900px){
-    .colset{--cols:5}
   }
 
   @media (min-width:900.1px){
     #parts.colset{grid-template-columns:repeat(4,minmax(0,1fr))}
     #days.colset{grid-template-columns:repeat(7,minmax(0,1fr))}
     #min15.colset{
-      grid-auto-flow:column; grid-auto-columns: minmax(110px,1fr);
-      overflow-x:auto; padding-bottom:6px; scroll-snap-type:x proximity
+      grid-auto-flow:column; grid-auto-columns:minmax(110px,1fr);
+      overflow-x:auto; padding-bottom:6px; scroll-snap-type:x proximity; touch-action:pan-x
     }
     #min15.colset::-webkit-scrollbar{height:8px}
   }
@@ -240,7 +251,7 @@
   <footer>&copy; <span id="year"></span> Richard / Počasie</footer>
 
   <script>
-    const APP_VERSION = '2025-08-14-mobile-compact-cols';
+    const APP_VERSION = '2025-08-14-mobile-fixes';
 
     const $ = s => document.querySelector(s);
     const fmt0 = (v, u = '') => (v == null || Number.isNaN(v)) ? '—' : `${Math.round(v)}${u}`;
@@ -298,7 +309,7 @@
       if (sr && ss){
         const sh = new Date(sr).getHours();
         const eh = new Date(ss).getHours();
-        if (!Number.isNaN(sh) && !Number.isNaN(eh) && sh < eh){ startH = sh; endH = eh; }
+        if (!Number.isNaN(sh) && !Number.isNaNaN(eh) && sh < eh){ startH = sh; endH = eh; }
       }
       const freq = new Map();
       for (let i=0;i<times.length;i++){
@@ -546,8 +557,8 @@
            <div class="c-max">${fmt0(temp,'°')}</div>
            <div class="c-min">${fmt0(temp-5,'°')}</div>
            <div class="c-ico">${wmoEmoji(code, isNightAt(dt, d.daily))}</div>
-           <div class="c-row">Zrážky ${fmt1(pr,' mm/h')}</div>
-           <div class="c-row">Vietor ${fmt1(wind,' km/h')}</div>`;
+           <div class="c-row">Zrážky ${fmt0(pr,' mm/h')}</div>
+           <div class="c-row">Vietor ${fmt0(wind,' km/h')}</div>`;
         wrap.appendChild(el);
       }
 
@@ -559,12 +570,6 @@
       const noc = new Date(base); noc.setDate(base.getDate()+1); noc.setHours(2,0,0,0); slot(noc,'Noc');
     }
 
-    function dayHours(srISO, ssISO){
-      if(!srISO || !ssISO) return '—';
-      const h = Math.round((new Date(ssISO) - new Date(srISO))/3600000);
-      return `${h} h`;
-    }
-
     function renderDays(d){
       const box = $('#days'); box.innerHTML = '';
       const days = d.daily; const n = Math.min(7, days.time.length);
@@ -574,7 +579,6 @@
         const code = days.weather_code?.[i];
         const max = days.temperature_2m_max[i], min = days.temperature_2m_min[i];
         const pp = days.precipitation_probability_max?.[i];
-        const sunh = dayHours(days.sunrise?.[i], days.sunset?.[i]);
 
         const el = document.createElement('div'); el.className = 'col';
         el.innerHTML =
@@ -582,8 +586,8 @@
            <div class="c-max">${fmt0(max,'°')}</div>
            <div class="c-min">${fmt0(min,'°')}</div>
            <div class="c-ico">${wmoEmoji(code,false)}</div>
-           <div class="c-row">☀ ${sunh}</div>
-           <div class="c-row">💧 ${pp!=null?pp+' %':'—'}</div>`;
+           <div class="c-row">💧 ${pp!=null?pp+' %':'—'}</div>
+           <div class="c-row"></div>`;
         box.appendChild(el);
       }
     }
@@ -610,8 +614,8 @@
            <div class="c-max">${fmt0(tmp,'°')}</div>
            <div class="c-min">${tmp!=null?fmt0(tmp-5,'°'):'—'}</div>
            <div class="c-ico">${wmoEmoji(code, isNightAt(t, d.daily))}</div>
-           <div class="c-row">Zrážky ${prep!=null?fmt1(prep,' mm/h'):'—'}</div>
-           <div class="c-row">Vietor ${wind!=null?fmt1(wind,' km/h'):'—'}</div>`;
+           <div class="c-row">Zrážky ${prep!=null?fmt0(prep,' mm/h'):'—'}</div>
+           <div class="c-row">Vietor ${wind!=null?fmt0(wind,' km/h'):'—'}</div>`;
         box.appendChild(el);
       }
     }
