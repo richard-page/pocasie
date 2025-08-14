@@ -261,10 +261,10 @@
     function aqiCat(v){
       if(v == null || Number.isNaN(v)) return '—';
       if(v <= 50)  return 'dobrá';
-      if(v <= 100) return 'uspokojivá';
-      if(v <= 150) return 'nezdravá pre citlivých';
-      if(v <= 200) return 'nezdravá';
-      if(v <= 300) return 'veľmi nezdravá';
+      if(v <= 100) return 'mierne zhoršená';
+      if(v <= 150) return 'riziková';
+      if(v <= 200) return 'zlá';
+      if(v <= 300) return 'veľmi zlá';
       return 'nebezpečná';
     }
     let state = { place:'Bratislava, SK', lat:48.1486, lon:17.1077, last:null };
