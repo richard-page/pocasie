@@ -108,7 +108,7 @@
   .col{
     background:var(--panel); border:1px solid var(--stroke); border-radius:12px; padding:10px;
     display:grid; grid-template-rows:auto auto auto auto auto auto; align-items:center; justify-items:center;
-    min-width:120px; min-height:170px; text-align:center
+    text-align:center
   }
   .c-top{opacity:.9}
   .c-max{font-size:26px; font-weight:700; color:#ff6c6c; margin-top:6px}
@@ -117,18 +117,30 @@
   .c-row{color:#cfe6ff; font-size:12px; margin-top:6px}
 
   @media (max-width:900px){
-    #parts.colset,#days.colset,#min15.colset{
+    .colset{--gap:8px; --cols:4; gap:var(--gap);
       grid-auto-flow:column;
-      grid-auto-columns:calc((100% - 24px)/3);
-      overflow-x:auto; padding-bottom:6px;
-      -webkit-overflow-scrolling:touch; scrollbar-width:none
+      grid-auto-columns: calc((100% - (var(--cols) - 1)*var(--gap))/var(--cols));
+      overflow-x:auto; padding:0 2px 8px;
+      scroll-snap-type:x mandatory; scroll-padding-inline:2px; -webkit-overflow-scrolling:touch; scrollbar-width:none
     }
-    #parts.colset::-webkit-scrollbar,#days.colset::-webkit-scrollbar,#min15.colset::-webkit-scrollbar{display:none}
+    .colset::-webkit-scrollbar{display:none}
+    .col{scroll-snap-align:start; padding:8px 8px}
+    .c-max{font-size:22px}
+    .c-min{font-size:14px}
+    .c-ico{font-size:22px}
+    .c-row{font-size:11px}
   }
+  @media (min-width:500px) and (max-width:900px){
+    .colset{--cols:5}
+  }
+
   @media (min-width:900.1px){
     #parts.colset{grid-template-columns:repeat(4,minmax(0,1fr))}
     #days.colset{grid-template-columns:repeat(7,minmax(0,1fr))}
-    #min15.colset{grid-auto-flow:column; grid-auto-columns:minmax(110px,1fr); overflow-x:auto; padding-bottom:6px}
+    #min15.colset{
+      grid-auto-flow:column; grid-auto-columns: minmax(110px,1fr);
+      overflow-x:auto; padding-bottom:6px; scroll-snap-type:x proximity
+    }
     #min15.colset::-webkit-scrollbar{height:8px}
   }
 
@@ -228,7 +240,7 @@
   <footer>&copy; <span id="year"></span> Richard / Počasie</footer>
 
   <script>
-    const APP_VERSION = '2025-08-14-true-columns';
+    const APP_VERSION = '2025-08-14-mobile-compact-cols';
 
     const $ = s => document.querySelector(s);
     const fmt0 = (v, u = '') => (v == null || Number.isNaN(v)) ? '—' : `${Math.round(v)}${u}`;
