@@ -85,16 +85,12 @@
   .row{display:grid; grid-template-columns:1fr; gap:12px; margin-top:4px}
   .meta{display:grid; grid-template-columns:1fr; gap:8px; color:var(--muted); font-size:14px}
   .meta strong{color:#fff}
-  .chip{display:inline-flex; gap:8px; align-items:center; background:#143344; border:1px solid var(--stroke); color:#d8f7ff; border-radius:999px; padding:6px 10px; font-size:12px; margin-right:6px}
+  .chip{display:inline-flex; gap:8px; align-items:center; background:#143344; border:1px solid var(--stroke); color:#d8f7ff; border-radius:999px; padding:6px 10px; font-size:12px}
   .tempNow{font-size:44px; font-weight:700; line-height:1; margin:6px 0}
   .icon{width:64px; height:64px; display:flex; align-items:center; justify-content:center; font-size:48px}
   .gridInfo{display:grid; grid-template-columns:1fr auto; gap:14px; align-items:start}
-  .chipRow{display:grid; grid-template-columns:1fr; gap:8px; margin-top:4px}
-  #aqi{white-space:nowrap}
-  #uv{white-space:nowrap}
-  @media (min-width:420px){
-    .chipRow{grid-template-columns:repeat(2,max-content); justify-content:flex-start}
-  }
+  .chipRow{display:flex; gap:8px; flex-wrap:wrap; align-items:center; margin-top:4px}
+  #uv,#aqi{white-space:nowrap}
   .hscroll{display:flex; gap:10px; overflow-x:auto; padding:6px 2px 8px; scroll-snap-type:x mandatory; -webkit-overflow-scrolling:touch}
   .hscroll::-webkit-scrollbar{height:8px}
   .hscroll::-webkit-scrollbar-track{background:#0f1c2a; border-radius:10px}
@@ -152,8 +148,8 @@
             <div id="time" style="color:var(--muted);font-size:14px">—</div>
             <div class="tempNow" id="temp">—°</div>
             <div class="chipRow">
+              <span class="chip" id="uv">UV index —</span>
               <span class="chip" id="aqi">Kvalita ovzdušia —</span>
-              <span class="chip" id="uv">UV —</span>
             </div>
             <div class="meta" style="margin-top:8px">
               <div>Pocitová teplota: <strong id="apparent">—</strong></div>
@@ -384,7 +380,7 @@
       $('#press').textContent = fmt0(cur.pressure_msl,' hPa');
       $('#icon').textContent = wmoEmoji(cur.weather_code);
       const uvi = (cur.uv_index ?? state.last.daily?.uv_index_max?.[0] ?? null);
-      $('#uv').textContent = `UV ${uvi != null ? fmt1(uvi) : '—'} • ${uvi != null ? uvCat(uvi) : '—'}`;
+      $('#uv').textContent = `UV index ${uvi != null ? fmt1(uvi) : '—'} • ${uvi != null ? uvCat(uvi) : '—'}`;
       const dd = d.daily;
       const tmax = dd.temperature_2m_max[0];
       const tmin = dd.temperature_2m_min[0];
