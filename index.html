@@ -69,6 +69,7 @@
 
   footer{padding:18px 10px; text-align:center; color:#cfe8ff; font-size:14px; border-top:1px solid rgba(255,255,255,.12)}
 
+  /* horizontálne karty */
   .colset{
     --cols:4;
     display:flex;
@@ -93,26 +94,31 @@
     scroll-snap-align:start
   }
 
+  /* TOP TITULKY — ABSOLÚTNE PRESNÉ CENTROVANIE */
   .c-top{
+    position:relative;
     width:100%;
-    max-width:100%;
-    padding-inline:8px;
-    opacity:.95;
-    line-height:1.1;
-    text-align:center;
-    display:flex;
-    align-items:center;
-    justify-content:center
+    height:1.75em; /* priestor pre 1 riadok */
   }
-  #parts .c-top,
-  #min15 .c-top{
+  .c-top__inner{
+    position:absolute; left:50%; top:50%;
+    transform:translate(-50%,-50%);
     white-space:nowrap;
+    text-align:center;
+    display:block;
+  }
+
+  /* veľkosti */
+  #parts .c-top__inner,
+  #min15 .c-top__inner{
     font-size:clamp(10px, 3.2vw, 16px);
-    letter-spacing:0
   }
   #days .c-top{
-    white-space:normal;
-    text-wrap:balance
+    height:auto;
+  }
+  #days .c-top__inner{
+    position:static; transform:none; white-space:normal; text-wrap:balance;
+    font-size:inherit;
   }
 
   .temps{display:grid; place-items:center; width:100%; min-width:0}
@@ -237,7 +243,7 @@
   <div id="err"></div>
 
   <script>
-    const APP_VERSION = '2025-08-15-mobile-nowrap-compact-3-center';
+    const APP_VERSION = '2025-08-15-center-absolute-v1';
     const $ = s => document.querySelector(s);
     const NBSP_NARROW = '\u202F';
     const fmt0 = (v,u='') => (v==null || Number.isNaN(v)) ? '—' : (Math.round(v) + u);
@@ -539,7 +545,7 @@
         const wind=valueAtHourLocal(h.time, h.wind_speed_10m, dt);
         const code=valueAtHourLocal(h.time, h.weather_code, dt);
         const el=document.createElement('div'); el.className='col';
-        el.innerHTML='<div class="c-top">'+label+'</div>'
+        el.innerHTML='<div class="c-top"><span class="c-top__inner">'+label+'</span></div>'
                     +'<div class="temps"><div class="c-max">'+fmt0(temp,'°')+'</div><div class="c-min">'+(temp!=null?fmt0(temp-5,'°'):'—')+'</div></div>'
                     +'<div class="c-ico">'+wmoEmoji(code, isNightAt(dt, d.daily||{}), {temp, wind, precip: pr})+'</div>'
                     +'<div class="metrics metrics--mini">'
@@ -572,7 +578,7 @@
         const will = willRain({code, prob:pp});
         const iconHTML = will ? '<span class="m-ico">💧</span>' : '';
         const el=document.createElement('div'); el.className='col';
-        el.innerHTML='<div class="c-top">'+top+'</div>'
+        el.innerHTML='<div class="c-top"><span class="c-top__inner">'+top+'</span></div>'
                     +'<div class="temps"><div class="c-max">'+fmt0(max,'°')+'</div><div class="c-min">'+fmt0(min,'°')+'</div></div>'
                     +'<div class="c-ico">'+dayIco+'</div>'
                     +'<div class="metrics metrics--mini"><div class="metric">'+iconHTML+'<span class="m-txt">'+(pp!=null?pp+' %':'—')+'</span></div></div>';
@@ -592,7 +598,7 @@
         const code=codeAt15min(d.hourly.time, d.hourly.weather_code, t);
         const wind=valueAt15min(d.hourly.time, d.hourly.wind_speed_10m, t);
         const el=document.createElement('div'); el.className='col';
-        el.innerHTML='<div class="c-top">'+t.toLocaleTimeString('sk-SK',{hour:'2-digit',minute:'2-digit'})+'</div>'
+        el.innerHTML='<div class="c-top"><span class="c-top__inner">'+t.toLocaleTimeString('sk-SK',{hour:'2-digit',minute:'2-digit'})+'</span></div>'
                     +'<div class="temps"><div class="c-max">'+fmt0(tmp,'°')+'</div><div class="c-min">'+(tmp!=null?fmt0(tmp-5,'°'):'—')+'</div></div>'
                     +'<div class="c-ico">'+wmoEmoji(code, isNightAt(t,d.daily||{}), {temp: tmp, wind, precip: prep})+'</div>'
                     +'<div class="metrics metrics--mini">'
