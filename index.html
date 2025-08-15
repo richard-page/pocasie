@@ -81,21 +81,22 @@
 
   .col{
     background:var(--panel); border:1px solid var(--stroke); border-radius:12px; padding:10px;
-    display:grid; grid-template-rows:auto auto auto auto auto; align-items:center; justify-items:center;
+    display:grid; grid-template-rows:auto 72px auto auto auto; align-items:center; justify-items:center;
     text-align:center; min-height:176px; contain:content; position:relative
   }
   .c-top{opacity:.9; white-space:nowrap; overflow:hidden; text-overflow:ellipsis}
 
-  .temps{display:flex; flex-direction:column; align-items:center; justify-content:center; width:100%; margin-top:2px}
-  .temps .c-max{font-size:22px; font-weight:700; color:#ff6c6c; line-height:1}
-  .temps .c-min{font-size:15px; color:#ffbb7c; margin-top:3px; line-height:1}
+  .temps{display:grid; place-items:center; width:100%; text-align:center}
+  .temps .c-max{font-size:24px; font-weight:700; color:#ff6c6c; line-height:1}
+  .temps .c-min{font-size:16px; color:#ffbb7c; margin-top:4px; line-height:1}
 
   @media (min-width:900px){
-    .temps .c-max{font-size:26px}
-    .temps .c-min{font-size:17px}
+    .col{grid-template-rows:auto 80px auto auto auto}
+    .temps .c-max{font-size:28px}
+    .temps .c-min{font-size:18px}
   }
 
-  .c-ico{font-size:24px; margin-top:8px}
+  .c-ico{font-size:24px; margin-top:6px}
   .c-row{color:#cfe6ff; font-size:11.5px; line-height:1.25; margin-top:6px; white-space:normal; overflow:visible; text-overflow:clip; word-break:break-word}
 
   .rain-badge{position:absolute; top:6px; right:6px; font-size:18px; line-height:1; filter:drop-shadow(0 1px 2px rgba(0,0,0,.6)); background:rgba(13,24,36,.6); border:1px solid rgba(255,255,255,.1); border-radius:10px; padding:2px 6px}
@@ -204,7 +205,7 @@
   <footer>&copy; <span id="year"></span> Richard / Počasie</footer>
 
   <script>
-    const APP_VERSION = '2025-08-15-bigger-centered-temps';
+    const APP_VERSION = '2025-08-15-centered-bigger-temps-wind-emoji';
     const $ = s => document.querySelector(s);
     const NBSP_NARROW = '\u202F';
     const fmt0 = (v,u='') => (v==null || Number.isNaN(v)) ? '—' : (Math.round(v) + u);
@@ -245,6 +246,7 @@
       return false;
     }
     function addRainBadge(el){ el.insertAdjacentHTML('beforeend', '<div class="rain-badge" aria-label="Zrážky" title="Zrážky">💧</div>') }
+    const windEmoji = v => (v!=null && !Number.isNaN(v) && v >= 2.5) ? '💨 ' : '';
 
     function isNightAt(dtLike, daily){
       const dt = typeof dtLike==='string' ? new Date(dtLike) : dtLike;
@@ -494,7 +496,7 @@
                     +'<div class="temps"><div class="c-max">'+fmt0(temp,'°')+'</div><div class="c-min">'+(temp!=null?fmt0(temp-5,'°'):'—')+'</div></div>'
                     +'<div class="c-ico">'+wmoEmoji(code, isNightAt(dt, d.daily||{}))+'</div>'
                     +'<div class="c-row">Zrážky '+fmt0(pr, NBSP_NARROW+'mm/h')+'</div>'
-                    +'<div class="c-row">Vietor '+fmt0(wind, NBSP_NARROW+'km/h')+'</div>';
+                    +'<div class="c-row">'+windEmoji(wind)+'Vietor '+fmt0(wind, NBSP_NARROW+'km/h')+'</div>';
         if (willRain({code, precip:pr, temp})) addRainBadge(el);
         wrap.appendChild(el);
       }
@@ -545,7 +547,7 @@
                     +'<div class="temps"><div class="c-max">'+fmt0(tmp,'°')+'</div><div class="c-min">'+(tmp!=null?fmt0(tmp-5,'°'):'—')+'</div></div>'
                     +'<div class="c-ico">'+wmoEmoji(code, isNightAt(t,d.daily||{}))+'</div>'
                     +'<div class="c-row">Zrážky '+(prep!=null?fmt0(prep, NBSP_NARROW+'mm/h'):'—')+'</div>'
-                    +'<div class="c-row">Vietor '+(wind!=null?fmt0(wind, NBSP_NARROW+'km/h'):'—')+'</div>';
+                    +'<div class="c-row">'+windEmoji(wind)+'Vietor '+(wind!=null?fmt0(wind, NBSP_NARROW+'km/h'):'—')+'</div>';
         if (willRain({code, precip:prep, temp:tmp})) addRainBadge(el);
         box.appendChild(el);
       }
