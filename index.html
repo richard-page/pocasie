@@ -36,9 +36,6 @@
   #suggestions{display:none; gap:6px; position:absolute; top:calc(100% + 6px); left:0; right:0; z-index:40; background:#0f1c2a; border:1px solid var(--stroke); border-radius:12px; padding:8px; max-height:55vh; overflow:auto}
   .sugg{background:#13263a; border:1px solid var(--stroke); border-radius:10px; padding:10px 12px; cursor:pointer}
 
-  .pill{background:#1b2c3d; border:1px solid var(--stroke); color:#dfeaff; border-radius:12px; padding:10px 12px; font-weight:600; cursor:pointer; min-height:40px; font-size:14px; text-align:center}
-  .pill.active{background:var(--accent); border-color:#2abbd0; color:#002a32}
-
   .card{background:linear-gradient(180deg, rgba(255,255,255,.06), rgba(255,255,255,.03)); border:1px solid var(--stroke); border-radius:var(--r); box-shadow:var(--shadow); padding:16px 14px}
   .card h3{margin:0 0 14px; text-align:center; font-size:18px}
   section.card{margin-top:18px !important}
@@ -178,12 +175,7 @@
     </section>
 
     <section class="card">
-      <h3 style="margin-bottom:10px">7-dňová predpoveď</h3>
-      <div style="display:flex;justify-content:center;gap:8px;flex-wrap:wrap;margin-bottom:10px">
-        <button class="pill" id="tab-ecmwf">ECMWF IFS</button>
-        <button class="pill" id="tab-icon">DWD ICON</button>
-        <button class="pill" id="tab-gfs">NOAA GFS</button>
-      </div>
+      <h3>7-dňová predpoveď</h3>
       <div id="days" class="colset"></div>
     </section>
 
@@ -210,7 +202,7 @@
   <footer>&copy; <span id="year"></span> Richard / Počasie</footer>
 
   <script>
-    const APP_VERSION = '2025-08-15-fog-context-alt';
+    const APP_VERSION = '2025-08-15-openmeteo-bestmatch-only';
     const $ = s => document.querySelector(s);
     const NBSP_NARROW = '\u202F';
     const fmt0 = (v,u='') => (v==null || Number.isNaN(v)) ? '—' : (Math.round(v) + u);
@@ -350,7 +342,7 @@
     };
 
     let state={place:'—', lat:48.1486, lon:17.1077, last:null};
-    let hourlyChart=null, activeModel='ecmwf';
+    let hourlyChart=null;
     const LS_KEY='wx_prefs_v3';
 
     try{
@@ -427,11 +419,11 @@
         current:'temperature_2m,apparent_temperature,relative_humidity_2m,pressure_msl,wind_speed_10m,weather_code,uv_index',
         hourly:'temperature_2m,precipitation,weather_code,wind_speed_10m',
         daily:'weather_code,temperature_2m_max,temperature_2m_min,precipitation_probability_max,precipitation_sum,uv_index_max,wind_speed_10m_max,sunrise,sunset',
-        forecast_days:'3'
+        forecast_days:'7'
       });
       const r=await fetch('https://api.open-meteo.com/v1/forecast?'+p+'&v='+APP_VERSION);
       state.last=await r.json();
-      renderAll(); drawHourly(); await fetchAQ().catch(()=>{}); fetchModels(activeModel); fetchHistory().catch(()=>{});
+      renderAll(); drawHourly(); await fetchAQ().catch(()=>{}); renderDays(state.last); fetchHistory().catch(()=>{});
     }
 
     function renderAll(){
@@ -587,19 +579,6 @@
       el.addEventListener('wheel', (e)=>{ const delta = Math.abs(e.deltaY) > Math.abs(e.deltaX) ? e.deltaY : e.deltaX; el.scrollLeft += delta * 0.6; e.preventDefault() }, {passive:false});
     }
 
-    async function fetchModels(which){
-      activeModel=which;
-      ['ecmwf','icon','gfs'].forEach(id=>{ const btn=document.querySelector('#tab-'+id); if(btn) btn.classList.toggle('active', id===which) });
-      const tz=Intl.DateTimeFormat().resolvedOptions().timeZone;
-      const daily='weather_code,temperature_2m_max,temperature_2m_min,precipitation_probability_max';
-      const base = which==='ecmwf' ? 'https://api.open-meteo.com/v1/ecmwf' : which==='icon' ? 'https://api.open-meteo.com/v1/dwd-icon' : 'https://api.open-meteo.com/v1/gfs';
-      try{
-        const url = base+'?'+new URLSearchParams({latitude:state.lat, longitude:state.lon, timezone:tz, daily, forecast_days:'7'})+'&v='+APP_VERSION;
-        const j=await fetch(url).then(r=>r.json());
-        renderDays(j);
-      }catch(e){ $('#days').innerHTML='<div style="color:#ffd4d4">Model sa nepodarilo načítať.</div>' }
-    }
-
     async function fetchHistory(){
       try{
         const baseTime=(state && state.last && state.last.current && state.last.current.time) ? new Date(state.last.current.time) : new Date();
@@ -644,10 +623,6 @@
     });
     document.addEventListener('click', e=>{ const box=$('#suggestions'); if(box && !box.contains(e.target) && e.target!==$('#q')) box.style.display='none' });
 
-    document.getElementById('tab-ecmwf').addEventListener('click', ()=>fetchModels('ecmwf'));
-    document.getElementById('tab-icon').addEventListener('click',  ()=>fetchModels('icon'));
-    document.getElementById('tab-gfs').addEventListener('click',   ()=>fetchModels('gfs'));
-
     document.getElementById('year').textContent=new Date().getFullYear();
 
     function initDragBars(){ ['parts','days','min15'].forEach(id=>{ const el=document.getElementById(id); if(el){ enableDragScroll(el) } }) }
@@ -655,7 +630,6 @@
     initGeolocation();
     window.addEventListener('resize', ()=>{ if(state.last){ drawHourly(); renderMin15() }});
     setTimeout(()=>{ if(!state.last) fetchWeather().catch(()=>{}) },1200);
-    fetchModels('ecmwf');
     initDragBars();
 
     if(!window.__wx_auto_refresh){
