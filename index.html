@@ -71,27 +71,28 @@
 
   .colset{
     --cols:4;
-    display:grid; gap:var(--gap); grid-auto-flow:column;
-    grid-auto-columns:minmax(0, calc((100% - (var(--cols) - 1)*var(--gap)) / var(--cols)));
-    overflow-x:auto; overflow-y:hidden; scrollbar-gutter:stable both-edges;
-    -webkit-overflow-scrolling:touch; touch-action:pan-y; overscroll-behavior-x:contain;
-    cursor:grab; padding:8px 6px 12px
+    display:flex; gap:var(--gap);
+    overflow-x:auto; overflow-y:hidden;
+    scrollbar-gutter:stable both-edges;
+    -webkit-overflow-scrolling:touch;
+    touch-action:pan-x pan-y;
+    overscroll-behavior-x:contain;
+    cursor:grab; padding:10px 6px 14px;
+    scroll-snap-type:x proximity
   }
   .colset.dragging{cursor:grabbing; user-select:none}
 
   .col{
+    flex:0 0 calc((100% - (var(--cols) - 1)*var(--gap)) / var(--cols));
     background:var(--panel); border:1px solid var(--stroke); border-radius:12px; padding:12px;
     display:grid; grid-template-rows:auto auto auto auto; align-items:center; justify-items:center;
-    text-align:center; min-height:182px; position:relative; row-gap:8px; min-width:0; overflow:visible
+    text-align:center; min-height:182px; position:relative; row-gap:8px; min-width:0; overflow:visible;
+    scroll-snap-align:start
   }
 
   .c-top{
-    opacity:.9;
-    white-space:normal;
-    overflow:visible;
-    text-overflow:clip;
-    line-height:1.1;
-    text-align:center
+    opacity:.9; white-space:normal; overflow:visible; text-overflow:clip;
+    line-height:1.1; text-align:center
   }
 
   .temps{display:grid; place-items:center; width:100%; min-width:0}
@@ -115,16 +116,16 @@
   .metric .m-ico{display:flex; align-items:center; justify-content:center; font-size:16px; line-height:1}
   .metric .m-txt{font-size:13.5px; font-weight:500; color:#e9f3ff; letter-spacing:.05px; line-height:1.25; text-align:center; word-break:keep-all}
 
-  .colset::-webkit-scrollbar{height:12px}
+  .colset::-webkit-scrollbar{height:10px}
   .colset::-webkit-scrollbar-track{background:#0f1c2a; border-radius:8px}
   .colset::-webkit-scrollbar-thumb{background:#33516f; border-radius:8px}
   .colset::-webkit-scrollbar-thumb:hover{background:#3f6b94}
   .colset{scrollbar-width:thin; scrollbar-color:#33516f #0f1c2a}
 
   @media (min-width:900px){
-    #parts.colset{--cols:4}
-    #days.colset{--cols:7}
-    #min15.colset{--cols:6}
+    #parts{--cols:4}
+    #days{--cols:7}
+    #min15{--cols:6}
   }
   @media (min-width:780px){
     .wrap{padding:24px 16px 44px}
@@ -213,7 +214,7 @@
   <footer>&copy; <span id="year"></span> Richard / Počasie</footer>
 
   <script>
-    const APP_VERSION = '2025-08-15-mobile-fix';
+    const APP_VERSION = '2025-08-15-mobile-flex-fix';
     const $ = s => document.querySelector(s);
     const NBSP_NARROW = '\u202F';
     const fmt0 = (v,u='') => (v==null || Number.isNaN(v)) ? '—' : (Math.round(v) + u);
@@ -223,7 +224,7 @@
       45:['Hmla'],48:['Mrznúca hmla'],51:['Slabé mrholenie'],53:['Mrholenie'],55:['Silné mrholenie'],
       61:['Slabý dážď'],63:['Dážď'],65:['Lejak'],66:['Mrznúci dážď'],67:['Mrznúci dážď'],
       71:['Slabé sneženie'],73:['Sneženie'],75:['Silné sneženie'],77:['Snehové zrná'],
-      80:['Prehánky'],81:['Prehánky'],82:['Silné prehánky'],85:['Snehové prehánky'],86:['Silné snehové prehánky'],
+      80,['Prehánky'],81,['Prehánky'],82,['Silné prehánky'],85,['Snehové prehánky'],86,['Silné snehové prehánky'],
       95:['Búrky'],96:['Búrky s krúpami'],99:['Silné búrky s krúpami']};
     const RAIN_CODES = new Set([51,53,55,61,63,65,66,67,80,81,82,95,96,99]);
     const uvCat = u => u<3?'nízky':u<6?'mierny':u<8?'vysoký':u<11?'veľmi vysoký':'extrémny';
