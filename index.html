@@ -71,35 +71,42 @@
 
   .colset{
     --cols:4;
-    display:flex; gap:var(--gap);
+    display:grid;
+    grid-auto-flow:column;
+    grid-auto-columns:calc((100% - (var(--cols) - 1)*var(--gap))/var(--cols) - .2px);
+    gap:var(--gap);
     overflow-x:auto; overflow-y:hidden;
     scrollbar-gutter:stable both-edges;
     -webkit-overflow-scrolling:touch;
     touch-action:pan-x pan-y;
     overscroll-behavior-x:contain;
-    cursor:grab; padding:10px 6px 18px;
-    scroll-snap-type:x proximity
+    scroll-snap-type:x proximity;
+    padding:8px 0 12px
   }
-  .colset.dragging{cursor:grabbing; user-select:none}
+  .colset.dragging{user-select:none}
 
   .col{
-    flex:0 0 calc((100% - (var(--cols) - 1)*var(--gap)) / var(--cols));
     background:var(--panel); border:1px solid var(--stroke); border-radius:12px; padding:12px;
     display:grid; grid-template-rows:auto auto auto auto; align-items:center; justify-items:center;
     text-align:center; min-height:182px; position:relative; row-gap:8px; min-width:0; overflow:hidden;
     scroll-snap-align:start
   }
 
-  .c-top{opacity:.9; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; line-height:1.1; text-align:center; width:100%}
+  .c-top{
+    opacity:.9; white-space:normal; line-height:1.1; text-align:center; font-size:13px
+  }
 
   .temps{display:grid; place-items:center; width:100%; min-width:0}
   .temps .c-max{font-size:28px; font-weight:700; color:#ff6c6c; line-height:1}
   .temps .c-min{font-size:18px; color:#ffbb7c; margin-top:4px; line-height:1}
 
   @media (max-width:420px){
-    .temps .c-max{font-size:26px}
-    .temps .c-min{font-size:17px}
-    .metric .m-txt{font-size:12.6px}
+    .temps .c-max{font-size:24px}
+    .temps .c-min{font-size:16px}
+    .metric .m-txt{font-size:12.4px}
+    .c-top{font-size:12.4px}
+    .c-ico{font-size:24px}
+    .col{min-height:170px}
   }
   @media (min-width:900px){
     .temps .c-max{font-size:32px}
@@ -111,19 +118,13 @@
   .metrics{display:flex; flex-direction:column; align-items:center; justify-content:center; gap:6px; width:100%}
   .metric{display:inline-flex; align-items:center; justify-content:center; gap:8px; width:100%}
   .metric .m-ico{display:flex; align-items:center; justify-content:center; font-size:16px; line-height:1}
-  .metric .m-txt{font-size:13.5px; font-weight:500; color:#e9f3ff; letter-spacing:.05px; line-height:1.25; text-align:center; white-space:nowrap; overflow:hidden; text-overflow:ellipsis}
+  .metric .m-txt{font-size:13.5px; font-weight:500; color:#e9f3ff; letter-spacing:.05px; line-height:1.25; text-align:center; word-break:keep-all}
 
   .colset::-webkit-scrollbar{height:10px}
   .colset::-webkit-scrollbar-track{background:#0f1c2a; border-radius:8px}
   .colset::-webkit-scrollbar-thumb{background:#33516f; border-radius:8px}
   .colset::-webkit-scrollbar-thumb:hover{background:#3f6b94}
   .colset{scrollbar-width:thin; scrollbar-color:#33516f #0f1c2a}
-
-  #min15 .col{min-height:160px}
-  #min15 .temps .c-max{font-size:24px}
-  #min15 .temps .c-min{font-size:16px}
-  #min15 .metric .m-txt{font-size:12.2px}
-  #min15 .c-top{font-size:13px}
 
   @media (min-width:900px){
     #parts{--cols:4}
@@ -137,20 +138,7 @@
     .chartWrap{height:270px}
   }
   @media (min-width:1100px){ .chartWrap{height:300px} }
-
   #err{position:fixed;left:10px;right:10px;bottom:12px;background:#2a1111;border:1px solid #6b2a2a;color:#ffd9d9;border-radius:10px;padding:10px 12px;font-size:14px;display:none;z-index:99}
-
-  /* Pevné 4 stĺpce bez orezania iba pre Dnešnú predpoveď */
-  #parts{
-    display:grid;
-    grid-template-columns:repeat(4,minmax(0,1fr));
-    gap:var(--gap);
-    overflow:visible;
-    padding:10px 0 6px;
-    scroll-snap-type:none;
-    cursor:auto
-  }
-  #parts .col{flex:initial}
 </style>
 </head>
 <body>
@@ -232,7 +220,7 @@
   <div id="err"></div>
 
   <script>
-    const APP_VERSION = '2025-08-15-mobile-grid-4';
+    const APP_VERSION = '2025-08-15-mobile-grid-4cols';
     const $ = s => document.querySelector(s);
     const NBSP_NARROW = '\u202F';
     const fmt0 = (v,u='') => (v==null || Number.isNaN(v)) ? '—' : (Math.round(v) + u);
@@ -661,7 +649,7 @@
 
     document.getElementById('year').textContent=new Date().getFullYear();
 
-    function initDragBars(){ ['days','min15'].forEach(id=>{ const el=document.getElementById(id); if(el){ enableDragScroll(el) } }) }
+    function initDragBars(){ ['parts','days','min15'].forEach(id=>{ const el=document.getElementById(id); if(el){ enableDragScroll(el) } }) }
 
     initGeolocation();
     window.addEventListener('resize', ()=>{ if(state.last){ drawHourly(); renderMin15() }});
