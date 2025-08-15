@@ -101,14 +101,16 @@
     overflow:hidden
   }
 
+  /* FIX: nech sa dlhé slová zalomia na 2 riadky */
   .c-top{
     padding-inline:10px;
     opacity:.9;
     white-space:normal;
+    overflow-wrap:anywhere;   /* kľúčové */
+    word-break:break-word;    /* fallback */
+    hyphens:auto;             /* pekné zalomenie, keď je dostupný slovník */
     line-height:1.1;
     text-align:center;
-    text-wrap:balance;
-    word-break:keep-all
   }
 
   .temps{display:grid; place-items:center; width:100%; min-width:0}
@@ -129,13 +131,12 @@
 
   .c-ico{font-size:26px; line-height:1; display:flex; align-items:center; justify-content:center}
 
+  /* jednotné rozloženie metrík – ako 7-dňová */
   .metrics{display:flex; flex-direction:column; align-items:center; justify-content:center; gap:6px; width:100%}
   .metric{display:flex; flex-direction:column; align-items:center; gap:6px; width:auto}
   .metric .m-ico{line-height:1; font-size:16px}
   .metric .m-txt{min-width:0; white-space:normal; text-align:center; font-size:13.5px; font-weight:500; color:#e9f3ff; letter-spacing:.02px; line-height:1.2}
-
   .metrics--mini .metric{display:flex; flex-direction:column; gap:6px}
-
   @media (max-width:480px){ .metrics{gap:4px} .metric .m-txt{font-size:12.6px} }
   @media (max-width:360px){ .metric .m-txt{font-size:12px} }
 
@@ -235,7 +236,7 @@
   <div id="err"></div>
 
   <script>
-    const APP_VERSION = '2025-08-15-hotfix-all-dead-1';
+    const APP_VERSION = '2025-08-15-mobile-title-wrap-2';
     const $ = s => document.querySelector(s);
     const NBSP_NARROW = '\u202F';
     const fmt0 = (v,u='') => (v==null || Number.isNaN(v)) ? '—' : (Math.round(v) + u);
@@ -621,7 +622,6 @@
         const baseTime=(state && state.last && state.last.current && state.last.current.time) ? new Date(state.last.current.time) : new Date();
         const lastYear=new Date(baseTime); lastYear.setFullYear(lastYear.getFullYear()-1);
         const day=lastYear.toISOString().slice(0,10);
-        $('#hist-date').textContent=new Intl.DateTimeFormat('sk-SK',{dateStyle:'full'}).format(lastYear);
         const p=new URLSearchParams({latitude:state.lat, longitude:state.lon, start_date:day, end_date:day, daily:'weather_code,temperature_2m_max,temperature_2m_min,precipitation_sum', timezone:'auto'});
         const j=await fetch('https://archive-api.open-meteo.com/v1/archive?'+p+'&v='+APP_VERSION).then(r=>r.json());
         const dd=j.daily || {};
@@ -630,13 +630,14 @@
         const tmin=dd.temperature_2m_min ? dd.temperature_2m_min[0] : null;
         const pr=(dd.precipitation_sum && dd.precipitation_sum[0]!=null) ? dd.precipitation_sum[0] : 0;
         const avgT = (tmax!=null && tmin!=null) ? (tmax+tmin)/2 : null;
-        $('#hist-emoji').textContent=wmoEmoji(code,false,{temp:avgT,precip:pr});
-        $('#hist-text').textContent=(WMO[code] && WMO[code][0])||'—';
-        $('#hist-max').textContent=fmt1(tmax,'°C');
-        $('#hist-min').textContent=fmt1(tmin,'°C');
-        $('#hist-extra').textContent=pr>0?('Zrážky: '+fmt1(pr, NBSP_NARROW+'mm')):'Bez zrážok.';
+        document.getElementById('hist-date').textContent=new Intl.DateTimeFormat('sk-SK',{dateStyle:'full'}).format(new Date(day));
+        document.getElementById('hist-emoji').textContent=wmoEmoji(code,false,{temp:avgT,precip:pr});
+        document.getElementById('hist-text').textContent=(WMO[code] && WMO[code][0])||'—';
+        document.getElementById('hist-max').textContent=fmt1(tmax,'°C');
+        document.getElementById('hist-min').textContent=fmt1(tmin,'°C');
+        document.getElementById('hist-extra').textContent=pr>0?('Zrážky: '+fmt1(pr, NBSP_NARROW+'mm')):'Bez zrážok.';
       }catch(e){
-        $('#hist-extra').textContent='Históriu sa nepodarilo načítať.';
+        document.getElementById('hist-extra').textContent='Históriu sa nepodarilo načítať.';
       }
     }
 
