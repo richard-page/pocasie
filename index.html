@@ -70,25 +70,39 @@
   footer{padding:18px 10px; text-align:center; color:#cfe8ff; font-size:14px; border-top:1px solid rgba(255,255,255,.12)}
 
   .colset{
-    --cols:4; display:grid; gap:var(--gap); grid-auto-flow:column;
-    grid-auto-columns: calc((100% - (var(--cols) - 1)*var(--gap)) / var(--cols) - .5px);
+    --cols:4;
+    display:grid; gap:var(--gap); grid-auto-flow:column;
+    grid-auto-columns:minmax(0, calc((100% - (var(--cols) - 1)*var(--gap)) / var(--cols)));
     overflow-x:auto; overflow-y:hidden; scrollbar-gutter:stable both-edges;
     -webkit-overflow-scrolling:touch; touch-action:pan-y; overscroll-behavior-x:contain;
-    cursor:grab; padding:6px 0 10px
+    cursor:grab; padding:8px 6px 12px
   }
   .colset.dragging{cursor:grabbing; user-select:none}
 
   .col{
     background:var(--panel); border:1px solid var(--stroke); border-radius:12px; padding:12px;
     display:grid; grid-template-rows:auto auto auto auto; align-items:center; justify-items:center;
-    text-align:center; min-height:182px; contain:content; position:relative; row-gap:8px
+    text-align:center; min-height:182px; position:relative; row-gap:8px; min-width:0; overflow:visible
   }
-  .c-top{opacity:.9; white-space:nowrap; overflow:hidden; text-overflow:ellipsis}
 
-  .temps{display:grid; place-items:center; width:100%}
+  .c-top{
+    opacity:.9;
+    white-space:normal;
+    overflow:visible;
+    text-overflow:clip;
+    line-height:1.1;
+    text-align:center
+  }
+
+  .temps{display:grid; place-items:center; width:100%; min-width:0}
   .temps .c-max{font-size:28px; font-weight:700; color:#ff6c6c; line-height:1}
   .temps .c-min{font-size:18px; color:#ffbb7c; margin-top:4px; line-height:1}
 
+  @media (max-width:420px){
+    .temps .c-max{font-size:26px}
+    .temps .c-min{font-size:17px}
+    .metric .m-txt{font-size:12.6px}
+  }
   @media (min-width:900px){
     .temps .c-max{font-size:32px}
     .temps .c-min{font-size:19px}
@@ -99,7 +113,7 @@
   .metrics{display:flex; flex-direction:column; align-items:center; justify-content:center; gap:6px; width:100%}
   .metric{display:inline-flex; align-items:center; justify-content:center; gap:8px; width:100%}
   .metric .m-ico{display:flex; align-items:center; justify-content:center; font-size:16px; line-height:1}
-  .metric .m-txt{font-size:13.5px; font-weight:500; color:#e9f3ff; letter-spacing:.05px; line-height:1.25; text-align:center}
+  .metric .m-txt{font-size:13.5px; font-weight:500; color:#e9f3ff; letter-spacing:.05px; line-height:1.25; text-align:center; word-break:keep-all}
 
   .colset::-webkit-scrollbar{height:12px}
   .colset::-webkit-scrollbar-track{background:#0f1c2a; border-radius:8px}
@@ -199,7 +213,7 @@
   <footer>&copy; <span id="year"></span> Richard / Počasie</footer>
 
   <script>
-    const APP_VERSION = '2025-08-15-openmeteo-bestmatch-only';
+    const APP_VERSION = '2025-08-15-mobile-fix';
     const $ = s => document.querySelector(s);
     const NBSP_NARROW = '\u202F';
     const fmt0 = (v,u='') => (v==null || Number.isNaN(v)) ? '—' : (Math.round(v) + u);
