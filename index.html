@@ -210,7 +210,7 @@
   <footer>&copy; <span id="year"></span> Richard / Počasie</footer>
 
   <script>
-    const APP_VERSION = '2025-08-15-days-emoji-restored';
+    const APP_VERSION = '2025-08-15-fog-context-alt';
     const $ = s => document.querySelector(s);
     const NBSP_NARROW = '\u202F';
     const fmt0 = (v,u='') => (v==null || Number.isNaN(v)) ? '—' : (Math.round(v) + u);
@@ -225,18 +225,28 @@
     const RAIN_CODES = new Set([51,53,55,61,63,65,66,67,80,81,82,95,96,99]);
     const uvCat = u => u<3?'nízky':u<6?'mierny':u<8?'vysoký':u<11?'veľmi vysoký':'extrémny';
 
-    const wmoEmoji = (code, night=false)=>{
+    function wmoEmoji(code, night=false, ctx={}){
       const k = Number(code);
+      function fogAlt(){
+        const t = Number.isFinite(ctx.temp) ? ctx.temp : null;
+        const w = Number.isFinite(ctx.wind) ? ctx.wind : null;
+        const p = Number.isFinite(ctx.precip) ? ctx.precip : null;
+        const prob = Number.isFinite(ctx.prob) ? ctx.prob : null;
+        if(t!=null && t<=0) return '❄️';
+        if((p!=null && p>0) || (prob!=null && prob>=30)) return '🌧️';
+        if(w!=null && w>=20) return '💨';
+        return night ? '🌙' : '☁️';
+      }
+      if ([45,48].includes(k)) return fogAlt();
       if ([0,1].includes(k)) return night ? '🌙' : '☀️';
       if (k===2) return night ? '🌙' : '⛅';
       if (k===3) return '☁️';
-      if ([45,48].includes(k)) return '☁️';
       if ([51,53,55].includes(k)) return '🌦️';
       if ([61,63,65,80,81,82].includes(k)) return '🌧️';
       if ([71,73,75,77,85,86].includes(k)) return '❄️';
       if ([95,96,99].includes(k)) return '⛈️';
       return night ? '🌙' : '🌤️';
-    };
+    }
 
     function willRain(args){
       const code = args && args.code!=null ? Number(args.code) : null;
@@ -433,7 +443,7 @@
       $('#wind').textContent=fmt1(cur.wind_speed_10m, NBSP_NARROW+'km/h');
       $('#hum').textContent=fmt0(cur.relative_humidity_2m, NBSP_NARROW+'%');
       $('#press').textContent=fmt0(cur.pressure_msl, NBSP_NARROW+'hPa');
-      $('#icon').textContent=wmoEmoji(cur.weather_code, isNightAt(cur.time, d.daily||{}));
+      $('#icon').textContent=wmoEmoji(cur.weather_code, isNightAt(cur.time, d.daily||{}), {temp:cur.temperature_2m, wind:cur.wind_speed_10m});
 
       const uvi=(cur.uv_index!=null ? cur.uv_index : (d.daily && d.daily.uv_index_max && d.daily.uv_index_max[0]!=null ? d.daily.uv_index_max[0] : null));
       $('#uv').textContent = uvi!=null ? ('UV index '+fmt1(uvi)+' • '+uvCat(uvi)) : 'UV index —';
@@ -499,7 +509,7 @@
         const el=document.createElement('div'); el.className='col';
         el.innerHTML='<div class="c-top">'+label+'</div>'
                     +'<div class="temps"><div class="c-max">'+fmt0(temp,'°')+'</div><div class="c-min">'+(temp!=null?fmt0(temp-5,'°'):'—')+'</div></div>'
-                    +'<div class="c-ico">'+wmoEmoji(code, isNightAt(dt, d.daily||{}))+'</div>'
+                    +'<div class="c-ico">'+wmoEmoji(code, isNightAt(dt, d.daily||{}), {temp, wind, precip: pr})+'</div>'
                     +'<div class="metrics">'
                     +  '<div class="metric"><span class="m-ico">💧</span><span class="m-txt">Zrážky '+fmt0(pr, NBSP_NARROW+'mm/h')+'</span></div>'
                     +  '<div class="metric"><span class="m-ico">'+windEmoji()+'</span><span class="m-txt">Vietor '+fmt0(wind, NBSP_NARROW+'km/h')+'</span></div>'
@@ -526,12 +536,14 @@
         const max=days.temperature_2m_max ? days.temperature_2m_max[i] : null;
         const min=days.temperature_2m_min ? days.temperature_2m_min[i] : null;
         const pp=days.precipitation_probability_max ? days.precipitation_probability_max[i] : null;
+        const avgT = (max!=null && min!=null) ? (max+min)/2 : null;
+        const dayIco = wmoEmoji(code, false, {prob: pp, temp: avgT});
         const will = willRain({code, prob:pp});
         const iconHTML = will ? '<span class="m-ico">💧</span>' : '';
         const el=document.createElement('div'); el.className='col';
         el.innerHTML='<div class="c-top">'+top+'</div>'
                     +'<div class="temps"><div class="c-max">'+fmt0(max,'°')+'</div><div class="c-min">'+fmt0(min,'°')+'</div></div>'
-                    +'<div class="c-ico">'+wmoEmoji(code,false)+'</div>'
+                    +'<div class="c-ico">'+dayIco+'</div>'
                     +'<div class="metrics"><div class="metric">'+iconHTML+'<span class="m-txt">'+(pp!=null?pp+' %':'—')+'</span></div></div>';
         box.appendChild(el);
       }
@@ -551,7 +563,7 @@
         const el=document.createElement('div'); el.className='col';
         el.innerHTML='<div class="c-top">'+t.toLocaleTimeString('sk-SK',{hour:'2-digit',minute:'2-digit'})+'</div>'
                     +'<div class="temps"><div class="c-max">'+fmt0(tmp,'°')+'</div><div class="c-min">'+(tmp!=null?fmt0(tmp-5,'°'):'—')+'</div></div>'
-                    +'<div class="c-ico">'+wmoEmoji(code, isNightAt(t,d.daily||{}))+'</div>'
+                    +'<div class="c-ico">'+wmoEmoji(code, isNightAt(t,d.daily||{}), {temp: tmp, wind, precip: prep})+'</div>'
                     +'<div class="metrics">'
                     +  '<div class="metric"><span class="m-ico">💧</span><span class="m-txt">Zrážky '+(prep!=null?fmt0(prep, NBSP_NARROW+'mm/h'):'—')+'</span></div>'
                     +  '<div class="metric"><span class="m-ico">'+windEmoji()+'</span><span class="m-txt">Vietor '+(wind!=null?fmt0(wind, NBSP_NARROW+'km/h'):'—')+'</span></div>'
@@ -601,7 +613,8 @@
         const tmax=dd.temperature_2m_max ? dd.temperature_2m_max[0] : null;
         const tmin=dd.temperature_2m_min ? dd.temperature_2m_min[0] : null;
         const pr=(dd.precipitation_sum && dd.precipitation_sum[0]!=null) ? dd.precipitation_sum[0] : 0;
-        $('#hist-emoji').textContent=wmoEmoji(code,false);
+        const avgT = (tmax!=null && tmin!=null) ? (tmax+tmin)/2 : null;
+        $('#hist-emoji').textContent=wmoEmoji(code,false,{temp:avgT,precip:pr});
         $('#hist-text').textContent=(WMO[code] && WMO[code][0])||'—';
         $('#hist-max').textContent=fmt1(tmax,'°C');
         $('#hist-min').textContent=fmt1(tmin,'°C');
