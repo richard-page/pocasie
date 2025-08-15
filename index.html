@@ -78,9 +78,7 @@
     touch-action:pan-x pan-y;
     overscroll-behavior-x:contain;
     cursor:grab; padding:10px 6px 18px;
-    scroll-snap-type:x proximity;
-    mask-image:linear-gradient(90deg, transparent 0, #000 14px, #000 calc(100% - 14px), transparent 100%);
-    -webkit-mask-image:linear-gradient(90deg, transparent 0, #000 14px, #000 calc(100% - 14px), transparent 100%)
+    scroll-snap-type:x proximity
   }
   .colset.dragging{cursor:grabbing; user-select:none}
 
@@ -113,7 +111,7 @@
   .metrics{display:flex; flex-direction:column; align-items:center; justify-content:center; gap:6px; width:100%}
   .metric{display:inline-flex; align-items:center; justify-content:center; gap:8px; width:100%}
   .metric .m-ico{display:flex; align-items:center; justify-content:center; font-size:16px; line-height:1}
-  .metric .m-txt{font-size:13.5px; font-weight:500; color:#e9f3ff; letter-spacing:.05px; line-height:1.25; text-align:center; word-break:keep-all; white-space:nowrap; overflow:hidden; text-overflow:ellipsis}
+  .metric .m-txt{font-size:13.5px; font-weight:500; color:#e9f3ff; letter-spacing:.05px; line-height:1.25; text-align:center; white-space:nowrap; overflow:hidden; text-overflow:ellipsis}
 
   .colset::-webkit-scrollbar{height:10px}
   .colset::-webkit-scrollbar-track{background:#0f1c2a; border-radius:8px}
@@ -139,8 +137,20 @@
     .chartWrap{height:270px}
   }
   @media (min-width:1100px){ .chartWrap{height:300px} }
-  
+
   #err{position:fixed;left:10px;right:10px;bottom:12px;background:#2a1111;border:1px solid #6b2a2a;color:#ffd9d9;border-radius:10px;padding:10px 12px;font-size:14px;display:none;z-index:99}
+
+  /* Pevné 4 stĺpce bez orezania iba pre Dnešnú predpoveď */
+  #parts{
+    display:grid;
+    grid-template-columns:repeat(4,minmax(0,1fr));
+    gap:var(--gap);
+    overflow:visible;
+    padding:10px 0 6px;
+    scroll-snap-type:none;
+    cursor:auto
+  }
+  #parts .col{flex:initial}
 </style>
 </head>
 <body>
@@ -222,7 +232,7 @@
   <div id="err"></div>
 
   <script>
-    const APP_VERSION = '2025-08-15-mobile-flex-fix-3';
+    const APP_VERSION = '2025-08-15-mobile-grid-4';
     const $ = s => document.querySelector(s);
     const NBSP_NARROW = '\u202F';
     const fmt0 = (v,u='') => (v==null || Number.isNaN(v)) ? '—' : (Math.round(v) + u);
@@ -651,7 +661,7 @@
 
     document.getElementById('year').textContent=new Date().getFullYear();
 
-    function initDragBars(){ ['parts','days','min15'].forEach(id=>{ const el=document.getElementById(id); if(el){ enableDragScroll(el) } }) }
+    function initDragBars(){ ['days','min15'].forEach(id=>{ const el=document.getElementById(id); if(el){ enableDragScroll(el) } }) }
 
     initGeolocation();
     window.addEventListener('resize', ()=>{ if(state.last){ drawHourly(); renderMin15() }});
