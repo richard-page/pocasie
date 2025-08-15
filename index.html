@@ -68,6 +68,7 @@
 
   footer{padding:18px 10px; text-align:center; color:#cfe8ff; font-size:14px; border-top:1px solid rgba(255,255,255,.12)}
 
+  /* horizontálne karty */
   .colset{
     --cols:4;
     --gap:8px;
@@ -127,26 +128,16 @@
 
   .c-ico{font-size:26px; line-height:1; display:flex; align-items:center; justify-content:center}
 
+  /* metriky */
   .metrics{display:flex; flex-direction:column; align-items:center; justify-content:center; gap:6px; width:100%}
-
-  .metric{
-    display:grid;
-    grid-template-columns:auto 1fr;
-    align-items:center;
-    justify-content:center;
-    column-gap:8px;
-    width:100%
-  }
+  .metric{display:grid; grid-template-columns:auto 1fr; align-items:center; justify-content:center; column-gap:8px; width:100%}
   .metric .m-ico{line-height:1; font-size:16px}
-  .metric .m-txt{
-    min-width:0;
-    white-space:normal;
-    overflow-wrap:break-word;
-    word-break:normal;
-    hyphens:auto;
-    text-align:center;
-    font-size:13.5px; font-weight:500; color:#e9f3ff; letter-spacing:.05px; line-height:1.25
-  }
+  .metric .m-txt{min-width:0; white-space:normal; overflow-wrap:break-word; word-break:normal; hyphens:auto; text-align:center; font-size:13.5px; font-weight:500; color:#e9f3ff; letter-spacing:.05px; line-height:1.25}
+
+  /* mini verzia – pre 7-dňovú: percento pod emoji v strede */
+  .metrics--mini{align-items:center}
+  .metrics--mini .metric{grid-template-columns:auto auto; width:auto}
+  .metrics--mini .m-txt{text-align:center}
 
   .colset::-webkit-scrollbar{height:10px}
   .colset::-webkit-scrollbar-track{background:#0f1c2a; border-radius:8px}
@@ -244,7 +235,7 @@
   <div id="err"></div>
 
   <script>
-    const APP_VERSION = '2025-08-15-mobile-grid-textfix-3';
+    const APP_VERSION = '2025-08-15-mobile-grid-textfix-4';
     const $ = s => document.querySelector(s);
     const NBSP_NARROW = '\u202F';
     const fmt0 = (v,u='') => (v==null || Number.isNaN(v)) ? '—' : (Math.round(v) + u);
@@ -588,7 +579,7 @@
         el.innerHTML='<div class="c-top">'+top+'</div>'
                     +'<div class="temps"><div class="c-max">'+fmt0(max,'°')+'</div><div class="c-min">'+fmt0(min,'°')+'</div></div>'
                     +'<div class="c-ico">'+dayIco+'</div>'
-                    +'<div class="metrics"><div class="metric">'+iconHTML+'<span class="m-txt">'+(pp!=null?pp+' %':'—')+'</span></div></div>';
+                    +'<div class="metrics metrics--mini"><div class="metric">'+iconHTML+'<span class="m-txt">'+(pp!=null?pp+' %':'—')+'</span></div></div>';
         box.appendChild(el);
       }
     }
