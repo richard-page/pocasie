@@ -71,33 +71,35 @@
 
   .colset{
     --cols:4; display:grid; gap:var(--gap); grid-auto-flow:column;
-    grid-auto-columns: calc((100% - (var(--cols) - 1)*var(--gap)) / var(--cols));
+    grid-auto-columns: calc((100% - (var(--cols) - 1)*var(--gap)) / var(--cols) - .5px);
     overflow-x:auto; overflow-y:hidden; scrollbar-gutter:stable both-edges;
     -webkit-overflow-scrolling:touch; touch-action:pan-y; overscroll-behavior-x:contain;
-    cursor:grab; padding:8px 4px 12px
+    cursor:grab; padding:6px 0 10px
   }
   .colset.dragging{cursor:grabbing; user-select:none}
 
   .col{
-    background:var(--panel); border:1px solid var(--stroke); border-radius:12px; padding:12px 12px 14px;
+    background:var(--panel); border:1px solid var(--stroke); border-radius:12px; padding:12px;
     display:grid; grid-template-rows:auto auto auto auto; align-items:center; justify-items:center;
-    text-align:center; min-height:192px; contain:content; position:relative; row-gap:8px; min-width:0
+    text-align:center; min-height:182px; contain:content; position:relative; row-gap:8px
   }
   .c-top{opacity:.9; white-space:nowrap; overflow:hidden; text-overflow:ellipsis}
 
   .temps{display:grid; place-items:center; width:100%}
-  .temps .c-max{font-size:26px; font-weight:700; color:#ff6c6c; line-height:1}
-  .temps .c-min{font-size:16px; color:#ffbb7c; margin-top:4px; line-height:1}
+  .temps .c-max{font-size:28px; font-weight:700; color:#ff6c6c; line-height:1}
+  .temps .c-min{font-size:18px; color:#ffbb7c; margin-top:4px; line-height:1}
 
-  .c-ico{font-size:24px; line-height:1; display:flex; align-items:center; justify-content:center}
+  @media (min-width:900px){
+    .temps .c-max{font-size:32px}
+    .temps .c-min{font-size:19px}
+  }
+
+  .c-ico{font-size:26px; line-height:1; display:flex; align-items:center; justify-content:center}
 
   .metrics{display:flex; flex-direction:column; align-items:center; justify-content:center; gap:6px; width:100%}
-  .metric{display:flex; align-items:center; justify-content:center; gap:8px; width:100%; padding:0 2px}
+  .metric{display:inline-flex; align-items:center; justify-content:center; gap:8px; width:100%}
   .metric .m-ico{display:flex; align-items:center; justify-content:center; font-size:16px; line-height:1}
-  .metric .m-txt{flex:1; min-width:0; font-size:13px; font-weight:500; color:#e9f3ff; letter-spacing:.05px; line-height:1.25; text-align:center; white-space:normal; overflow-wrap:anywhere}
-
-  .rain-badge{position:absolute; top:6px; right:6px; font-size:18px; line-height:1; filter:drop-shadow(0 1px 2px rgba(0,0,0,.6)); background:rgba(13,24,36,.6); border:1px solid rgba(255,255,255,.1); border-radius:10px; padding:2px 6px}
-  @media (max-width:720px){ .rain-badge{top:auto; bottom:6px; right:6px} }
+  .metric .m-txt{font-size:13.5px; font-weight:500; color:#e9f3ff; letter-spacing:.05px; line-height:1.25; text-align:center}
 
   .colset::-webkit-scrollbar{height:12px}
   .colset::-webkit-scrollbar-track{background:#0f1c2a; border-radius:8px}
@@ -105,21 +107,10 @@
   .colset::-webkit-scrollbar-thumb:hover{background:#3f6b94}
   .colset{scrollbar-width:thin; scrollbar-color:#33516f #0f1c2a}
 
-  @media (max-width:420px){
-    .temps .c-max{font-size:24px}
-    .temps .c-min{font-size:15px}
-    .metric .m-txt{font-size:12.5px}
-    .c-ico{font-size:22px}
-    .col{min-height:188px; padding:10px 10px 12px}
-  }
-
   @media (min-width:900px){
     #parts.colset{--cols:4}
     #days.colset{--cols:7}
     #min15.colset{--cols:6}
-    .temps .c-max{font-size:30px}
-    .temps .c-min{font-size:18px}
-    .c-ico{font-size:26px}
   }
   @media (min-width:780px){
     .wrap{padding:24px 16px 44px}
@@ -208,7 +199,7 @@
   <footer>&copy; <span id="year"></span> Richard / Počasie</footer>
 
   <script>
-    const APP_VERSION = '2025-08-15-mobile-wrap-fix';
+    const APP_VERSION = '2025-08-15-openmeteo-bestmatch-only';
     const $ = s => document.querySelector(s);
     const NBSP_NARROW = '\u202F';
     const fmt0 = (v,u='') => (v==null || Number.isNaN(v)) ? '—' : (Math.round(v) + u);
@@ -258,7 +249,6 @@
       if (precip!=null && precip > 0){ if (temp==null) return true; return temp>1 }
       return false;
     }
-    function addRainBadge(el){ el.insertAdjacentHTML('beforeend', '<div class="rain-badge" aria-label="Zrážky" title="Zrážky">💧</div>') }
     const windEmoji = ()=> '💨';
 
     function isNightAt(dtLike, daily){
@@ -512,7 +502,6 @@
                     +  '<div class="metric"><span class="m-ico">💧</span><span class="m-txt">Zrážky '+fmt0(pr, NBSP_NARROW+'mm/h')+'</span></div>'
                     +  '<div class="metric"><span class="m-ico">'+windEmoji()+'</span><span class="m-txt">Vietor '+fmt0(wind, NBSP_NARROW+'km/h')+'</span></div>'
                     +'</div>';
-        if (willRain({code, precip:pr, temp})) addRainBadge(el);
         wrap.appendChild(el);
       }
       const doobeda=new Date(base); doobeda.setHours(10,0,0,0); slot(doobeda,'Doobeda');
@@ -566,7 +555,6 @@
                     +  '<div class="metric"><span class="m-ico">💧</span><span class="m-txt">Zrážky '+(prep!=null?fmt0(prep, NBSP_NARROW+'mm/h'):'—')+'</span></div>'
                     +  '<div class="metric"><span class="m-ico">'+windEmoji()+'</span><span class="m-txt">Vietor '+(wind!=null?fmt0(wind, NBSP_NARROW+'km/h'):'—')+'</span></div>'
                     +'</div>';
-        if (willRain({code, precip:prep, temp:tmp})) addRainBadge(el);
         box.appendChild(el);
       }
     }
