@@ -69,9 +69,8 @@
 
   footer{padding:18px 10px; text-align:center; color:#cfe8ff; font-size:14px; border-top:1px solid rgba(255,255,255,.12)}
 
-  /* HORIZONTÁLNE ZOZNAMY – FLEX + SCROLL-SNAP, 4 KARTY NA MOBIL */
+  /* --- horizontálne zoznamy: flex + scroll-snap; šírku dodá JS cez --col-basis --- */
   .colset{
-    --cols:4;
     display:flex; gap:var(--gap);
     overflow-x:auto; overflow-y:hidden;
     scrollbar-gutter:stable both-edges;
@@ -79,39 +78,26 @@
     touch-action:pan-x pan-y;
     overscroll-behavior-x:contain;
     cursor:grab; padding:10px 6px 14px;
-    scroll-snap-type:x proximity
+    scroll-snap-type:x proximity;
   }
   .colset.dragging{cursor:grabbing; user-select:none}
 
   .col{
-    flex:0 0 calc((100% - (var(--cols) - 1)*var(--gap)) / var(--cols));
+    flex:0 0 var(--col-basis, 25%);
     background:var(--panel); border:1px solid var(--stroke); border-radius:12px; padding:12px;
     display:grid; grid-template-rows:auto auto auto auto; align-items:center; justify-items:center;
     text-align:center; min-height:182px; position:relative; row-gap:8px; min-width:0; overflow:visible;
-    scroll-snap-align:start
+    scroll-snap-align:start;
   }
 
-  .c-top{
-    opacity:.9; white-space:normal; overflow:visible; text-overflow:clip;
-    line-height:1.1; text-align:center
-  }
-
+  .c-top{opacity:.9; white-space:normal; overflow:visible; text-overflow:clip; line-height:1.1; text-align:center}
   .temps{display:grid; place-items:center; width:100%; min-width:0}
   .temps .c-max{font-size:28px; font-weight:700; color:#ff6c6c; line-height:1}
   .temps .c-min{font-size:18px; color:#ffbb7c; margin-top:4px; line-height:1}
-
-  @media (max-width:420px){
-    .temps .c-max{font-size:26px}
-    .temps .c-min{font-size:17px}
-    .metric .m-txt{font-size:12.6px}
-  }
-  @media (min-width:900px){
-    .temps .c-max{font-size:32px}
-    .temps .c-min{font-size:19px}
-  }
+  @media (max-width:420px){ .temps .c-max{font-size:26px} .temps .c-min{font-size:17px} .metric .m-txt{font-size:12.6px} }
+  @media (min-width:900px){ .temps .c-max{font-size:32px} .temps .c-min{font-size:19px} }
 
   .c-ico{font-size:26px; line-height:1; display:flex; align-items:center; justify-content:center}
-
   .metrics{display:flex; flex-direction:column; align-items:center; justify-content:center; gap:6px; width:100%}
   .metric{display:inline-flex; align-items:center; justify-content:center; gap:8px; width:100%}
   .metric .m-ico{display:flex; align-items:center; justify-content:center; font-size:16px; line-height:1}
@@ -123,11 +109,6 @@
   .colset::-webkit-scrollbar-thumb:hover{background:#3f6b94}
   .colset{scrollbar-width:thin; scrollbar-color:#33516f #0f1c2a}
 
-  @media (min-width:900px){
-    #parts{--cols:4}
-    #days{--cols:7}
-    #min15{--cols:6}
-  }
   @media (min-width:780px){
     .wrap{padding:24px 16px 44px}
     .row{grid-template-columns:1.05fr 1fr; gap:18px}
@@ -135,7 +116,7 @@
     .chartWrap{height:270px}
   }
   @media (min-width:1100px){ .chartWrap{height:300px} }
-  
+
   /* jednoduchý error toast */
   #err{position:fixed;left:10px;right:10px;bottom:12px;background:#2a1111;border:1px solid #6b2a2a;color:#ffd9d9;border-radius:10px;padding:10px 12px;font-size:14px;display:none;z-index:99}
 </style>
@@ -187,17 +168,17 @@
 
     <section class="card">
       <h3>Dnešná predpoveď</h3>
-      <div id="parts" class="colset"></div>
+      <div id="parts" class="colset" data-mcols="4" data-dcols="4"></div>
     </section>
 
     <section class="card">
       <h3>7-dňová predpoveď</h3>
-      <div id="days" class="colset"></div>
+      <div id="days" class="colset" data-mcols="4" data-dcols="7"></div>
     </section>
 
     <section class="card">
       <h3>15-minútová predpoveď (24 h)</h3>
-      <div id="min15" class="colset"></div>
+      <div id="min15" class="colset" data-mcols="4" data-dcols="6"></div>
     </section>
 
     <section class="card">
@@ -219,25 +200,41 @@
   <div id="err"></div>
 
   <script>
-    const APP_VERSION = '2025-08-15-mobile-flex-fix-2';
+    const APP_VERSION = '2025-08-15-mobile-4col-final';
     const $ = s => document.querySelector(s);
     const NBSP_NARROW = '\u202F';
     const fmt0 = (v,u='') => (v==null || Number.isNaN(v)) ? '—' : (Math.round(v) + u);
     const fmt1 = (v,u='') => (v==null || Number.isNaN(v)) ? '—' : ((Math.round(v*10)/10).toFixed(1) + u);
 
-    /* FIX: správna WMO tabuľka (bez syntaktických chýb) */
-    const WMO = {
-      0:['Jasno'],1:['Prevažne jasno'],2:['Polojasno'],3:['Zamračené'],
-      45:['Hmla'],48:['Mrznúca hmla'],
-      51:['Slabé mrholenie'],53:['Mrholenie'],55:['Silné mrholenie'],
+    /* --- WMO + helpery --- */
+    const WMO = {0:['Jasno'],1:['Prevažne jasno'],2:['Polojasno'],3:['Zamračené'],
+      45:['Hmla'],48:['Mrznúca hmla'],51:['Slabé mrholenie'],53:['Mrholenie'],55:['Silné mrholenie'],
       61:['Slabý dážď'],63:['Dážď'],65:['Lejak'],66:['Mrznúci dážď'],67:['Mrznúci dážď'],
       71:['Slabé sneženie'],73:['Sneženie'],75:['Silné sneženie'],77:['Snehové zrná'],
       80:['Prehánky'],81:['Prehánky'],82:['Silné prehánky'],
       85:['Snehové prehánky'],86:['Silné snehové prehánky'],
-      95:['Búrky'],96:['Búrky s krúpami'],99:['Silné búrky s krúpami']
-    };
+      95:['Búrky'],96:['Búrky s krúpami'],99:['Silné búrky s krúpami']};
     const RAIN_CODES = new Set([51,53,55,61,63,65,66,67,80,81,82,95,96,99]);
     const uvCat = u => u<3?'nízky':u<6?'mierny':u<8?'vysoký':u<11?'veľmi vysoký':'extrémny';
+    const windEmoji = ()=> '💨';
+
+    /* --- Layout: spoľahlivé 4 karty na mobil --- */
+    const ro = new ResizeObserver(()=>layoutCols());
+    function computeGapPx(el){ const cs=getComputedStyle(el); const g=parseFloat(cs.columnGap||cs.gap||'10'); return Number.isFinite(g)?g:10; }
+    function colsFor(el){ const isDesktop=(window.innerWidth||0)>=900; const m=Number(el.dataset.mcols||4); const d=Number(el.dataset.dcols||m); return isDesktop?d:m; }
+    function setColBasisFor(el){
+      if(!el) return;
+      const cols = colsFor(el);
+      const gap = computeGapPx(el);
+      const w = el.clientWidth;
+      const basis = Math.max(140, (w - (cols-1)*gap) / cols);
+      el.style.setProperty('--col-basis', basis + 'px');
+    }
+    function layoutCols(){ document.querySelectorAll('.colset').forEach(setColBasisFor); }
+
+    /* --- UI drobnosti --- */
+    const toast=(msg)=>{ const el=$('#err'); if(!el) return; el.textContent=msg; el.style.display='block'; setTimeout(()=>{el.style.display='none'}, 5000) };
+    const pad = n => String(n).padStart(2,'0');
 
     function wmoEmoji(code, night=false, ctx={}){
       const k = Number(code);
@@ -261,7 +258,6 @@
       if ([95,96,99].includes(k)) return '⛈️';
       return night ? '🌙' : '🌤️';
     }
-
     function willRain(args){
       const code = args && args.code!=null ? Number(args.code) : null;
       const precip = args && args.precip!=null ? Number(args.precip) : null;
@@ -274,8 +270,6 @@
       if (precip!=null && precip > 0){ if (temp==null) return true; return temp>1 }
       return false;
     }
-    const windEmoji = ()=> '💨';
-
     function isNightAt(dtLike, daily){
       const dt = typeof dtLike==='string' ? new Date(dtLike) : dtLike;
       try{
@@ -292,12 +286,10 @@
       return (h<6 || h>=21);
     }
 
-    const pad = n => String(n).padStart(2,'0');
     const localHourKey = (date)=>{
       const d = typeof date==='string' ? new Date(date) : new Date(date);
       return d.getFullYear() + '-' + pad(d.getMonth()+1) + '-' + pad(d.getDate()) + 'T' + pad(d.getHours());
     };
-
     function valueAtHourLocal(timesISO, arr, date){
       const key = localHourKey(date);
       let idx = timesISO.findIndex(t => t.slice(0,13) === key);
@@ -306,7 +298,6 @@
       timesISO.forEach((t,i)=>{ const diff=Math.abs(new Date(t)-new Date(date)); if(diff<bestDiff){best=i;bestDiff=diff;} });
       return arr[best];
     }
-
     const lerp=(a,b,t)=>a+(b-a)*t;
     function valueAt15min(timesISO, arr, date){
       const ts=timesISO.map(t=>new Date(t));
@@ -331,7 +322,6 @@
       }
       return codes[codes.length-1] ?? 0;
     }
-
     function pickDayCondition(d){
       const times=(d.hourly && d.hourly.time) ? d.hourly.time : [];
       const codes=(d.hourly && d.hourly.weather_code) ? d.hourly.weather_code : [];
@@ -354,28 +344,16 @@
       Object.keys(freq).forEach(k=>{ const cnt=freq[k]; if(cnt>bestCnt){bestCnt=cnt; best=Number(k);} });
       return best;
     }
-
-    const aqiCat = (v)=>{
-      if(v==null||Number.isNaN(v)) return '—';
-      if(v<=50) return 'dobrá'; if(v<=100) return 'mierne zhoršená';
-      if(v<=150) return 'riziková'; if(v<=200) return 'zlá';
-      if(v<=300) return 'veľmi zlá'; return 'nebezpečná';
-    };
+    const aqiCat = (v)=>{ if(v==null||Number.isNaN(v)) return '—'; if(v<=50) return 'dobrá'; if(v<=100) return 'mierne zhoršená'; if(v<=150) return 'riziková'; if(v<=200) return 'zlá'; if(v<=300) return 'veľmi zlá'; return 'nebezpečná'; };
 
     let state={place:'—', lat:48.1486, lon:17.1077, last:null};
     let hourlyChart=null;
     const LS_KEY='wx_prefs_v3';
 
-    const toast=(msg)=>{ const el=$('#err'); if(!el) return; el.textContent=msg; el.style.display='block'; setTimeout(()=>{el.style.display='none'}, 5000) };
-
     try{
       const raw=localStorage.getItem(LS_KEY);
-      if(raw){
-        const p=JSON.parse(raw);
-        if(+p.lat && +p.lon && p.place){ state={...state, ...p}; }
-      }
+      if(raw){ const p=JSON.parse(raw); if(+p.lat && +p.lon && p.place){ state={...state, ...p}; } }
     }catch(e){}
-
     const savePrefs=()=>{ try{ localStorage.setItem(LS_KEY, JSON.stringify({lat:state.lat, lon:state.lon, place:state.place})); }catch(e){} };
 
     async function reverseGeocodeOpenMeteo(lat, lon){
@@ -425,10 +403,9 @@
 
     function initGeolocation(){
       if(!('geolocation'in navigator)){ fetchWeather().catch(()=>toast('Geolokácia nedostupná')); return; }
-      const placeEl=$('#place'); placeEl.textContent='Zisťujem polohu…';
+      $('#place').textContent='Zisťujem polohu…';
       navigator.geolocation.getCurrentPosition(async pos=>{
-        const coords = pos.coords || {};
-        const latitude = coords.latitude, longitude = coords.longitude;
+        const {latitude, longitude}=pos.coords||{};
         if (latitude!=null && longitude!=null) await setLocation(latitude, longitude);
         else fetchWeather().catch(()=>toast('Geolokácia zlyhala'));
       }, _=>{
@@ -448,11 +425,11 @@
       const r=await fetch('https://api.open-meteo.com/v1/forecast?'+p+'&v='+APP_VERSION);
       state.last=await r.json();
       renderAll(); drawHourly(); await fetchAQ().catch(()=>{}); renderDays(state.last); fetchHistory().catch(()=>{});
+      layoutCols(); // po vykreslení prepočítaj šírky
     }
 
     function renderAll(){
-      const d=state.last || {};
-      const cur=d.current || {};
+      const d=state.last || {}; const cur=d.current || {};
       $('#place').textContent=state.place;
       $('#temp').textContent=fmt0(cur.temperature_2m,'°');
       $('#apparent').textContent=fmt0(cur.apparent_temperature,'°');
@@ -591,13 +568,19 @@
 
     function enableDragScroll(el){
       let isDown=false, startX=0, startScroll=0, lastX=0, lastT=0, vx=0;
+      if(!el) return;
       el.addEventListener('pointerdown', e=>{
         if(e.button!==0) return; isDown=true; startX=e.clientX; startScroll=el.scrollLeft; lastX=e.clientX; lastT=performance.now(); vx=0; el.classList.add('dragging'); el.setPointerCapture(e.pointerId); e.preventDefault()
       });
       el.addEventListener('pointermove', e=>{
-        if(!isDown) return; const now=performance.now(); const dx=e.clientX-startX; el.scrollLeft = startScroll - dx; const ddx = e.clientX - lastX; const dt  = Math.max(1, now - lastT); vx = -(ddx/dt); lastX=e.clientX; lastT=now; e.preventDefault()
+        if(!isDown) return; const now=performance.now(); const dx=e.clientX-startX; el.scrollLeft = startScroll - dx;
+        const ddx = e.clientX - lastX; const dt  = Math.max(1, now - lastT); vx = -(ddx/dt); lastX=e.clientX; lastT=now; e.preventDefault()
       });
-      function momentum(v){ let velocity = v * 14; const friction = 0.92; function step(){ if(Math.abs(velocity) < 0.25) return; el.scrollLeft += velocity; velocity *= friction; if(el.scrollLeft<=0 || Math.ceil(el.scrollLeft)>=el.scrollWidth-el.clientWidth) return; requestAnimationFrame(step) } requestAnimationFrame(step) }
+      function momentum(v){ let velocity = v * 14; const friction = 0.92;
+        function step(){ if(Math.abs(velocity) < 0.25) return; el.scrollLeft += velocity; velocity *= friction;
+          if(el.scrollLeft<=0 || Math.ceil(el.scrollLeft)>=el.scrollWidth-el.clientWidth) return; requestAnimationFrame(step) }
+        requestAnimationFrame(step)
+      }
       el.addEventListener('pointerup', e=>{ if(!isDown) return; isDown=false; el.classList.remove('dragging'); try{ el.releasePointerCapture(e.pointerId) }catch(_){} momentum(vx) });
       el.addEventListener('pointercancel', ()=>{ isDown=false; el.classList.remove('dragging') });
       el.addEventListener('wheel', (e)=>{ const delta = Math.abs(e.deltaY) > Math.abs(e.deltaX) ? e.deltaY : e.deltaX; el.scrollLeft += delta * 0.6; e.preventDefault() }, {passive:false});
@@ -649,13 +632,27 @@
 
     document.getElementById('year').textContent=new Date().getFullYear();
 
-    function initDragBars(){ ['parts','days','min15'].forEach(id=>{ const el=document.getElementById(id); if(el){ enableDragScroll(el) } }) }
+    function initDragBars(){
+      ['parts','days','min15'].forEach(id=>{
+        const el=document.getElementById(id);
+        if(el){ enableDragScroll(el); ro.observe(el); }
+      });
+    }
 
+    // inicializácia
     initGeolocation();
-    window.addEventListener('resize', ()=>{ if(state.last){ drawHourly(); renderMin15() }});
-    setTimeout(()=>{ if(!state.last) fetchWeather().catch(()=>toast('Načítanie počasia zlyhalo')) },1200);
+    layoutCols(); // prvotný výpočet
     initDragBars();
 
+    // repainty/reflow
+    window.addEventListener('resize', ()=>{ layoutCols(); if(state.last){ drawHourly(); renderMin15(); }});
+    window.addEventListener('orientationchange', layoutCols);
+    if (document.fonts && document.fonts.ready) document.fonts.ready.then(layoutCols);
+
+    // fallback keď geolokácia nepovolí a nič ešte neprišlo
+    setTimeout(()=>{ if(!state.last) fetchWeather().catch(()=>toast('Načítanie počasia zlyhalo')); },1200);
+
+    // auto-refresh
     if(!window.__wx_auto_refresh){
       window.__wx_auto_refresh=setInterval(()=>{
         if(state.lat && state.lon){ fetchWeather().catch(()=>{}); fetchAQ().catch(()=>{}) }
