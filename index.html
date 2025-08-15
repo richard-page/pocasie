@@ -68,7 +68,6 @@
 
   footer{padding:18px 10px; text-align:center; color:#cfe8ff; font-size:14px; border-top:1px solid rgba(255,255,255,.12)}
 
-  /* horizontálne karty */
   .colset{
     --cols:4;
     --gap:8px;
@@ -115,8 +114,6 @@
   @media (max-width:420px){
     .temps .c-max{font-size:26px}
     .temps .c-min{font-size:17px}
-    .metric .m-txt{font-size:12.4px}
-    .c-ico{font-size:24px}
   }
   @media (min-width:900px){
     #parts{--cols:4}
@@ -128,16 +125,34 @@
 
   .c-ico{font-size:26px; line-height:1; display:flex; align-items:center; justify-content:center}
 
-  /* metriky – emoji priamo pri texte */
+  /* METRIKY – emoji pri texte, bez zalamovania a bez delenia slov */
   .metrics{display:flex; flex-direction:column; align-items:center; justify-content:center; gap:6px; width:100%}
-  .metric{display:inline-flex; align-items:center; gap:8px; width:auto}
+  .metric{display:inline-flex; align-items:center; gap:8px; width:auto; white-space:nowrap}
   .metric .m-ico{line-height:1; font-size:16px}
-  .metric .m-txt{min-width:0; white-space:normal; overflow-wrap:break-word; word-break:normal; hyphens:auto; text-align:center; font-size:13.5px; font-weight:500; color:#e9f3ff; letter-spacing:.05px; line-height:1.25}
+  .metric .m-txt{
+    min-width:0;
+    white-space:nowrap;
+    overflow:hidden;
+    text-overflow:ellipsis;
+    word-break:keep-all;
+    hyphens:none;
+    text-align:center;
+    font-size:13.5px; font-weight:500; color:#e9f3ff; letter-spacing:.02px; line-height:1.2
+  }
 
-  /* mini verzia – pre 7-dňovú: percento pod emoji v strede */
+  /* mini verzia – 7-dňová: percento pod emoji, centrované */
   .metrics--mini{align-items:center}
   .metrics--mini .metric{display:flex; flex-direction:column; gap:6px}
   .metrics--mini .m-txt{text-align:center}
+
+  /* mobilné doladenie – drobnejší font, menšie medzery */
+  @media (max-width:480px){
+    .metrics{gap:4px}
+    .metric .m-txt{font-size:12.6px}
+  }
+  @media (max-width:360px){
+    .metric .m-txt{font-size:12px}
+  }
 
   .colset::-webkit-scrollbar{height:10px}
   .colset::-webkit-scrollbar-track{background:#0f1c2a; border-radius:8px}
@@ -235,7 +250,7 @@
   <div id="err"></div>
 
   <script>
-    const APP_VERSION = '2025-08-15-inline-metrics-1';
+    const APP_VERSION = '2025-08-15-mobile-inline-nowrap-1';
     const $ = s => document.querySelector(s);
     const NBSP_NARROW = '\u202F';
     const fmt0 = (v,u='') => (v==null || Number.isNaN(v)) ? '—' : (Math.round(v) + u);
@@ -289,7 +304,6 @@
       if (precip!=null && precip > 0){ if (temp==null) return true; return temp>1 }
       return false;
     }
-    const windEmoji = ()=> '💨';
 
     function isNightAt(dtLike, daily){
       const dt = typeof dtLike==='string' ? new Date(dtLike) : dtLike;
@@ -310,7 +324,7 @@
     const pad = n => String(n).padStart(2,'0');
     const localHourKey = date => {
       const d = typeof date==='string' ? new Date(date) : new Date(date);
-      return d.getFullYear() + '-' + pad(d.getMonth()+1) + '-' + pad(d.getDate()) + 'T' + pad(d.getHours());
+      return d.getFullYear() + '-' + (d.getMonth()+1).toString().padStart(2,'0') + '-' + d.getDate().toString().padStart(2,'0') + 'T' + d.getHours().toString().padStart(2,'0');
     };
 
     function valueAtHourLocal(timesISO, arr, date){
@@ -508,8 +522,7 @@
         const j=await fetch('https://air-quality-api.open-meteo.com/v1/air-quality?'+p+'&v='+APP_VERSION).then(r=>r.json());
         const t=(state && state.last && state.last.current && state.last.current.time) ? state.last.current.time : (j.hourly && j.hourly.time ? j.hourly.time[0] : null);
         const aqi=valueAtHourLocal(j.hourly.time, j.hourly.us_aqi, t);
-        const chip=$('#aqi'); const num=(aqi==null||Number.isNaN(aqi))?'—':String(Math.round(aqi));
-        chip.textContent='Kvalita ovzdušia '+num+' • '+aqiCat(aqi);
+        $('#aqi').textContent='Kvalita ovzdušia '+(aqi==null||Number.isNaN(aqi)?'—':Math.round(aqi))+' • '+aqiCat(aqi);
       }catch(e){ $('#aqi').textContent='Kvalita ovzdušia —'; }
     }
 
@@ -547,8 +560,8 @@
                     +'<div class="temps"><div class="c-max">'+fmt0(temp,'°')+'</div><div class="c-min">'+(temp!=null?fmt0(temp-5,'°'):'—')+'</div></div>'
                     +'<div class="c-ico">'+wmoEmoji(code, isNightAt(dt, d.daily||{}), {temp, wind, precip: pr})+'</div>'
                     +'<div class="metrics">'
-                    +  '<div class="metric"><span class="m-ico">💧</span><span class="m-txt">Zrážky '+fmt0(pr, NBSP_NARROW+'mm/h')+'</span></div>'
-                    +  '<div class="metric"><span class="m-ico">💨</span><span class="m-txt">Vietor '+fmt0(wind, NBSP_NARROW+'km/h')+'</span></div>'
+                    +  '<div class="metric"><span class="m-ico">💧</span><span class="m-txt">Zrážky'+NBSP_NARROW+fmt0(pr, NBSP_NARROW+'mm/h')+'</span></div>'
+                    +  '<div class="metric"><span class="m-ico">💨</span><span class="m-txt">Vietor'+NBSP_NARROW+fmt0(wind, NBSP_NARROW+'km/h')+'</span></div>'
                     +'</div>';
         wrap.appendChild(el);
       }
@@ -600,8 +613,8 @@
                     +'<div class="temps"><div class="c-max">'+fmt0(tmp,'°')+'</div><div class="c-min">'+(tmp!=null?fmt0(tmp-5,'°'):'—')+'</div></div>'
                     +'<div class="c-ico">'+wmoEmoji(code, isNightAt(t,d.daily||{}), {temp: tmp, wind, precip: prep})+'</div>'
                     +'<div class="metrics">'
-                    +  '<div class="metric"><span class="m-ico">💧</span><span class="m-txt">Zrážky '+(prep!=null?fmt0(prep, NBSP_NARROW+'mm/h'):'—')+'</span></div>'
-                    +  '<div class="metric"><span class="m-ico">💨</span><span class="m-txt">Vietor '+(wind!=null?fmt0(wind, NBSP_NARROW+'km/h'):'—')+'</span></div>'
+                    +  '<div class="metric"><span class="m-ico">💧</span><span class="m-txt">Zrážky'+NBSP_NARROW+(prep!=null?fmt0(prep, NBSP_NARROW+'mm/h'):'—')+'</span></div>'
+                    +  '<div class="metric"><span class="m-ico">💨</span><span class="m-txt">Vietor'+NBSP_NARROW+(wind!=null?fmt0(wind, NBSP_NARROW+'km/h'):'—')+'</span></div>'
                     +'</div>';
         box.appendChild(el);
       }
@@ -658,7 +671,7 @@
         arr.forEach(p=>{
           const b=document.createElement('div'); b.className='sugg';
           b.textContent=p.name+(p.admin1?(', '+p.admin1):'')+', '+p.country_code;
-          b.addEventListener('click', ()=>{ setLocation(p.latitude,p.longitude,b.textcontent); box.style.display='none' });
+          b.addEventListener('click', ()=>{ setLocation(p.latitude,p.longitude,b.textContent); box.style.display='none' });
           box.appendChild(b);
         });
       },250);
