@@ -69,6 +69,7 @@
 
   footer{padding:18px 10px; text-align:center; color:#cfe8ff; font-size:14px; border-top:1px solid rgba(255,255,255,.12)}
 
+  /* HORIZONTÁLNE ZOZNAMY – FLEX + SCROLL-SNAP, 4 KARTY NA MOBIL */
   .colset{
     --cols:4;
     display:flex; gap:var(--gap);
@@ -134,6 +135,9 @@
     .chartWrap{height:270px}
   }
   @media (min-width:1100px){ .chartWrap{height:300px} }
+  
+  /* jednoduchý error toast */
+  #err{position:fixed;left:10px;right:10px;bottom:12px;background:#2a1111;border:1px solid #6b2a2a;color:#ffd9d9;border-radius:10px;padding:10px 12px;font-size:14px;display:none;z-index:99}
 </style>
 </head>
 <body>
@@ -212,20 +216,26 @@
   </div>
 
   <footer>&copy; <span id="year"></span> Richard / Počasie</footer>
+  <div id="err"></div>
 
   <script>
-    const APP_VERSION = '2025-08-15-mobile-flex-fix';
+    const APP_VERSION = '2025-08-15-mobile-flex-fix-2';
     const $ = s => document.querySelector(s);
     const NBSP_NARROW = '\u202F';
     const fmt0 = (v,u='') => (v==null || Number.isNaN(v)) ? '—' : (Math.round(v) + u);
     const fmt1 = (v,u='') => (v==null || Number.isNaN(v)) ? '—' : ((Math.round(v*10)/10).toFixed(1) + u);
 
-    const WMO = {0:['Jasno'],1:['Prevažne jasno'],2:['Polojasno'],3:['Zamračené'],
-      45:['Hmla'],48:['Mrznúca hmla'],51:['Slabé mrholenie'],53:['Mrholenie'],55:['Silné mrholenie'],
+    /* FIX: správna WMO tabuľka (bez syntaktických chýb) */
+    const WMO = {
+      0:['Jasno'],1:['Prevažne jasno'],2:['Polojasno'],3:['Zamračené'],
+      45:['Hmla'],48:['Mrznúca hmla'],
+      51:['Slabé mrholenie'],53:['Mrholenie'],55:['Silné mrholenie'],
       61:['Slabý dážď'],63:['Dážď'],65:['Lejak'],66:['Mrznúci dážď'],67:['Mrznúci dážď'],
       71:['Slabé sneženie'],73:['Sneženie'],75:['Silné sneženie'],77:['Snehové zrná'],
-      80,['Prehánky'],81,['Prehánky'],82,['Silné prehánky'],85,['Snehové prehánky'],86,['Silné snehové prehánky'],
-      95:['Búrky'],96:['Búrky s krúpami'],99:['Silné búrky s krúpami']};
+      80:['Prehánky'],81:['Prehánky'],82:['Silné prehánky'],
+      85:['Snehové prehánky'],86:['Silné snehové prehánky'],
+      95:['Búrky'],96:['Búrky s krúpami'],99:['Silné búrky s krúpami']
+    };
     const RAIN_CODES = new Set([51,53,55,61,63,65,66,67,80,81,82,95,96,99]);
     const uvCat = u => u<3?'nízky':u<6?'mierny':u<8?'vysoký':u<11?'veľmi vysoký':'extrémny';
 
@@ -356,6 +366,8 @@
     let hourlyChart=null;
     const LS_KEY='wx_prefs_v3';
 
+    const toast=(msg)=>{ const el=$('#err'); if(!el) return; el.textContent=msg; el.style.display='block'; setTimeout(()=>{el.style.display='none'}, 5000) };
+
     try{
       const raw=localStorage.getItem(LS_KEY);
       if(raw){
@@ -363,6 +375,7 @@
         if(+p.lat && +p.lon && p.place){ state={...state, ...p}; }
       }
     }catch(e){}
+
     const savePrefs=()=>{ try{ localStorage.setItem(LS_KEY, JSON.stringify({lat:state.lat, lon:state.lon, place:state.place})); }catch(e){} };
 
     async function reverseGeocodeOpenMeteo(lat, lon){
@@ -407,19 +420,19 @@
       const label = labelOpt || await reverseGeocode(lat, lon) || 'Moja poloha';
       state.place = label;
       savePrefs();
-      await fetchWeather().catch(e=>alert(e.message));
+      await fetchWeather().catch(e=>toast(e.message||'Chyba načítania počasia'));
     }
 
     function initGeolocation(){
-      if(!('geolocation'in navigator)){ fetchWeather().catch(()=>{}); return; }
+      if(!('geolocation'in navigator)){ fetchWeather().catch(()=>toast('Geolokácia nedostupná')); return; }
       const placeEl=$('#place'); placeEl.textContent='Zisťujem polohu…';
       navigator.geolocation.getCurrentPosition(async pos=>{
         const coords = pos.coords || {};
         const latitude = coords.latitude, longitude = coords.longitude;
         if (latitude!=null && longitude!=null) await setLocation(latitude, longitude);
-        else fetchWeather().catch(()=>{});
+        else fetchWeather().catch(()=>toast('Geolokácia zlyhala'));
       }, _=>{
-        fetchWeather().catch(()=>{});
+        fetchWeather().catch(()=>toast('Geolokácia zablokovaná'));
       }, {enableHighAccuracy:true, timeout:10000, maximumAge:300000});
     }
 
@@ -490,14 +503,16 @@
       let i=hours.findIndex(h=>h.slice(0,13)===key); if(i<0)i=0;
       const labels=hours.slice(i,i+24).map(h=>h.split('T')[1]);
       const t24=(d.hourly && d.hourly.temperature_2m) ? d.hourly.temperature_2m.slice(i,i+24) : [];
-      if(hourlyChart) hourlyChart.destroy();
-      hourlyChart=new Chart($('#hourly'),{
-        type:'line',
-        data:{labels, datasets:[{label:'Teplota (°C)', data:t24, borderWidth:2, pointRadius:2, tension:.35}]},
-        options:{responsive:true, maintainAspectRatio:false, interaction:{mode:'nearest', intersect:false},
-          scales:{x:{grid:{color:'rgba(255,255,255,.08)'}}, y:{grid:{color:'rgba(255,255,255,.08)'}}},
-          plugins:{legend:{labels:{color:'#fff'}, onClick:()=>{}, onHover:(e)=>{if(e&&e.native) e.native.target.style.cursor='default';}}}}
-      });
+      if(hourlyChart) try{ hourlyChart.destroy(); }catch(_){}
+      if (window.Chart){
+        hourlyChart=new Chart($('#hourly'),{
+          type:'line',
+          data:{labels, datasets:[{label:'Teplota (°C)', data:t24, borderWidth:2, pointRadius:2, tension:.35}]},
+          options:{responsive:true, maintainAspectRatio:false, interaction:{mode:'nearest', intersect:false},
+            scales:{x:{grid:{color:'rgba(255,255,255,.08)'}}, y:{grid:{color:'rgba(255,255,255,.08)'}}},
+            plugins:{legend:{labels:{color:'#fff'}, onClick:()=>{}, onHover:(e)=>{if(e&&e.native) e.native.target.style.cursor='default';}}}}
+        });
+      }
     }
 
     function renderParts(){
@@ -638,7 +653,7 @@
 
     initGeolocation();
     window.addEventListener('resize', ()=>{ if(state.last){ drawHourly(); renderMin15() }});
-    setTimeout(()=>{ if(!state.last) fetchWeather().catch(()=>{}) },1200);
+    setTimeout(()=>{ if(!state.last) fetchWeather().catch(()=>toast('Načítanie počasia zlyhalo')) },1200);
     initDragBars();
 
     if(!window.__wx_auto_refresh){
