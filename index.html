@@ -81,57 +81,35 @@
     touch-action:pan-x pan-y;
     overscroll-behavior-x:contain;
     cursor:grab;
-    padding:8px 0 12px;
+    padding:8px 0 12px; /* bez bočného paddingu, aby sa vošli presne 4 */
     scroll-snap-type:x proximity
   }
   .colset.dragging{cursor:grabbing; user-select:none}
 
   .col{
+    /* -0.5px eliminuje zaokrúhľovacie úniky, aby 4. karta nebola orezaná */
     flex:0 0 calc((100% - (var(--cols) - 1)*8px) / var(--cols) - 0.5px);
     background:var(--panel); border:1px solid var(--stroke); border-radius:12px; padding:12px;
     display:grid; grid-template-rows:auto auto auto auto; align-items:center; justify-items:center;
-    text-align:center; min-height:186px; position:relative; row-gap:8px; min-width:0; overflow:visible;
+    text-align:center; min-height:182px; position:relative; row-gap:8px; min-width:0; overflow:visible;
     scroll-snap-align:start
   }
 
-  .c-top{opacity:.9; white-space:normal; line-height:1.1; text-align:center}
+  .c-top{
+    opacity:.9; white-space:normal; overflow:visible; text-overflow:clip;
+    line-height:1.1; text-align:center
+  }
 
   .temps{display:grid; place-items:center; width:100%; min-width:0}
   .temps .c-max{font-size:28px; font-weight:700; color:#ff6c6c; line-height:1}
   .temps .c-min{font-size:18px; color:#ffbb7c; margin-top:4px; line-height:1}
 
-  .c-ico{font-size:26px; line-height:1; display:flex; align-items:center; justify-content:center}
-
-  /* METRIKY: kľúč | hodnota, bez zalamovania */
-  .metrics{display:flex; flex-direction:column; align-items:stretch; justify-content:center; gap:6px; width:100%}
-  .metric{width:100%}
-  .metric.kv{
-    display:grid;
-    grid-template-columns:auto 1fr auto; /* ikona | kľúč (fill) | hodnota */
-    align-items:center;
-    gap:6px;
-  }
-  .metric .m-ico{display:flex; align-items:center; justify-content:center; font-size:16px; line-height:1}
-  .metric .m-key{font-size:13px; color:#e9f3ff; opacity:.9; white-space:nowrap}
-  .metric .m-val{font-size:13px; font-weight:600; color:#e9f3ff; white-space:nowrap}
-
-  /* fallback pre staré metriky s jedným .m-txt (napr. v 7-dňovej) */
-  .metric .m-txt{font-size:13.5px; font-weight:500; color:#e9f3ff; letter-spacing:.02px; line-height:1.25; text-align:center; word-break:keep-all; white-space:nowrap}
-
-  .colset::-webkit-scrollbar{height:10px}
-  .colset::-webkit-scrollbar-track{background:#0f1c2a; border-radius:8px}
-  .colset::-webkit-scrollbar-thumb{background:#33516f; border-radius:8px}
-  .colset::-webkit-scrollbar-thumb:hover{background:#3f6b94}
-  .colset{scrollbar-width:thin; scrollbar-color:#33516f #0f1c2a}
-
   @media (max-width:420px){
     .temps .c-max{font-size:26px}
     .temps .c-min{font-size:17px}
-    .metric .m-key,.metric .m-val{font-size:12.4px}
     .metric .m-txt{font-size:12.4px}
     .c-ico{font-size:24px}
   }
-
   @media (min-width:900px){
     #parts{--cols:4}
     #days{--cols:7}
@@ -139,6 +117,20 @@
     .temps .c-max{font-size:32px}
     .temps .c-min{font-size:19px}
   }
+
+  .c-ico{font-size:26px; line-height:1; display:flex; align-items:center; justify-content:center}
+
+  .metrics{display:flex; flex-direction:column; align-items:center; justify-content:center; gap:6px; width:100%}
+  .metric{display:inline-flex; align-items:center; justify-content:center; gap:8px; width:100%}
+  .metric .m-ico{display:flex; align-items:center; justify-content:center; font-size:16px; line-height:1}
+  .metric .m-txt{font-size:13.5px; font-weight:500; color:#e9f3ff; letter-spacing:.05px; line-height:1.25; text-align:center; word-break:keep-all}
+
+  .colset::-webkit-scrollbar{height:10px}
+  .colset::-webkit-scrollbar-track{background:#0f1c2a; border-radius:8px}
+  .colset::-webkit-scrollbar-thumb{background:#33516f; border-radius:8px}
+  .colset::-webkit-scrollbar-thumb:hover{background:#3f6b94}
+  .colset{scrollbar-width:thin; scrollbar-color:#33516f #0f1c2a}
+
   @media (min-width:780px){
     .wrap{padding:24px 16px 44px}
     .row{grid-template-columns:1.05fr 1fr; gap:18px}
@@ -229,7 +221,7 @@
   <div id="err"></div>
 
   <script>
-    const APP_VERSION = '2025-08-15-mobile-flex-fix-4';
+    const APP_VERSION = '2025-08-15-mobile-flex-fix-3';
     const $ = s => document.querySelector(s);
     const NBSP_NARROW = '\u202F';
     const fmt0 = (v,u='') => (v==null || Number.isNaN(v)) ? '—' : (Math.round(v) + u);
@@ -538,8 +530,8 @@
                     +'<div class="temps"><div class="c-max">'+fmt0(temp,'°')+'</div><div class="c-min">'+(temp!=null?fmt0(temp-5,'°'):'—')+'</div></div>'
                     +'<div class="c-ico">'+wmoEmoji(code, isNightAt(dt, d.daily||{}), {temp, wind, precip: pr})+'</div>'
                     +'<div class="metrics">'
-                    +  '<div class="metric kv"><span class="m-ico">💧</span><span class="m-key">Zrážky</span><span class="m-val">'+fmt0(pr, NBSP_NARROW+'mm/h')+'</span></div>'
-                    +  '<div class="metric kv"><span class="m-ico">'+windEmoji()+'</span><span class="m-key">Vietor</span><span class="m-val">'+fmt0(wind, NBSP_NARROW+'km/h')+'</span></div>'
+                    +  '<div class="metric"><span class="m-ico">💧</span><span class="m-txt">Zrážky '+fmt0(pr, NBSP_NARROW+'mm/h')+'</span></div>'
+                    +  '<div class="metric"><span class="m-ico">'+windEmoji()+'</span><span class="m-txt">Vietor '+fmt0(wind, NBSP_NARROW+'km/h')+'</span></div>'
                     +'</div>';
         wrap.appendChild(el);
       }
@@ -591,8 +583,8 @@
                     +'<div class="temps"><div class="c-max">'+fmt0(tmp,'°')+'</div><div class="c-min">'+(tmp!=null?fmt0(tmp-5,'°'):'—')+'</div></div>'
                     +'<div class="c-ico">'+wmoEmoji(code, isNightAt(t,d.daily||{}), {temp: tmp, wind, precip: prep})+'</div>'
                     +'<div class="metrics">'
-                    +  '<div class="metric kv"><span class="m-ico">💧</span><span class="m-key">Zrážky</span><span class="m-val">'+(prep!=null?fmt0(prep, NBSP_NARROW+'mm/h'):'—')+'</span></div>'
-                    +  '<div class="metric kv"><span class="m-ico">'+windEmoji()+'</span><span class="m-key">Vietor</span><span class="m-val">'+(wind!=null?fmt0(wind, NBSP_NARROW+'km/h'):'—')+'</span></div>'
+                    +  '<div class="metric"><span class="m-ico">💧</span><span class="m-txt">Zrážky '+(prep!=null?fmt0(prep, NBSP_NARROW+'mm/h'):'—')+'</span></div>'
+                    +  '<div class="metric"><span class="m-ico">'+windEmoji()+'</span><span class="m-txt">Vietor '+(wind!=null?fmt0(wind, NBSP_NARROW+'km/h'):'—')+'</span></div>'
                     +'</div>';
         box.appendChild(el);
       }
