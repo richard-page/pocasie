@@ -69,31 +69,47 @@
 
   footer{padding:18px 10px; text-align:center; color:#cfe8ff; font-size:14px; border-top:1px solid rgba(255,255,255,.12)}
 
-  /* ======= 4 karty v riadku na mobile – bez horizontálneho scrollu ======= */
+  /* HORIZONTÁLNE ZOZNAMY – 4 KARTY NA MOBIL BEZ OREZANIA */
   .colset{
     --cols:4;
-    display:grid;
-    grid-template-columns:repeat(var(--cols), minmax(0, 1fr));
-    gap:var(--gap);
+    display:flex;
+    gap:8px;
+    overflow-x:auto;
+    overflow-y:hidden;
+    scrollbar-gutter:stable both-edges;
+    -webkit-overflow-scrolling:touch;
+    touch-action:pan-x pan-y;
+    overscroll-behavior-x:contain;
+    cursor:grab;
+    padding:8px 0 12px; /* bez bočného paddingu, aby sa vošli presne 4 */
+    scroll-snap-type:x proximity
   }
+  .colset.dragging{cursor:grabbing; user-select:none}
+
   .col{
+    /* -0.5px eliminuje zaokrúhľovacie úniky, aby 4. karta nebola orezaná */
+    flex:0 0 calc((100% - (var(--cols) - 1)*8px) / var(--cols) - 0.5px);
     background:var(--panel); border:1px solid var(--stroke); border-radius:12px; padding:12px;
     display:grid; grid-template-rows:auto auto auto auto; align-items:center; justify-items:center;
-    text-align:center; min-height:178px; position:relative; row-gap:8px; min-width:0;
+    text-align:center; min-height:182px; position:relative; row-gap:8px; min-width:0; overflow:visible;
+    scroll-snap-align:start
   }
 
-  .c-top{opacity:.9; line-height:1.15; text-align:center}
+  .c-top{
+    opacity:.9; white-space:normal; overflow:visible; text-overflow:clip;
+    line-height:1.1; text-align:center
+  }
+
   .temps{display:grid; place-items:center; width:100%; min-width:0}
-  .temps .c-max{font-size:clamp(20px, 5vw, 28px); font-weight:700; color:#ff6c6c; line-height:1}
-  .temps .c-min{font-size:clamp(15px, 3.8vw, 18px); color:#ffbb7c; margin-top:4px; line-height:1}
-  .c-ico{font-size:26px; line-height:1; display:flex; align-items:center; justify-content:center}
+  .temps .c-max{font-size:28px; font-weight:700; color:#ff6c6c; line-height:1}
+  .temps .c-min{font-size:18px; color:#ffbb7c; margin-top:4px; line-height:1}
 
-  .metrics{display:flex; flex-direction:column; align-items:center; justify-content:center; gap:6px; width:100%}
-  .metric{display:inline-flex; align-items:center; justify-content:center; gap:8px; width:100%}
-  .metric .m-ico{display:flex; align-items:center; justify-content:center; font-size:16px; line-height:1}
-  .metric .m-txt{font-size:13.5px; font-weight:500; color:#e9f3ff; letter-spacing:.05px; line-height:1.25; text-align:center; white-space:normal}
-
-  /* Desktop – viac stĺpcov */
+  @media (max-width:420px){
+    .temps .c-max{font-size:26px}
+    .temps .c-min{font-size:17px}
+    .metric .m-txt{font-size:12.4px}
+    .c-ico{font-size:24px}
+  }
   @media (min-width:900px){
     #parts{--cols:4}
     #days{--cols:7}
@@ -102,6 +118,19 @@
     .temps .c-min{font-size:19px}
   }
 
+  .c-ico{font-size:26px; line-height:1; display:flex; align-items:center; justify-content:center}
+
+  .metrics{display:flex; flex-direction:column; align-items:center; justify-content:center; gap:6px; width:100%}
+  .metric{display:inline-flex; align-items:center; justify-content:center; gap:8px; width:100%}
+  .metric .m-ico{display:flex; align-items:center; justify-content:center; font-size:16px; line-height:1}
+  .metric .m-txt{font-size:13.5px; font-weight:500; color:#e9f3ff; letter-spacing:.05px; line-height:1.25; text-align:center; word-break:keep-all}
+
+  .colset::-webkit-scrollbar{height:10px}
+  .colset::-webkit-scrollbar-track{background:#0f1c2a; border-radius:8px}
+  .colset::-webkit-scrollbar-thumb{background:#33516f; border-radius:8px}
+  .colset::-webkit-scrollbar-thumb:hover{background:#3f6b94}
+  .colset{scrollbar-width:thin; scrollbar-color:#33516f #0f1c2a}
+
   @media (min-width:780px){
     .wrap{padding:24px 16px 44px}
     .row{grid-template-columns:1.05fr 1fr; gap:18px}
@@ -109,7 +138,7 @@
     .chartWrap{height:270px}
   }
   @media (min-width:1100px){ .chartWrap{height:300px} }
-
+  
   #err{position:fixed;left:10px;right:10px;bottom:12px;background:#2a1111;border:1px solid #6b2a2a;color:#ffd9d9;border-radius:10px;padding:10px 12px;font-size:14px;display:none;z-index:99}
 </style>
 </head>
@@ -192,23 +221,24 @@
   <div id="err"></div>
 
   <script>
-    const APP_VERSION = '2025-08-15-mobile-4col-no-scroll';
+    const APP_VERSION = '2025-08-15-mobile-flex-fix-3';
     const $ = s => document.querySelector(s);
     const NBSP_NARROW = '\u202F';
     const fmt0 = (v,u='') => (v==null || Number.isNaN(v)) ? '—' : (Math.round(v) + u);
     const fmt1 = (v,u='') => (v==null || Number.isNaN(v)) ? '—' : ((Math.round(v*10)/10).toFixed(1) + u);
-    const MOBILE = () => window.matchMedia('(max-width: 899px)').matches;
 
-    /* WMO kódy */
-    const WMO = {0:['Jasno'],1:['Prevažne jasno'],2:['Polojasno'],3:['Zamračené'],
-      45:['Hmla'],48:['Mrznúca hmla'],51:['Slabé mrholenie'],53:['Mrholenie'],55:['Silné mrholenie'],
+    const WMO = {
+      0:['Jasno'],1:['Prevažne jasno'],2:['Polojasno'],3:['Zamračené'],
+      45:['Hmla'],48:['Mrznúca hmla'],
+      51:['Slabé mrholenie'],53:['Mrholenie'],55:['Silné mrholenie'],
       61:['Slabý dážď'],63:['Dážď'],65:['Lejak'],66:['Mrznúci dážď'],67:['Mrznúci dážď'],
       71:['Slabé sneženie'],73:['Sneženie'],75:['Silné sneženie'],77:['Snehové zrná'],
-      80:['Prehánky'],81:['Prehánky'],82:['Silné prehánky'],85:['Snehové prehánky'],86:['Silné snehové prehánky'],
-      95:['Búrky'],96:['Búrky s krúpami'],99:['Silné búrky s krúpami']};
+      80:['Prehánky'],81:['Prehánky'],82:['Silné prehánky'],
+      85:['Snehové prehánky'],86:['Silné snehové prehánky'],
+      95:['Búrky'],96:['Búrky s krúpami'],99:['Silné búrky s krúpami']
+    };
     const RAIN_CODES = new Set([51,53,55,61,63,65,66,67,80,81,82,95,96,99]);
     const uvCat = u => u<3?'nízky':u<6?'mierny':u<8?'vysoký':u<11?'veľmi vysoký':'extrémny';
-    const windEmoji = ()=> '💨';
 
     function wmoEmoji(code, night=false, ctx={}){
       const k = Number(code);
@@ -232,6 +262,7 @@
       if ([95,96,99].includes(k)) return '⛈️';
       return night ? '🌙' : '🌤️';
     }
+
     function willRain(args){
       const code = args && args.code!=null ? Number(args.code) : null;
       const precip = args && args.precip!=null ? Number(args.precip) : null;
@@ -244,13 +275,15 @@
       if (precip!=null && precip > 0){ if (temp==null) return true; return temp>1 }
       return false;
     }
+    const windEmoji = ()=> '💨';
+
     function isNightAt(dtLike, daily){
       const dt = typeof dtLike==='string' ? new Date(dtLike) : dtLike;
       try{
         const dayStr = dt.toISOString().slice(0,10);
         const times = daily && daily.time ? daily.time : [];
         const i = times.indexOf(dayStr);
-        if (i>=0 && daily && daily.sunrise && daily.sunrise[i] && daily.sunset && daily.sunset[i]){
+        if (i>=0 && daily && daily.sunrise && daily.sunset && daily.sunset[i]){
           const sr = new Date(daily.sunrise[i]);
           const ss = new Date(daily.sunset[i]);
           return (dt < sr || dt >= ss);
@@ -265,6 +298,7 @@
       const d = typeof date==='string' ? new Date(date) : new Date(date);
       return d.getFullYear() + '-' + pad(d.getMonth()+1) + '-' + pad(d.getDate()) + 'T' + pad(d.getHours());
     };
+
     function valueAtHourLocal(timesISO, arr, date){
       const key = localHourKey(date);
       let idx = timesISO.findIndex(t => t.slice(0,13) === key);
@@ -273,6 +307,7 @@
       timesISO.forEach((t,i)=>{ const diff=Math.abs(new Date(t)-new Date(date)); if(diff<bestDiff){best=i;bestDiff=diff;} });
       return arr[best];
     }
+
     const lerp=(a,b,t)=>a+(b-a)*t;
     function valueAt15min(timesISO, arr, date){
       const ts=timesISO.map(t=>new Date(t));
@@ -297,6 +332,7 @@
       }
       return codes[codes.length-1] ?? 0;
     }
+
     function pickDayCondition(d){
       const times=(d.hourly && d.hourly.time) ? d.hourly.time : [];
       const codes=(d.hourly && d.hourly.weather_code) ? d.hourly.weather_code : [];
@@ -319,7 +355,13 @@
       Object.keys(freq).forEach(k=>{ const cnt=freq[k]; if(cnt>bestCnt){bestCnt=cnt; best=Number(k);} });
       return best;
     }
-    const aqiCat = (v)=>{ if(v==null||Number.isNaN(v)) return '—'; if(v<=50) return 'dobrá'; if(v<=100) return 'mierne zhoršená'; if(v<=150) return 'riziková'; if(v<=200) return 'zlá'; if(v<=300) return 'veľmi zlá'; return 'nebezpečná'; };
+
+    const aqiCat = (v)=>{
+      if(v==null||Number.isNaN(v)) return '—';
+      if(v<=50) return 'dobrá'; if(v<=100) return 'mierne zhoršená';
+      if(v<=150) return 'riziková'; if(v<=200) return 'zlá';
+      if(v<=300) return 'veľmi zlá'; return 'nebezpečná';
+    };
 
     let state={place:'—', lat:48.1486, lon:17.1077, last:null};
     let hourlyChart=null;
@@ -334,6 +376,7 @@
         if(+p.lat && +p.lon && p.place){ state={...state, ...p}; }
       }
     }catch(e){}
+
     const savePrefs=()=>{ try{ localStorage.setItem(LS_KEY, JSON.stringify({lat:state.lat, lon:state.lon, place:state.place})); }catch(e){} };
 
     async function reverseGeocodeOpenMeteo(lat, lon){
@@ -409,7 +452,8 @@
     }
 
     function renderAll(){
-      const d=state.last || {}; const cur=d.current || {};
+      const d=state.last || {};
+      const cur=d.current || {};
       $('#place').textContent=state.place;
       $('#temp').textContent=fmt0(cur.temperature_2m,'°');
       $('#apparent').textContent=fmt0(cur.apparent_temperature,'°');
@@ -502,8 +546,7 @@
     function renderDays(data){
       const box=$('#days'); box.innerHTML='';
       const days=(data.daily || {}); const times=days.time || [];
-      const total=times.length;
-      const n = MOBILE() ? Math.min(4,total) : Math.min(7,total);
+      const n=Math.min(7,times.length);
       for(let i=0;i<n;i++){
         const dt=new Date(times[i]+'T00:00:00');
         const top=dt.toLocaleDateString('sk-SK',{weekday:'short'})+' '+dt.toLocaleDateString('sk-SK',{day:'2-digit',month:'2-digit'});
@@ -512,11 +555,14 @@
         const min=days.temperature_2m_min ? days.temperature_2m_min[i] : null;
         const pp=days.precipitation_probability_max ? days.precipitation_probability_max[i] : null;
         const avgT = (max!=null && min!=null) ? (max+min)/2 : null;
+        const dayIco = wmoEmoji(code, false, {prob: pp, temp: avgT});
+        const will = willRain({code, prob:pp});
+        const iconHTML = will ? '<span class="m-ico">💧</span>' : '';
         const el=document.createElement('div'); el.className='col';
         el.innerHTML='<div class="c-top">'+top+'</div>'
                     +'<div class="temps"><div class="c-max">'+fmt0(max,'°')+'</div><div class="c-min">'+fmt0(min,'°')+'</div></div>'
-                    +'<div class="c-ico">'+wmoEmoji(code, false, {prob: pp, temp: avgT})+'</div>'
-                    +'<div class="metrics"><div class="metric">'+(pp!=null?'<span class="m-ico">💧</span>':'')+'<span class="m-txt">'+(pp!=null?pp+' %':'—')+'</span></div></div>';
+                    +'<div class="c-ico">'+dayIco+'</div>'
+                    +'<div class="metrics"><div class="metric">'+iconHTML+'<span class="m-txt">'+(pp!=null?pp+' %':'—')+'</span></div></div>';
         box.appendChild(el);
       }
     }
@@ -526,8 +572,7 @@
       if(!(d.hourly && d.hourly.time && d.hourly.time.length)){ box.innerHTML='<div style="opacity:.8;color:#bcd1e5;padding:8px 10px;">Bez dát</div>'; return; }
       const start=new Date((d.current && d.current.time) ? d.current.time : d.hourly.time[0]);
       const m=start.getMinutes(); const add=(15-(m%15))%15; if(add>0) start.setMinutes(m+add,0,0);
-      const limit = MOBILE() ? 4 : 96;  // 4 karty na mobile
-      for(let k=0;k<limit;k++){
+      for(let k=0;k<96;k++){
         const t=new Date(start.getTime()+k*15*60*1000);
         const tmp=valueAt15min(d.hourly.time, d.hourly.temperature_2m, t);
         const prep=valueAt15min(d.hourly.time, d.hourly.precipitation, t);
@@ -543,6 +588,20 @@
                     +'</div>';
         box.appendChild(el);
       }
+    }
+
+    function enableDragScroll(el){
+      let isDown=false, startX=0, startScroll=0, lastX=0, lastT=0, vx=0;
+      el.addEventListener('pointerdown', e=>{
+        if(e.button!==0) return; isDown=true; startX=e.clientX; startScroll=el.scrollLeft; lastX=e.clientX; lastT=performance.now(); vx=0; el.classList.add('dragging'); el.setPointerCapture(e.pointerId); e.preventDefault()
+      });
+      el.addEventListener('pointermove', e=>{
+        if(!isDown) return; const now=performance.now(); const dx=e.clientX-startX; el.scrollLeft = startScroll - dx; const ddx = e.clientX - lastX; const dt  = Math.max(1, now - lastT); vx = -(ddx/dt); lastX=e.clientX; lastT=now; e.preventDefault()
+      });
+      function momentum(v){ let velocity = v * 14; const friction = 0.92; function step(){ if(Math.abs(velocity) < 0.25) return; el.scrollLeft += velocity; velocity *= friction; if(el.scrollLeft<=0 || Math.ceil(el.scrollLeft)>=el.scrollWidth-el.clientWidth) return; requestAnimationFrame(step) } requestAnimationFrame(step) }
+      el.addEventListener('pointerup', e=>{ if(!isDown) return; isDown=false; el.classList.remove('dragging'); try{ el.releasePointerCapture(e.pointerId) }catch(_){} momentum(vx) });
+      el.addEventListener('pointercancel', ()=>{ isDown=false; el.classList.remove('dragging') });
+      el.addEventListener('wheel', (e)=>{ const delta = Math.abs(e.deltaY) > Math.abs(e.deltaX) ? e.deltaY : e.deltaX; el.scrollLeft += delta * 0.6; e.preventDefault() }, {passive:false});
     }
 
     async function fetchHistory(){
@@ -591,18 +650,18 @@
 
     document.getElementById('year').textContent=new Date().getFullYear();
 
-    // štart
+    function initDragBars(){ ['parts','days','min15'].forEach(id=>{ const el=document.getElementById(id); if(el){ enableDragScroll(el) } }) }
+
     initGeolocation();
+    window.addEventListener('resize', ()=>{ if(state.last){ drawHourly(); renderMin15() }});
     setTimeout(()=>{ if(!state.last) fetchWeather().catch(()=>toast('Načítanie počasia zlyhalo')) },1200);
+    initDragBars();
 
     if(!window.__wx_auto_refresh){
       window.__wx_auto_refresh=setInterval(()=>{
         if(state.lat && state.lon){ fetchWeather().catch(()=>{}); fetchAQ().catch(()=>{}) }
       }, 5*60*1000);
     }
-
-    // re-render na zmenu veľkosti (prepínanie mobile/desktop)
-    window.addEventListener('resize', ()=>{ if(state.last){ renderDays(state.last); renderMin15(); }});
   </script>
 </body>
 </html>
