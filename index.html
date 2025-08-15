@@ -69,7 +69,7 @@
 
   footer{padding:18px 10px; text-align:center; color:#cfe8ff; font-size:14px; border-top:1px solid rgba(255,255,255,.12)}
 
-  /* ===== GRID rozloženie: vždy 4 stĺpce na mobile (bez horizontálneho scrollu) ===== */
+  /* ======= 4 karty v riadku na mobile – bez horizontálneho scrollu ======= */
   .colset{
     --cols:4;
     display:grid;
@@ -79,13 +79,13 @@
   .col{
     background:var(--panel); border:1px solid var(--stroke); border-radius:12px; padding:12px;
     display:grid; grid-template-rows:auto auto auto auto; align-items:center; justify-items:center;
-    text-align:center; min-height:182px; position:relative; row-gap:8px; min-width:0;
+    text-align:center; min-height:178px; position:relative; row-gap:8px; min-width:0;
   }
 
   .c-top{opacity:.9; line-height:1.15; text-align:center}
   .temps{display:grid; place-items:center; width:100%; min-width:0}
-  .temps .c-max{font-size:26px; font-weight:700; color:#ff6c6c; line-height:1}
-  .temps .c-min{font-size:17px; color:#ffbb7c; margin-top:4px; line-height:1}
+  .temps .c-max{font-size:clamp(20px, 5vw, 28px); font-weight:700; color:#ff6c6c; line-height:1}
+  .temps .c-min{font-size:clamp(15px, 3.8vw, 18px); color:#ffbb7c; margin-top:4px; line-height:1}
   .c-ico{font-size:26px; line-height:1; display:flex; align-items:center; justify-content:center}
 
   .metrics{display:flex; flex-direction:column; align-items:center; justify-content:center; gap:6px; width:100%}
@@ -93,7 +93,7 @@
   .metric .m-ico{display:flex; align-items:center; justify-content:center; font-size:16px; line-height:1}
   .metric .m-txt{font-size:13.5px; font-weight:500; color:#e9f3ff; letter-spacing:.05px; line-height:1.25; text-align:center; white-space:normal}
 
-  /* väčšie obrazovky – viac stĺpcov */
+  /* Desktop – viac stĺpcov */
   @media (min-width:900px){
     #parts{--cols:4}
     #days{--cols:7}
@@ -101,12 +101,6 @@
     .temps .c-max{font-size:32px}
     .temps .c-min{font-size:19px}
   }
-
-  .colset::-webkit-scrollbar{height:10px}
-  .colset::-webkit-scrollbar-track{background:#0f1c2a; border-radius:8px}
-  .colset::-webkit-scrollbar-thumb{background:#33516f; border-radius:8px}
-  .colset::-webkit-scrollbar-thumb:hover{background:#3f6b94}
-  .colset{scrollbar-width:thin; scrollbar-color:#33516f #0f1c2a}
 
   @media (min-width:780px){
     .wrap{padding:24px 16px 44px}
@@ -116,7 +110,6 @@
   }
   @media (min-width:1100px){ .chartWrap{height:300px} }
 
-  /* jednoduchý error toast */
   #err{position:fixed;left:10px;right:10px;bottom:12px;background:#2a1111;border:1px solid #6b2a2a;color:#ffd9d9;border-radius:10px;padding:10px 12px;font-size:14px;display:none;z-index:99}
 </style>
 </head>
@@ -199,21 +192,23 @@
   <div id="err"></div>
 
   <script>
-    const APP_VERSION = '2025-08-15-mobile-4col-grid';
+    const APP_VERSION = '2025-08-15-mobile-4col-no-scroll';
     const $ = s => document.querySelector(s);
     const NBSP_NARROW = '\u202F';
     const fmt0 = (v,u='') => (v==null || Number.isNaN(v)) ? '—' : (Math.round(v) + u);
     const fmt1 = (v,u='') => (v==null || Number.isNaN(v)) ? '—' : ((Math.round(v*10)/10).toFixed(1) + u);
+    const MOBILE = () => window.matchMedia('(max-width: 899px)').matches;
 
+    /* WMO kódy */
     const WMO = {0:['Jasno'],1:['Prevažne jasno'],2:['Polojasno'],3:['Zamračené'],
       45:['Hmla'],48:['Mrznúca hmla'],51:['Slabé mrholenie'],53:['Mrholenie'],55:['Silné mrholenie'],
       61:['Slabý dážď'],63:['Dážď'],65:['Lejak'],66:['Mrznúci dážď'],67:['Mrznúci dážď'],
       71:['Slabé sneženie'],73:['Sneženie'],75:['Silné sneženie'],77:['Snehové zrná'],
-      80:['Prehánky'],81:['Prehánky'],82:['Silné prehánky'],
-      85:['Snehové prehánky'],86:['Silné snehové prehánky'],
+      80:['Prehánky'],81:['Prehánky'],82:['Silné prehánky'],85:['Snehové prehánky'],86:['Silné snehové prehánky'],
       95:['Búrky'],96:['Búrky s krúpami'],99:['Silné búrky s krúpami']};
     const RAIN_CODES = new Set([51,53,55,61,63,65,66,67,80,81,82,95,96,99]);
     const uvCat = u => u<3?'nízky':u<6?'mierny':u<8?'vysoký':u<11?'veľmi vysoký':'extrémny';
+    const windEmoji = ()=> '💨';
 
     function wmoEmoji(code, night=false, ctx={}){
       const k = Number(code);
@@ -414,8 +409,7 @@
     }
 
     function renderAll(){
-      const d=state.last || {};
-      const cur=d.current || {};
+      const d=state.last || {}; const cur=d.current || {};
       $('#place').textContent=state.place;
       $('#temp').textContent=fmt0(cur.temperature_2m,'°');
       $('#apparent').textContent=fmt0(cur.apparent_temperature,'°');
@@ -493,7 +487,7 @@
                     +'<div class="c-ico">'+wmoEmoji(code, isNightAt(dt, d.daily||{}), {temp, wind, precip: pr})+'</div>'
                     +'<div class="metrics">'
                     +  '<div class="metric"><span class="m-ico">💧</span><span class="m-txt">Zrážky '+fmt0(pr, NBSP_NARROW+'mm/h')+'</span></div>'
-                    +  '<div class="metric"><span class="m-ico">💨</span><span class="m-txt">Vietor '+fmt0(wind, NBSP_NARROW+'km/h')+'</span></div>'
+                    +  '<div class="metric"><span class="m-ico">'+windEmoji()+'</span><span class="m-txt">Vietor '+fmt0(wind, NBSP_NARROW+'km/h')+'</span></div>'
                     +'</div>';
         wrap.appendChild(el);
       }
@@ -508,7 +502,8 @@
     function renderDays(data){
       const box=$('#days'); box.innerHTML='';
       const days=(data.daily || {}); const times=days.time || [];
-      const n=Math.min(7,times.length);
+      const total=times.length;
+      const n = MOBILE() ? Math.min(4,total) : Math.min(7,total);
       for(let i=0;i<n;i++){
         const dt=new Date(times[i]+'T00:00:00');
         const top=dt.toLocaleDateString('sk-SK',{weekday:'short'})+' '+dt.toLocaleDateString('sk-SK',{day:'2-digit',month:'2-digit'});
@@ -531,7 +526,8 @@
       if(!(d.hourly && d.hourly.time && d.hourly.time.length)){ box.innerHTML='<div style="opacity:.8;color:#bcd1e5;padding:8px 10px;">Bez dát</div>'; return; }
       const start=new Date((d.current && d.current.time) ? d.current.time : d.hourly.time[0]);
       const m=start.getMinutes(); const add=(15-(m%15))%15; if(add>0) start.setMinutes(m+add,0,0);
-      for(let k=0;k<96;k++){
+      const limit = MOBILE() ? 4 : 96;  // 4 karty na mobile
+      for(let k=0;k<limit;k++){
         const t=new Date(start.getTime()+k*15*60*1000);
         const tmp=valueAt15min(d.hourly.time, d.hourly.temperature_2m, t);
         const prep=valueAt15min(d.hourly.time, d.hourly.precipitation, t);
@@ -543,7 +539,7 @@
                     +'<div class="c-ico">'+wmoEmoji(code, isNightAt(t,d.daily||{}), {temp: tmp, wind, precip: prep})+'</div>'
                     +'<div class="metrics">'
                     +  '<div class="metric"><span class="m-ico">💧</span><span class="m-txt">Zrážky '+(prep!=null?fmt0(prep, NBSP_NARROW+'mm/h'):'—')+'</span></div>'
-                    +  '<div class="metric"><span class="m-ico">💨</span><span class="m-txt">Vietor '+(wind!=null?fmt0(wind, NBSP_NARROW+'km/h'):'—')+'</span></div>'
+                    +  '<div class="metric"><span class="m-ico">'+windEmoji()+'</span><span class="m-txt">Vietor '+(wind!=null?fmt0(wind, NBSP_NARROW+'km/h'):'—')+'</span></div>'
                     +'</div>';
         box.appendChild(el);
       }
@@ -604,6 +600,9 @@
         if(state.lat && state.lon){ fetchWeather().catch(()=>{}); fetchAQ().catch(()=>{}) }
       }, 5*60*1000);
     }
+
+    // re-render na zmenu veľkosti (prepínanie mobile/desktop)
+    window.addEventListener('resize', ()=>{ if(state.last){ renderDays(state.last); renderMin15(); }});
   </script>
 </body>
 </html>
