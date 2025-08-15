@@ -69,7 +69,6 @@
 
   footer{padding:18px 10px; text-align:center; color:#cfe8ff; font-size:14px; border-top:1px solid rgba(255,255,255,.12)}
 
-  /* HORIZONTÁLNE ZOZNAMY – FLEX + SCROLL-SNAP, 4 KARTY NA MOBIL */
   .colset{
     --cols:4;
     display:flex; gap:var(--gap);
@@ -78,8 +77,10 @@
     -webkit-overflow-scrolling:touch;
     touch-action:pan-x pan-y;
     overscroll-behavior-x:contain;
-    cursor:grab; padding:10px 6px 14px;
-    scroll-snap-type:x proximity
+    cursor:grab; padding:10px 6px 18px;
+    scroll-snap-type:x proximity;
+    mask-image:linear-gradient(90deg, transparent 0, #000 14px, #000 calc(100% - 14px), transparent 100%);
+    -webkit-mask-image:linear-gradient(90deg, transparent 0, #000 14px, #000 calc(100% - 14px), transparent 100%)
   }
   .colset.dragging{cursor:grabbing; user-select:none}
 
@@ -87,14 +88,11 @@
     flex:0 0 calc((100% - (var(--cols) - 1)*var(--gap)) / var(--cols));
     background:var(--panel); border:1px solid var(--stroke); border-radius:12px; padding:12px;
     display:grid; grid-template-rows:auto auto auto auto; align-items:center; justify-items:center;
-    text-align:center; min-height:182px; position:relative; row-gap:8px; min-width:0; overflow:visible;
+    text-align:center; min-height:182px; position:relative; row-gap:8px; min-width:0; overflow:hidden;
     scroll-snap-align:start
   }
 
-  .c-top{
-    opacity:.9; white-space:normal; overflow:visible; text-overflow:clip;
-    line-height:1.1; text-align:center
-  }
+  .c-top{opacity:.9; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; line-height:1.1; text-align:center; width:100%}
 
   .temps{display:grid; place-items:center; width:100%; min-width:0}
   .temps .c-max{font-size:28px; font-weight:700; color:#ff6c6c; line-height:1}
@@ -115,13 +113,19 @@
   .metrics{display:flex; flex-direction:column; align-items:center; justify-content:center; gap:6px; width:100%}
   .metric{display:inline-flex; align-items:center; justify-content:center; gap:8px; width:100%}
   .metric .m-ico{display:flex; align-items:center; justify-content:center; font-size:16px; line-height:1}
-  .metric .m-txt{font-size:13.5px; font-weight:500; color:#e9f3ff; letter-spacing:.05px; line-height:1.25; text-align:center; word-break:keep-all}
+  .metric .m-txt{font-size:13.5px; font-weight:500; color:#e9f3ff; letter-spacing:.05px; line-height:1.25; text-align:center; word-break:keep-all; white-space:nowrap; overflow:hidden; text-overflow:ellipsis}
 
   .colset::-webkit-scrollbar{height:10px}
   .colset::-webkit-scrollbar-track{background:#0f1c2a; border-radius:8px}
   .colset::-webkit-scrollbar-thumb{background:#33516f; border-radius:8px}
   .colset::-webkit-scrollbar-thumb:hover{background:#3f6b94}
   .colset{scrollbar-width:thin; scrollbar-color:#33516f #0f1c2a}
+
+  #min15 .col{min-height:160px}
+  #min15 .temps .c-max{font-size:24px}
+  #min15 .temps .c-min{font-size:16px}
+  #min15 .metric .m-txt{font-size:12.2px}
+  #min15 .c-top{font-size:13px}
 
   @media (min-width:900px){
     #parts{--cols:4}
@@ -136,7 +140,6 @@
   }
   @media (min-width:1100px){ .chartWrap{height:300px} }
   
-  /* jednoduchý error toast */
   #err{position:fixed;left:10px;right:10px;bottom:12px;background:#2a1111;border:1px solid #6b2a2a;color:#ffd9d9;border-radius:10px;padding:10px 12px;font-size:14px;display:none;z-index:99}
 </style>
 </head>
@@ -219,13 +222,12 @@
   <div id="err"></div>
 
   <script>
-    const APP_VERSION = '2025-08-15-mobile-flex-fix-2';
+    const APP_VERSION = '2025-08-15-mobile-flex-fix-3';
     const $ = s => document.querySelector(s);
     const NBSP_NARROW = '\u202F';
     const fmt0 = (v,u='') => (v==null || Number.isNaN(v)) ? '—' : (Math.round(v) + u);
     const fmt1 = (v,u='') => (v==null || Number.isNaN(v)) ? '—' : ((Math.round(v*10)/10).toFixed(1) + u);
 
-    /* FIX: správna WMO tabuľka (bez syntaktických chýb) */
     const WMO = {
       0:['Jasno'],1:['Prevažne jasno'],2:['Polojasno'],3:['Zamračené'],
       45:['Hmla'],48:['Mrznúca hmla'],
