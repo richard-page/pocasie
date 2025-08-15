@@ -101,7 +101,7 @@
 
   .metrics{display:flex; flex-direction:column; align-items:center; justify-content:center; gap:6px; width:100%}
   .metric{display:inline-flex; align-items:center; justify-content:center; gap:8px; width:100%}
-  .metric .m-ico{display:flex; align-items:center; justify-content:center; width:18px; font-size:16px; line-height:1}
+  .metric .m-ico{display:flex; align-items:center; justify-content:center; font-size:16px; line-height:1}
   .metric .m-txt{font-size:13.5px; font-weight:500; color:#e9f3ff; letter-spacing:.05px; line-height:1.25; text-align:center}
 
   .rain-badge{position:absolute; top:6px; right:6px; font-size:18px; line-height:1; filter:drop-shadow(0 1px 2px rgba(0,0,0,.6)); background:rgba(13,24,36,.6); border:1px solid rgba(255,255,255,.1); border-radius:10px; padding:2px 6px}
@@ -210,7 +210,7 @@
   <footer>&copy; <span id="year"></span> Richard / Počasie</footer>
 
   <script>
-    const APP_VERSION = '2025-08-15-spacing-centering-history-fix';
+    const APP_VERSION = '2025-08-15-center-pct-no-badge-days';
     const $ = s => document.querySelector(s);
     const NBSP_NARROW = '\u202F';
     const fmt0 = (v,u='') => (v==null || Number.isNaN(v)) ? '—' : (Math.round(v) + u);
@@ -527,13 +527,12 @@
         const min=days.temperature_2m_min ? days.temperature_2m_min[i] : null;
         const pp=days.precipitation_probability_max ? days.precipitation_probability_max[i] : null;
         const will = willRain({code, prob:pp});
-        const iconHTML = will ? '<span class="m-ico">💧</span>' : '<span class="m-ico"></span>';
+        const iconHTML = will ? '<span class="m-ico">💧</span>' : '';
         const el=document.createElement('div'); el.className='col';
         el.innerHTML='<div class="c-top">'+top+'</div>'
                     +'<div class="temps"><div class="c-max">'+fmt0(max,'°')+'</div><div class="c-min">'+fmt0(min,'°')+'</div></div>'
                     +'<div class="c-ico">'+wmoEmoji(code,false)+'</div>'
                     +'<div class="metrics"><div class="metric">'+iconHTML+'<span class="m-txt">'+(pp!=null?pp+' %':'—')+'</span></div></div>';
-        if (will) addRainBadge(el);
         box.appendChild(el);
       }
     }
