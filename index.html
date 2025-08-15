@@ -78,14 +78,13 @@
   .histSub{color:#a8bed5; font-size:12px; margin-top:6px; text-align:center}
   footer{padding:18px 10px; text-align:center; color:#cfe8ff; font-size:14px; border-top:1px solid rgba(255,255,255,.12)}
 
-  /* ======= KARTY / SCROLL ======= */
+  /* ======= KARTY – presne 4 na mobile ======= */
   .colset{
-    --cols:3;
-    display:grid; gap:var(--gap);
-    grid-auto-flow:column;
-    grid-auto-columns: calc((100% - (var(--cols) - 1)*var(--gap)) / var(--cols));
+    --cols:4;            /* default mobil: 4 viditeľné karty */
+    --gap:8px;
+    display:flex;        /* flex presnejší na percentá + gap */
+    gap:var(--gap);
     overflow-x:auto; overflow-y:hidden;
-    scrollbar-gutter:stable both-edges;
     -webkit-overflow-scrolling:touch;
     touch-action:pan-y;
     overscroll-behavior-x:contain;
@@ -98,22 +97,19 @@
     background:var(--panel); border:1px solid var(--stroke); border-radius:12px; padding:12px;
     display:grid; grid-template-rows:auto auto auto auto; align-items:center; justify-items:center; text-align:center;
     min-height:182px; contain:content; position:relative; row-gap:8px;
-    min-width:0
+    min-width:0;
+    flex:0 0 calc((100% - (var(--cols) - 1)*var(--gap)) / var(--cols) - .25px)
   }
   .c-top{opacity:.9; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; min-width:0}
   .temps{display:grid; place-items:center; width:100%; min-width:0}
-  .temps .c-max{font-size:28px; font-weight:700; color:#ff6c6c; line-height:1}
-  .temps .c-min{font-size:18px; color:#ffbb7c; margin-top:4px; line-height:1}
-  @media (min-width:900px){
-    .temps .c-max{font-size:32px}
-    .temps .c-min{font-size:19px}
-  }
-  .c-ico{font-size:26px; line-height:1; display:flex; align-items:center; justify-content:center; min-width:0}
+  .temps .c-max{font-size:26px; font-weight:700; color:#ff6c6c; line-height:1}
+  .temps .c-min{font-size:16px; color:#ffbb7c; margin-top:4px; line-height:1}
+  .c-ico{font-size:22px; line-height:1; display:flex; align-items:center; justify-content:center; min-width:0}
   .metrics{display:flex; flex-direction:column; align-items:center; justify-content:center; gap:6px; width:100%; min-width:0}
   .metric{display:inline-flex; align-items:center; justify-content:center; gap:8px; width:100%; min-width:0}
   .metric .m-ico{display:flex; align-items:center; justify-content:center; font-size:16px; line-height:1}
   .metric .m-txt{
-    font-size:13.5px; font-weight:500; color:#e9f3ff; letter-spacing:.05px; line-height:1.25; text-align:center;
+    font-size:12px; font-weight:500; color:#e9f3ff; letter-spacing:.05px; line-height:1.25; text-align:center;
     white-space:normal; word-break:break-word; min-width:0
   }
   .rain-badge{
@@ -129,23 +125,15 @@
   .colset::-webkit-scrollbar-thumb:hover{background:#3f6b94}
   .colset{scrollbar-width:thin; scrollbar-color:#33516f #0f1c2a}
 
-  /* Mobilné dolaďenie – menšie písmo a viac priestoru, bez orezu */
-  @media (max-width:420px){
-    #parts.colset{--cols:3}
-    #days.colset{--cols:3}
-    #min15.colset{--cols:3}
-    .col{padding:10px; row-gap:6px}
-    .temps .c-max{font-size:24px}
-    .temps .c-min{font-size:16px}
-    .c-ico{font-size:22px}
-    .metric .m-txt{font-size:12px}
-  }
-
-  /* Stredné šírky – 4 karty na šírku bez orezu */
+  /* Stredné šírky */
   @media (min-width:421px) and (max-width:899px){
     #parts.colset{--cols:4}
     #days.colset{--cols:4}
     #min15.colset{--cols:4}
+    .temps .c-max{font-size:24px}
+    .temps .c-min{font-size:15px}
+    .c-ico{font-size:20px}
+    .metric .m-txt{font-size:12px}
   }
 
   /* Desktop */
@@ -159,6 +147,10 @@
     #parts.colset{--cols:4}
     #days.colset{--cols:7}
     #min15.colset{--cols:6}
+    .temps .c-max{font-size:32px}
+    .temps .c-min{font-size:19px}
+    .c-ico{font-size:26px}
+    .metric .m-txt{font-size:13.5px}
   }
   @media (min-width:1100px){ .chartWrap{height:300px} }
 </style>
@@ -404,9 +396,7 @@
         if(+p.lat && +p.lon && p.place){ state={...state, ...p}; }
       }
     }catch(e){}
-    const savePrefs=()=>{
-      try{ localStorage.setItem(LS_KEY, JSON.stringify({lat:state.lat, lon:state.lon, place:state.place})); }catch(e){}
-    };
+    const savePrefs=()=>{ try{ localStorage.setItem(LS_KEY, JSON.stringify({lat:state.lat, lon:state.lon, place:state.place})); }catch(e){} };
 
     async function reverseGeocodeOpenMeteo(lat, lon){
       try{
@@ -541,10 +531,10 @@
 
     function drawHourly(){
       const d=state.last || {};
-      const cur=d.current || {};
+      theCur=d.current || {};
       const hours=(d.hourly && d.hourly.time) ? d.hourly.time : [];
       if(!hours.length) return;
-      const key=localHourKey(cur.time || hours[0]);
+      const key=localHourKey(theCur.time || hours[0]);
       let i=hours.findIndex(h=>h.slice(0,13)===key);
       if(i<0)i=0;
       const labels=hours.slice(i,i+24).map(h=>h.split('T')[1]);
@@ -621,6 +611,7 @@
           '<div class="temps"><div class="c-max">'+fmt0(max,'°')+'</div><div class="c-min">'+fmt0(min,'°')+'</div></div>'+
           '<div class="c-ico">'+dayIco+'</div>'+
           '<div class="metrics"><div class="metric">'+iconHTML+'<span class="m-txt">'+(pp!=null?pp+' %':'—')+'</span></div></div>';
+        if (will) addRainBadge(el);
         box.appendChild(el);
       }
     }
@@ -771,12 +762,7 @@
     }
 
     initGeolocation();
-    window.addEventListener('resize', ()=>{
-      if(state.last){
-        drawHourly();
-        renderMin15()
-      }
-    });
+    window.addEventListener('resize', ()=>{ if(state.last){ drawHourly(); renderMin15() }});
     setTimeout(()=>{ if(!state.last) fetchWeather().catch(()=>{}) },1200);
     initDragBars();
 
