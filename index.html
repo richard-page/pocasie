@@ -33,7 +33,7 @@
   .search{width:100%; background:#152535; border:1px solid var(--stroke); color:#fff; border-radius:12px; padding:12px 14px; outline:none; font-size:16px; min-height:46px}
   .search:focus{border-color:#2e4a67}
   #suggestions{display:none; gap:6px; position:absolute; top:calc(100% + 6px); left:0; right:0; z-index:40; background:#0f1c2a; border:1px solid var(--stroke); border-radius:12px; padding:8px; max-height:55vh; overflow:auto}
-  .sugg{background:#13263a; border:1px solid var(--stroke); border-radius:10px; padding:10px 12px; cursor:pointer}
+  .sugg{background:#13263a; border:1px solid var(--stroke); border-radius:10px; padding:10px 12px}
 
   .card{background:linear-gradient(180deg, rgba(255,255,255,.06), rgba(255,255,255,.03)); border:1px solid var(--stroke); border-radius:var(--r); box-shadow:var(--shadow); padding:16px 14px}
   .card h3{margin:0 0 14px; text-align:center; font-size:18px}
@@ -244,7 +244,7 @@
   <div id="err"></div>
 
   <script>
-    const APP_VERSION = '2025-08-15-mobile-grid-textfix';
+    const APP_VERSION = '2025-08-15-mobile-grid-textfix-3';
     const $ = s => document.querySelector(s);
     const NBSP_NARROW = '\u202F';
     const fmt0 = (v,u='') => (v==null || Number.isNaN(v)) ? '—' : (Math.round(v) + u);
