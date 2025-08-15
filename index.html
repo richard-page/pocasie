@@ -10,7 +10,7 @@
 <meta http-equiv="Expires" content="0" />
 <link rel="preconnect" href="https://fonts.googleapis.com" />
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
-<link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;500;600;700&display=swap" rel="stylesheet" />
+<link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;600;700&display=swap" rel="stylesheet" />
 <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.3/dist/chart.umd.min.js"></script>
 <style>
   :root{
@@ -34,6 +34,9 @@
   .search:focus{border-color:#2e4a67}
   #suggestions{display:none; gap:6px; position:absolute; top:calc(100% + 6px); left:0; right:0; z-index:40; background:#0f1c2a; border:1px solid var(--stroke); border-radius:12px; padding:8px; max-height:55vh; overflow:auto}
   .sugg{background:#13263a; border:1px solid var(--stroke); border-radius:10px; padding:10px 12px; cursor:pointer}
+
+  .pill{background:#1b2c3d; border:1px solid var(--stroke); color:#dfeaff; border-radius:12px; padding:10px 12px; font-weight:600; cursor:pointer; min-height:40px; font-size:14px; text-align:center}
+  .pill.active{background:var(--accent); border-color:#2abbd0; color:#002a32}
 
   .card{background:linear-gradient(180deg, rgba(255,255,255,.06), rgba(255,255,255,.03)); border:1px solid var(--stroke); border-radius:var(--r); box-shadow:var(--shadow); padding:14px}
   .card h3{margin:0 0 10px; text-align:center; font-size:18px}
@@ -59,6 +62,12 @@
   .summarySection h3{margin-bottom:8px}
   #summary{margin:0 auto; max-width:720px; color:#dbeeff; background:#0f1c2a; border:1px solid var(--stroke); border-radius:10px; padding:12px; text-align:center}
 
+  .histRow{display:flex; align-items:center; justify-content:center; gap:10px; flex-wrap:wrap}
+  .badge{display:inline-block; padding:6px 10px; border-radius:10px; font-weight:700}
+  .badge.max{background:#ff5e5e; color:#fff}
+  .badge.min{background:#ffd265; color:#2b2300}
+  .histSub{color:#a8bed5; font-size:12px; margin-top:6px; text-align:center}
+
   footer{padding:14px 10px; text-align:center; color:#cfe8ff; font-size:14px; border-top:1px solid rgba(255,255,255,.12)}
 
   .colset{
@@ -72,21 +81,23 @@
 
   .col{
     background:var(--panel); border:1px solid var(--stroke); border-radius:12px; padding:10px;
-    display:grid; grid-template-rows:auto 64px auto auto; align-items:center; justify-items:center;
-    row-gap:6px; text-align:center; min-height:176px; contain:content; position:relative
+    display:grid; grid-template-rows:auto 72px auto auto auto; align-items:center; justify-items:center;
+    text-align:center; min-height:176px; contain:content; position:relative
   }
   .c-top{opacity:.9; white-space:nowrap; overflow:hidden; text-overflow:ellipsis}
 
   .temps{display:grid; place-items:center; width:100%; text-align:center}
-  .temps .c-max{font-size:26px; font-weight:700; color:#ff6c6c; line-height:1}
-  .temps .c-min{font-size:17px; color:#ffbb7c; margin-top:2px; line-height:1}
+  .temps .c-max{font-size:24px; font-weight:700; color:#ff6c6c; line-height:1}
+  .temps .c-min{font-size:16px; color:#ffbb7c; margin-top:4px; line-height:1}
 
-  .c-ico{font-size:26px; line-height:1; display:flex; align-items:center; justify-content:center; width:100%; height:28px; margin:0}
+  @media (min-width:900px){
+    .col{grid-template-rows:auto 80px auto auto auto}
+    .temps .c-max{font-size:28px}
+    .temps .c-min{font-size:18px}
+  }
 
-  .metrics{display:grid; gap:4px; width:100%; max-width:240px; align-self:stretch}
-  .metric{display:flex; align-items:center; justify-content:center; gap:8px; font-size:13.2px; font-weight:500; color:#e9f3ff; letter-spacing:.1px; line-height:1.25}
-  .metric .m-ico{display:inline-flex; align-items:center; justify-content:center; width:18px; height:18px; font-size:16px; line-height:1}
-  @media (min-width:900px){ .temps .c-max{font-size:28px} .temps .c-min{font-size:18px} .metric{font-size:14px} }
+  .c-ico{font-size:24px; margin-top:6px}
+  .c-row{color:#cfe6ff; font-size:11.5px; line-height:1.25; margin-top:6px; white-space:normal; overflow:visible; text-overflow:clip; word-break:break-word}
 
   .rain-badge{position:absolute; top:6px; right:6px; font-size:18px; line-height:1; filter:drop-shadow(0 1px 2px rgba(0,0,0,.6)); background:rgba(13,24,36,.6); border:1px solid rgba(255,255,255,.1); border-radius:10px; padding:2px 6px}
   @media (max-width:720px){ .rain-badge{top:auto; bottom:6px; right:6px} }
@@ -175,12 +186,26 @@
       <h3>15-minútová predpoveď (24 h)</h3>
       <div id="min15" class="colset"></div>
     </section>
+
+    <section class="card" style="margin-top:12px">
+      <div class="head" style="text-align:center">
+        <h3>Počasie presne pred rokom</h3>
+        <div id="hist-date" style="color:var(--muted);font-size:12px">—</div>
+      </div>
+      <div class="histRow" style="margin-top:6px">
+        <div id="hist-emoji" style="font-size:26px">—</div>
+        <div style="font-weight:700" id="hist-text">—</div>
+        <span class="badge max" id="hist-max">—</span>
+        <span class="badge min" id="hist-min">—</span>
+      </div>
+      <div class="histSub" id="hist-extra">—</div>
+    </section>
   </div>
 
   <footer>&copy; <span id="year"></span> Richard / Počasie</footer>
 
   <script>
-    const APP_VERSION = '2025-08-15-emoji-centered-lean-metrics';
+    const APP_VERSION = '2025-08-15-wind-always-and-rain-emoji';
     const $ = s => document.querySelector(s);
     const NBSP_NARROW = '\u202F';
     const fmt0 = (v,u='') => (v==null || Number.isNaN(v)) ? '—' : (Math.round(v) + u);
@@ -221,6 +246,7 @@
       return false;
     }
     function addRainBadge(el){ el.insertAdjacentHTML('beforeend', '<div class="rain-badge" aria-label="Zrážky" title="Zrážky">💧</div>') }
+    const windEmoji = ()=> '💨 ';
 
     function isNightAt(dtLike, daily){
       const dt = typeof dtLike==='string' ? new Date(dtLike) : dtLike;
@@ -469,10 +495,8 @@
         el.innerHTML='<div class="c-top">'+label+'</div>'
                     +'<div class="temps"><div class="c-max">'+fmt0(temp,'°')+'</div><div class="c-min">'+(temp!=null?fmt0(temp-5,'°'):'—')+'</div></div>'
                     +'<div class="c-ico">'+wmoEmoji(code, isNightAt(dt, d.daily||{}))+'</div>'
-                    +'<div class="metrics">'
-                    +  '<div class="metric"><span class="m-ico">💧</span><span class="m-txt">Zrážky '+fmt0(pr, NBSP_NARROW+'mm/h')+'</span></div>'
-                    +  '<div class="metric"><span class="m-ico">💨</span><span class="m-txt">Vietor '+fmt0(wind, NBSP_NARROW+'km/h')+'</span></div>'
-                    +'</div>';
+                    +'<div class="c-row">💧 Zrážky '+fmt0(pr, NBSP_NARROW+'mm/h')+'</div>'
+                    +'<div class="c-row">'+windEmoji()+'Vietor '+fmt0(wind, NBSP_NARROW+'km/h')+'</div>';
         if (willRain({code, precip:pr, temp})) addRainBadge(el);
         wrap.appendChild(el);
       }
@@ -496,13 +520,13 @@
         const min=days.temperature_2m_min ? days.temperature_2m_min[i] : null;
         const pp=days.precipitation_probability_max ? days.precipitation_probability_max[i] : null;
         const will = willRain({code, prob:pp});
-        const iconHTML = will ? '<span class="m-ico">💧</span>' : '';
+        const rowRain = pp!=null ? (will ? '💧 '+pp+' %' : pp+' %') : '—';
         const el=document.createElement('div'); el.className='col';
         el.innerHTML='<div class="c-top">'+top+'</div>'
                     +'<div class="temps"><div class="c-max">'+fmt0(max,'°')+'</div><div class="c-min">'+fmt0(min,'°')+'</div></div>'
                     +'<div class="c-ico">'+wmoEmoji(code,false)+'</div>'
-                    +'<div class="metrics"><div class="metric">'+iconHTML+'<span class="m-txt">'+(pp!=null?pp+' %':'—')+'</span></div></div>';
-        if (will) addRainBadge(el);
+                    +'<div class="c-row">'+rowRain+'</div>'
+                    +'<div class="c-row"></div>';
         box.appendChild(el);
       }
     }
@@ -522,10 +546,8 @@
         el.innerHTML='<div class="c-top">'+t.toLocaleTimeString('sk-SK',{hour:'2-digit',minute:'2-digit'})+'</div>'
                     +'<div class="temps"><div class="c-max">'+fmt0(tmp,'°')+'</div><div class="c-min">'+(tmp!=null?fmt0(tmp-5,'°'):'—')+'</div></div>'
                     +'<div class="c-ico">'+wmoEmoji(code, isNightAt(t,d.daily||{}))+'</div>'
-                    +'<div class="metrics">'
-                    +  '<div class="metric"><span class="m-ico">💧</span><span class="m-txt">Zrážky '+(prep!=null?fmt0(prep, NBSP_NARROW+'mm/h'):'—')+'</span></div>'
-                    +  '<div class="metric"><span class="m-ico">💨</span><span class="m-txt">Vietor '+(wind!=null?fmt0(wind, NBSP_NARROW+'km/h'):'—')+'</span></div>'
-                    +'</div>';
+                    +'<div class="c-row">💧 Zrážky '+(prep!=null?fmt0(prep, NBSP_NARROW+'mm/h'):'—')+'</div>'
+                    +'<div class="c-row">'+windEmoji()+'Vietor '+(wind!=null?fmt0(wind, NBSP_NARROW+'km/h'):'—')+'</div>';
         if (willRain({code, precip:prep, temp:tmp})) addRainBadge(el);
         box.appendChild(el);
       }
@@ -562,7 +584,7 @@
       try{
         const baseTime=(state && state.last && state.last.current && state.last.current.time) ? new Date(state.last.current.time) : new Date();
         const lastYear=new Date(baseTime); lastYear.setFullYear(lastYear.getFullYear()-1);
-        const day=lastYear.toISOString().slice(0,10);
+        const day=lastYear.toISOString().slice(0,10); $('#hist-date').textContent=new Intl.DateTimeFormat('sk-SK',{dateStyle:'full'}).format(lastYear);
         const p=new URLSearchParams({latitude:state.lat, longitude:state.lon, start_date:day, end_date:day, daily:'weather_code,temperature_2m_max,temperature_2m_min,precipitation_sum', timezone:'auto'});
         const j=await fetch('https://archive-api.open-meteo.com/v1/archive?'+p+'&v='+APP_VERSION).then(r=>r.json());
         const dd=j.daily || {};
@@ -570,8 +592,10 @@
         const tmax=dd.temperature_2m_max ? dd.temperature_2m_max[0] : null;
         const tmin=dd.temperature_2m_min ? dd.temperature_2m_min[0] : null;
         const pr=(dd.precipitation_sum && dd.precipitation_sum[0]!=null) ? dd.precipitation_sum[0] : 0;
-        document.getElementById('year').textContent=new Date().getFullYear();
-      }catch(e){}
+        $('#hist-emoji').textContent=wmoEmoji(code,false); $('#hist-text').textContent=(WMO[code] && WMO[code][0])||'—';
+        $('#hist-max').textContent=fmt1(tmax)+'°C'; $('#hist-min').textContent=fmt1(tmin)+'°C';
+        $('#hist-extra').textContent=pr>0?('Zrážky: '+fmt1(pr, NBSP_NARROW+'mm')):'Bez zrážok.';
+      }catch(e){ $('#hist-extra').textContent='Históriu sa nepodarilo načítať.' }
     }
 
     let timer;
@@ -597,6 +621,8 @@
     document.getElementById('tab-ecmwf').addEventListener('click', ()=>fetchModels('ecmwf'));
     document.getElementById('tab-icon').addEventListener('click',  ()=>fetchModels('icon'));
     document.getElementById('tab-gfs').addEventListener('click',   ()=>fetchModels('gfs'));
+
+    document.getElementById('year').textContent=new Date().getFullYear();
 
     function initDragBars(){ ['parts','days','min15'].forEach(id=>{ const el=document.getElementById(id); if(el){ enableDragScroll(el) } }) }
 
