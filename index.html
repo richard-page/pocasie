@@ -69,31 +69,43 @@
 
   footer{padding:18px 10px; text-align:center; color:#cfe8ff; font-size:14px; border-top:1px solid rgba(255,255,255,.12)}
 
-  /* HORIZONTÁLNE ZOZNAMY – 4 KARTY NA MOBIL BEZ OREZANIA */
-  .colset{
-    --cols:4;
-    display:flex;
-    gap:8px;
-    overflow-x:auto;
-    overflow-y:hidden;
-    scrollbar-gutter:stable both-edges;
-    -webkit-overflow-scrolling:touch;
-    touch-action:pan-x pan-y;
-    overscroll-behavior-x:contain;
-    cursor:grab;
-    padding:8px 0 12px; /* bez bočného paddingu, aby sa vošli presne 4 */
-    scroll-snap-type:x proximity
-  }
-  .colset.dragging{cursor:grabbing; user-select:none}
+/* NÁHRADA za existujúce .colset a .col (flex)  */
+.colset{
+  --cols:4;
+  --gap:8px;
+  display:grid;
+  grid-auto-flow:column;
+  grid-auto-columns: calc((100% - (var(--cols) - 1)*var(--gap)) / var(--cols));
+  gap: var(--gap);
+  overflow-x:auto;
+  overflow-y:hidden;
+  -webkit-overflow-scrolling:touch;
+  overscroll-behavior-x:contain;
+  scroll-snap-type:x proximity;
+  padding:8px 0 12px;
+  /* toto nechaj max na 'stable' – 'both-edges' zbytočne uberá šírku na mobile */
+  scrollbar-gutter: stable;
+}
 
-  .col{
-    /* -0.5px eliminuje zaokrúhľovacie úniky, aby 4. karta nebola orezaná */
-    flex:0 0 calc((100% - (var(--cols) - 1)*8px) / var(--cols) - 0.5px);
-    background:var(--panel); border:1px solid var(--stroke); border-radius:12px; padding:12px;
-    display:grid; grid-template-rows:auto auto auto auto; align-items:center; justify-items:center;
-    text-align:center; min-height:182px; position:relative; row-gap:8px; min-width:0; overflow:visible;
-    scroll-snap-align:start
-  }
+.col{
+  /* už žiadny flex-basis hack, Grid si to drží sám */
+  min-width:0;
+  background:var(--panel);
+  border:1px solid var(--stroke);
+  border-radius:12px;
+  padding:12px;
+  display:grid;
+  grid-template-rows:auto auto auto auto;
+  justify-items:center;
+  align-items:center;
+  row-gap:8px;
+  text-align:center;
+  scroll-snap-align:start;
+}
+
+/* drobný textový fix – nech sa môže zalomiť na úzkych kartách */
+.metric .m-txt{ word-break: normal; white-space: normal; }
+.c-top{ text-wrap: balance; } /* voliteľné, krajšie zalomenie titulku */
 
   .c-top{
     opacity:.9; white-space:normal; overflow:visible; text-overflow:clip;
