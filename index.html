@@ -69,7 +69,7 @@
 
   footer{padding:18px 10px; text-align:center; color:#cfe8ff; font-size:14px; border-top:1px solid rgba(255,255,255,.12)}
 
-  /* --- horizontálne zoznamy: flex + scroll-snap; šírku dodá JS cez --col-basis --- */
+  /* --- horizontálne zoznamy: flex + scroll-snap; šírku dosadí JS priamo do --col-basis --- */
   .colset{
     display:flex; gap:var(--gap);
     overflow-x:auto; overflow-y:hidden;
@@ -82,8 +82,10 @@
   }
   .colset.dragging{cursor:grabbing; user-select:none}
 
+  /* DÔLEŽITÉ: používame width (border-box) namiesto flex-basis, aby sa započítali paddingy a bordery. */
   .col{
-    flex:0 0 var(--col-basis, 25%);
+    flex:0 0 auto;
+    width:var(--col-basis, 25%);
     background:var(--panel); border:1px solid var(--stroke); border-radius:12px; padding:12px;
     display:grid; grid-template-rows:auto auto auto auto; align-items:center; justify-items:center;
     text-align:center; min-height:182px; position:relative; row-gap:8px; min-width:0; overflow:visible;
@@ -200,13 +202,13 @@
   <div id="err"></div>
 
   <script>
-    const APP_VERSION = '2025-08-15-mobile-4col-final';
+    const APP_VERSION = '2025-08-15-mobile-4col-borderbox';
     const $ = s => document.querySelector(s);
     const NBSP_NARROW = '\u202F';
     const fmt0 = (v,u='') => (v==null || Number.isNaN(v)) ? '—' : (Math.round(v) + u);
     const fmt1 = (v,u='') => (v==null || Number.isNaN(v)) ? '—' : ((Math.round(v*10)/10).toFixed(1) + u);
 
-    /* --- WMO + helpery --- */
+    /* ===== WMO + helpery ===== */
     const WMO = {0:['Jasno'],1:['Prevažne jasno'],2:['Polojasno'],3:['Zamračené'],
       45:['Hmla'],48:['Mrznúca hmla'],51:['Slabé mrholenie'],53:['Mrholenie'],55:['Silné mrholenie'],
       61:['Slabý dážď'],63:['Dážď'],65:['Lejak'],66:['Mrznúci dážď'],67:['Mrznúci dážď'],
@@ -218,21 +220,23 @@
     const uvCat = u => u<3?'nízky':u<6?'mierny':u<8?'vysoký':u<11?'veľmi vysoký':'extrémny';
     const windEmoji = ()=> '💨';
 
-    /* --- Layout: spoľahlivé 4 karty na mobil --- */
-    const ro = new ResizeObserver(()=>layoutCols());
-    function computeGapPx(el){ const cs=getComputedStyle(el); const g=parseFloat(cs.columnGap||cs.gap||'10'); return Number.isFinite(g)?g:10; }
-    function colsFor(el){ const isDesktop=(window.innerWidth||0)>=900; const m=Number(el.dataset.mcols||4); const d=Number(el.dataset.dcols||m); return isDesktop?d:m; }
+    /* ===== Layout: spoľahlivé 4 karty na mobile ===== */
+    function px(cs,prop){ return parseFloat(cs.getPropertyValue(prop))||0 }
+    function colsFor(el){ return (window.innerWidth||0)>=900 ? +(el.dataset.dcols||7) : +(el.dataset.mcols||4) }
     function setColBasisFor(el){
       if(!el) return;
+      const cs = getComputedStyle(el);
+      const inner = el.clientWidth - px(cs,'padding-left') - px(cs,'padding-right'); // vnútorná šírka bez paddingu
+      const gap = px(cs,'column-gap') || px(cs,'gap') || 10;
       const cols = colsFor(el);
-      const gap = computeGapPx(el);
-      const w = el.clientWidth;
-      const basis = Math.max(140, (w - (cols-1)*gap) / cols);
+      const minW = 130; // bezpečné minimum pre obsah
+      const basis = Math.max(minW, Math.floor((inner - (cols-1)*gap) / cols));
       el.style.setProperty('--col-basis', basis + 'px');
     }
-    function layoutCols(){ document.querySelectorAll('.colset').forEach(setColBasisFor); }
+    function layoutCols(){ document.querySelectorAll('.colset').forEach(setColBasisFor) }
+    const ro = new ResizeObserver(layoutCols);
 
-    /* --- UI drobnosti --- */
+    /* ===== Ostatné helpery ===== */
     const toast=(msg)=>{ const el=$('#err'); if(!el) return; el.textContent=msg; el.style.display='block'; setTimeout(()=>{el.style.display='none'}, 5000) };
     const pad = n => String(n).padStart(2,'0');
 
