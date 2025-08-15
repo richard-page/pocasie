@@ -13,53 +13,94 @@
 <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;500;600;700&display=swap" rel="stylesheet" />
 <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.3/dist/chart.umd.min.js"></script>
 <style>
-  :root{ --bg0:#0b0f14; --bg1:#0e1620; --panel:#152433; --stroke:#233448; --txt:#eaf3ff; --muted:#a8bed5; --accent:#3ad0e6; --r:14px; --shadow:0 10px 28px rgba(0,0,0,.28); --gap:10px }
+  :root{
+    --bg0:#0b0f14; --bg1:#0e1620; --panel:#152433; --stroke:#233448;
+    --txt:#eaf3ff; --muted:#a8bed5; --accent:#3ad0e6;
+    --r:14px; --shadow:0 10px 28px rgba(0,0,0,.28);
+    --gap:10px
+  }
   *{box-sizing:border-box}
   html,body{min-height:100%; margin:0; padding:0}
-  body{color:var(--txt); font-family:Poppins,system-ui,-apple-system,Segoe UI,Roboto,Arial; background:linear-gradient(180deg,var(--bg1),var(--bg0)); overflow-x:hidden; overflow-y:auto; -webkit-text-size-adjust:100%; -webkit-tap-highlight-color:transparent; min-height:100dvh}
+  body{
+    color:var(--txt); font-family:Poppins,system-ui,-apple-system,Segoe UI,Roboto,Arial;
+    background:linear-gradient(180deg,var(--bg1),var(--bg0));
+    overflow-x:hidden; overflow-y:auto; -webkit-text-size-adjust:100%; -webkit-tap-highlight-color:transparent; min-height:100dvh
+  }
   .wrap{width:100%; max-width:1120px; margin-inline:auto; padding:22px 14px 40px}
   header h1{margin:0 0 14px; text-align:center; font-size:28px; letter-spacing:.3px}
+
   .toolbar{display:grid; grid-template-columns:1fr; gap:12px; margin:14px 0 14px}
   .searchCol{display:flex; flex-direction:column; gap:8px; position:relative}
   .search{width:100%; background:#152535; border:1px solid var(--stroke); color:#fff; border-radius:12px; padding:12px 14px; outline:none; font-size:16px; min-height:46px}
   .search:focus{border-color:#2e4a67}
   #suggestions{display:none; gap:6px; position:absolute; top:calc(100% + 6px); left:0; right:0; z-index:40; background:#0f1c2a; border:1px solid var(--stroke); border-radius:12px; padding:8px; max-height:55vh; overflow:auto}
   .sugg{background:#13263a; border:1px solid var(--stroke); border-radius:10px; padding:10px 12px; cursor:pointer}
+
   .card{background:linear-gradient(180deg, rgba(255,255,255,.06), rgba(255,255,255,.03)); border:1px solid var(--stroke); border-radius:var(--r); box-shadow:var(--shadow); padding:16px 14px}
   .card h3{margin:0 0 14px; text-align:center; font-size:18px}
   section.card{margin-top:18px !important}
+
   #place{white-space:nowrap; overflow:hidden; text-overflow:ellipsis; text-align:left; margin:0}
+
   .row{display:grid; grid-template-columns:1fr; gap:18px; margin-top:6px}
   .meta{display:grid; grid-template-columns:1fr; gap:10px; color:var(--muted); font-size:14px}
   .meta strong{color:#fff}
+
   .chipRow{display:flex; flex-direction:column; gap:10px; align-items:flex-start}
   .chip{display:inline-flex; align-items:center; gap:8px; background:#143344; border:1px solid var(--stroke); color:#d8f7ff; border-radius:999px; padding:8px 14px; font-size:13px; line-height:1}
   @media (min-width:900px){ .chipRow{flex-direction:row; flex-wrap:wrap} }
+
   .tempNow{font-size:44px; font-weight:700; line-height:1; margin:6px 0}
   .icon{width:64px; height:64px; display:flex; align-items:center; justify-content:center; font-size:48px}
   .gridInfo{display:grid; grid-template-columns:1fr auto; gap:16px; align-items:start}
+
   .chartWrap{height:240px}
   canvas{background:#0f1c2a; border:1px solid var(--stroke); border-radius:12px}
+
   .summarySection{margin-top:14px}
   .summarySection h3{margin-bottom:10px}
   #summary{margin:0 auto; max-width:780px; color:#dbeeff; background:#0f1c2a; border:1px solid var(--stroke); border-radius:10px; padding:12px; text-align:center}
+
   .histRow{display:flex; align-items:center; justify-content:center; gap:10px; flex-wrap:wrap}
   .badge{display:inline-block; padding:6px 10px; border-radius:10px; font-weight:700}
   .badge.max{background:#ff5e5e; color:#fff}
   .badge.min{background:#ffd265; color:#2b2300}
   .histSub{color:#a8bed5; font-size:12px; margin-top:6px; text-align:center}
+
   footer{padding:18px 10px; text-align:center; color:#cfe8ff; font-size:14px; border-top:1px solid rgba(255,255,255,.12)}
-  .colset{ --cols:4; --gap:8px; display:grid; grid-auto-flow:column; grid-auto-columns:calc((100% - (var(--cols) - 1)*var(--gap))/var(--cols) - .2px); gap:var(--gap); overflow-x:auto; overflow-y:hidden; scrollbar-gutter:stable both-edges; -webkit-overflow-scrolling:touch; touch-action:pan-x pan-y; overscroll-behavior-x:contain; scroll-snap-type:x proximity; padding:6px 0 10px }
-  .colset.dragging{user-select:none}
-  .col{background:var(--panel); border:1px solid var(--stroke); border-radius:12px; padding:12px; display:grid; grid-template-rows:auto auto auto auto; align-items:center; justify-items:center; text-align:center; min-height:172px; position:relative; row-gap:8px; min-width:0; overflow:hidden; scroll-snap-align:start}
+
+  /* ====== 4 KARTY NA MOBIL – JEDNOTNÉ PRE VŠETKY LISTY ====== */
+  .colset{
+    --cols:4;
+    --cardW: calc((100% - (var(--cols) - 1)*var(--gap)) / var(--cols));
+    display:flex; flex-wrap:nowrap; gap:var(--gap);
+    overflow-x:auto; overflow-y:hidden;
+    -webkit-overflow-scrolling:touch;
+    touch-action:pan-x pan-y;
+    overscroll-behavior-x:contain;
+    scroll-snap-type:x proximity;
+    padding:0; margin:0
+  }
+  .colset.dragging{cursor:grabbing; user-select:none}
+
+  .col{
+    flex:0 0 var(--cardW); width:var(--cardW);
+    background:var(--panel); border:1px solid var(--stroke); border-radius:12px; padding:12px;
+    display:grid; grid-template-rows:auto auto auto auto; align-items:center; justify-items:center;
+    text-align:center; min-height:172px; position:relative; row-gap:8px; min-width:0; overflow:hidden;
+    scroll-snap-align:start
+  }
+
   .c-top{opacity:.9; white-space:normal; line-height:1.1; text-align:center; font-size:13px}
+
   .temps{display:grid; place-items:center; width:100%; min-width:0}
   .temps .c-max{font-size:28px; font-weight:700; color:#ff6c6c; line-height:1}
   .temps .c-min{font-size:18px; color:#ffbb7c; margin-top:4px; line-height:1}
+
   @media (max-width:420px){
     .temps .c-max{font-size:24px}
     .temps .c-min{font-size:16px}
-    .metric .m-txt{font-size:12.4px; white-space:nowrap}
+    .metric .m-txt{font-size:12.4px}
     .c-top{font-size:12.4px}
     .c-ico{font-size:24px}
     .col{min-height:164px}
@@ -68,16 +109,21 @@
     .temps .c-max{font-size:32px}
     .temps .c-min{font-size:19px}
   }
+
   .c-ico{font-size:26px; line-height:1; display:flex; align-items:center; justify-content:center}
+
   .metrics{display:flex; flex-direction:column; align-items:center; justify-content:center; gap:6px; width:100%}
-  .metric{display:inline-flex; align-items:center; justify-content:center; gap:8px; width:100%}
+  .metric{display:inline-flex; align-items:center; justify-content:center; gap:8px; width:100%; flex-wrap:nowrap}
   .metric .m-ico{display:flex; align-items:center; justify-content:center; font-size:16px; line-height:1}
-  .metric .m-txt{font-size:13.5px; font-weight:500; color:#e9f3ff; letter-spacing:.05px; line-height:1.25; text-align:center; word-break:keep-all}
+  .metric .m-txt{font-size:13.5px; font-weight:500; color:#e9f3ff; letter-spacing:.05px; line-height:1.25; text-align:center; word-break:keep-all; white-space:nowrap}
+
   .colset::-webkit-scrollbar{height:10px}
   .colset::-webkit-scrollbar-track{background:#0f1c2a; border-radius:8px}
   .colset::-webkit-scrollbar-thumb{background:#33516f; border-radius:8px}
   .colset::-webkit-scrollbar-thumb:hover{background:#3f6b94}
   .colset{scrollbar-width:thin; scrollbar-color:#33516f #0f1c2a}
+
+  /* desktop – viac kariet naraz */
   @media (min-width:900px){
     #parts{--cols:4}
     #days{--cols:7}
@@ -90,6 +136,8 @@
     .chartWrap{height:270px}
   }
   @media (min-width:1100px){ .chartWrap{height:300px} }
+
+  /* jednoduchý error toast */
   #err{position:fixed;left:10px;right:10px;bottom:12px;background:#2a1111;border:1px solid #6b2a2a;color:#ffd9d9;border-radius:10px;padding:10px 12px;font-size:14px;display:none;z-index:99}
 </style>
 </head>
@@ -172,13 +220,23 @@
   <div id="err"></div>
 
   <script>
-    const APP_VERSION = '2025-08-15-mobile-4cards';
+    const APP_VERSION = '2025-08-15-mobile-4cards-final';
     const $ = s => document.querySelector(s);
     const NBSP_NARROW = '\u202F';
     const fmt0 = (v,u='') => (v==null || Number.isNaN(v)) ? '—' : (Math.round(v) + u);
     const fmt1 = (v,u='') => (v==null || Number.isNaN(v)) ? '—' : ((Math.round(v*10)/10).toFixed(1) + u);
 
-    const WMO = {0:['Jasno'],1:['Prevažne jasno'],2:['Polojasno'],3:['Zamračené'],45:['Hmla'],48:['Mrznúca hmla'],51:['Slabé mrholenie'],53:['Mrholenie'],55:['Silné mrholenie'],61:['Slabý dážď'],63:['Dážď'],65:['Lejak'],66:['Mrznúci dážď'],67:['Mrznúci dážď'],71:['Slabé sneženie'],73:['Sneženie'],75:['Silné sneženie'],77:['Snehové zrná'],80:['Prehánky'],81:['Prehánky'],82:['Silné prehánky'],85:['Snehové prehánky'],86:['Silné snehové prehánky'],95:['Búrky'],96:['Búrky s krúpami'],99:['Silné búrky s krúpami']};
+    /* WMO tabuľka */
+    const WMO = {
+      0:['Jasno'],1:['Prevažne jasno'],2:['Polojasno'],3:['Zamračené'],
+      45:['Hmla'],48:['Mrznúca hmla'],
+      51:['Slabé mrholenie'],53:['Mrholenie'],55:['Silné mrholenie'],
+      61:['Slabý dážď'],63:['Dážď'],65:['Lejak'],66:['Mrznúci dážď'],67:['Mrznúci dážď'],
+      71:['Slabé sneženie'],73:['Sneženie'],75:['Silné sneženie'],77:['Snehové zrná'],
+      80:['Prehánky'],81:['Prehánky'],82:['Silné prehánky'],
+      85:['Snehové prehánky'],86:['Silné snehové prehánky'],
+      95:['Búrky'],96:['Búrky s krúpami'],99:['Silné búrky s krúpami']
+    };
     const RAIN_CODES = new Set([51,53,55,61,63,65,66,67,80,81,82,95,96,99]);
     const uvCat = u => u<3?'nízky':u<6?'mierny':u<8?'vysoký':u<11?'veľmi vysoký':'extrémny';
 
@@ -204,7 +262,6 @@
       if ([95,96,99].includes(k)) return '⛈️';
       return night ? '🌙' : '🌤️';
     }
-
     function willRain(args){
       const code = args && args.code!=null ? Number(args.code) : null;
       const precip = args && args.precip!=null ? Number(args.precip) : null;
@@ -236,7 +293,10 @@
     }
 
     const pad = n => String(n).padStart(2,'0');
-    const localHourKey = (date)=>{ const d = typeof date==='string' ? new Date(date) : new Date(date); return d.getFullYear() + '-' + pad(d.getMonth()+1) + '-' + pad(d.getDate()) + 'T' + pad(d.getHours()); };
+    const localHourKey = (date)=>{
+      const d = typeof date==='string' ? new Date(date) : new Date(date);
+      return d.getFullYear() + '-' + pad(d.getMonth()+1) + '-' + pad(d.getDate()) + 'T' + pad(d.getHours());
+    };
 
     function valueAtHourLocal(timesISO, arr, date){
       const key = localHourKey(date);
@@ -295,7 +355,12 @@
       return best;
     }
 
-    const aqiCat = (v)=>{ if(v==null||Number.isNaN(v)) return '—'; if(v<=50) return 'dobrá'; if(v<=100) return 'mierne zhoršená'; if(v<=150) return 'riziková'; if(v<=200) return 'zlá'; if(v<=300) return 'veľmi zlá'; return 'nebezpečná'; };
+    const aqiCat = (v)=>{
+      if(v==null||Number.isNaN(v)) return '—';
+      if(v<=50) return 'dobrá'; if(v<=100) return 'mierne zhoršená';
+      if(v<=150) return 'riziková'; if(v<=200) return 'zlá';
+      if(v<=300) return 'veľmi zlá'; return 'nebezpečná';
+    };
 
     let state={place:'—', lat:48.1486, lon:17.1077, last:null};
     let hourlyChart=null;
@@ -406,7 +471,7 @@
       const pp=dd.precipitation_probability_max && dd.precipitation_probability_max[0];
       const wmax=dd.wind_speed_10m_max && dd.wind_speed_10m_max[0];
       const condToday=(WMO[pickDayCondition(d)] && WMO[pickDayCondition(d)][0])||'—';
-      const rainTxt = (ps!=null && ps >= 0.1) ? ('zrážky do '+fmt1(ps, NBSP_NARROW+'mm')) : ((pp!=null && pp>20) ? ('bez výrazných zrážok (pravdepodobnosť '+pp+NBSP_NARROW+'%)') : 'bez zrážok');
+      const rainTxt = (ps!=null && ps >= 0.1) ? ('zrážky do '+fmt1(ps, NBSP_NARROW+'mm')) : ((pp!=null && pp>20) ? ('bez výrazných zrážok (pravdepodobnosť '+Math.round(pp)+NBSP_NARROW+'%)') : 'bez zrážok');
       const uvTxt = (dd.uv_index_max && dd.uv_index_max[0]!=null) ? ('UV '+uvCat(dd.uv_index_max[0])+' (max '+fmt1(dd.uv_index_max[0])+')') : 'UV údaj nedostupný';
       $('#summary').innerHTML='Dnes <strong>'+condToday.toLowerCase()+'</strong>, max <strong>'+fmt0(tmax,'°')+'</strong>, min <strong>'+fmt0(tmin,'°')+'</strong>, '+rainTxt+', vietor do <strong>'+fmt1(wmax, NBSP_NARROW+'km/h')+'</strong>, '+uvTxt+'.';
 
@@ -526,9 +591,24 @@
 
     function enableDragScroll(el){
       let isDown=false, startX=0, startScroll=0, lastX=0, lastT=0, vx=0;
-      el.addEventListener('pointerdown', e=>{ if(e.button!==0) return; isDown=true; startX=e.clientX; startScroll=el.scrollLeft; lastX=e.clientX; lastT=performance.now(); vx=0; el.classList.add('dragging'); el.setPointerCapture(e.pointerId); e.preventDefault() });
-      el.addEventListener('pointermove', e=>{ if(!isDown) return; const now=performance.now(); const dx=e.clientX-startX; el.scrollLeft = startScroll - dx; const ddx = e.clientX - lastX; const dt  = Math.max(1, now - lastT); vx = -(ddx/dt); lastX=e.clientX; lastT=now; e.preventDefault() });
-      function momentum(v){ let velocity = v * 14; const friction = 0.92; function step(){ if(Math.abs(velocity) < 0.25) return; el.scrollLeft += velocity; velocity *= friction; if(el.scrollLeft<=0 || Math.ceil(el.scrollLeft)>=el.scrollWidth-el.clientWidth) return; requestAnimationFrame(step) } requestAnimationFrame(step) }
+      el.addEventListener('pointerdown', e=>{
+        if(e.button!==0) return; isDown=true; startX=e.clientX; startScroll=el.scrollLeft; lastX=e.clientX; lastT=performance.now(); vx=0;
+        el.classList.add('dragging'); el.setPointerCapture(e.pointerId); e.preventDefault()
+      });
+      el.addEventListener('pointermove', e=>{
+        if(!isDown) return; const now=performance.now(); const dx=e.clientX-startX;
+        el.scrollLeft = startScroll - dx;
+        const ddx = e.clientX - lastX; const dt  = Math.max(1, now - lastT); vx = -(ddx/dt);
+        lastX=e.clientX; lastT=now; e.preventDefault()
+      });
+      function momentum(v){
+        let velocity = v * 14; const friction = 0.92;
+        function step(){ if(Math.abs(velocity) < 0.25) return;
+          el.scrollLeft += velocity; velocity *= friction;
+          if(el.scrollLeft<=0 || Math.ceil(el.scrollLeft)>=el.scrollWidth-el.clientWidth) return;
+          requestAnimationFrame(step)
+        } requestAnimationFrame(step)
+      }
       el.addEventListener('pointerup', e=>{ if(!isDown) return; isDown=false; el.classList.remove('dragging'); try{ el.releasePointerCapture(e.pointerId) }catch(_){} momentum(vx) });
       el.addEventListener('pointercancel', ()=>{ isDown=false; el.classList.remove('dragging') });
       el.addEventListener('wheel', (e)=>{ const delta = Math.abs(e.deltaY) > Math.abs(e.deltaX) ? e.deltaY : e.deltaX; el.scrollLeft += delta * 0.6; e.preventDefault() }, {passive:false});
@@ -588,7 +668,9 @@
     initDragBars();
 
     if(!window.__wx_auto_refresh){
-      window.__wx_auto_refresh=setInterval(()=>{ if(state.lat && state.lon){ fetchWeather().catch(()=>{}); fetchAQ().catch(()=>{}) } }, 5*60*1000);
+      window.__wx_auto_refresh=setInterval(()=>{
+        if(state.lat && state.lon){ fetchWeather().catch(()=>{}); fetchAQ().catch(()=>{}) }
+      }, 5*60*1000);
     }
   </script>
 </body>
