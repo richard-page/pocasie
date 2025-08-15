@@ -69,7 +69,6 @@
 
   footer{padding:18px 10px; text-align:center; color:#cfe8ff; font-size:14px; border-top:1px solid rgba(255,255,255,.12)}
 
-  /* horizontálne karty */
   .colset{
     --cols:4;
     display:flex;
@@ -94,21 +93,23 @@
     scroll-snap-align:start
   }
 
-  /* Hlavička – nikdy neorež, nikdy nezalamuj, adaptívne zmenši */
   .c-top{
+    width:100%;
     max-width:100%;
-    padding-inline:6px;
+    padding-inline:8px;
     opacity:.95;
     line-height:1.1;
-    text-align:center
+    text-align:center;
+    display:flex;
+    align-items:center;
+    justify-content:center
   }
   #parts .c-top,
   #min15 .c-top{
     white-space:nowrap;
     font-size:clamp(10px, 3.2vw, 16px);
-    letter-spacing:0;
+    letter-spacing:0
   }
-  /* 7-dňová môže byť viariadková */
   #days .c-top{
     white-space:normal;
     text-wrap:balance
@@ -236,7 +237,7 @@
   <div id="err"></div>
 
   <script>
-    const APP_VERSION = '2025-08-15-mobile-nowrap-compact-2';
+    const APP_VERSION = '2025-08-15-mobile-nowrap-compact-3-center';
     const $ = s => document.querySelector(s);
     const NBSP_NARROW = '\u202F';
     const fmt0 = (v,u='') => (v==null || Number.isNaN(v)) ? '—' : (Math.round(v) + u);
