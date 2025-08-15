@@ -99,13 +99,17 @@
     align-items:center; justify-items:center;
     text-align:center; min-height:182px; position:relative; row-gap:8px;
     scroll-snap-align:start;
-    overflow:hidden;
-    contain:layout paint
+    overflow:hidden; /* kvôli zaobleným rohom */
   }
 
   .c-top{
-    opacity:.9; white-space:normal; text-overflow:clip;
-    line-height:1.1; text-align:center; text-wrap:balance
+    padding-inline:10px;     /* bezpečný vnútorný okraj proti orezaniu */
+    opacity:.9;
+    white-space:normal;
+    line-height:1.1;
+    text-align:center;
+    text-wrap:balance;
+    word-break:keep-all;
   }
 
   .temps{display:grid; place-items:center; width:100%; min-width:0}
@@ -126,16 +130,14 @@
 
   .c-ico{font-size:26px; line-height:1; display:flex; align-items:center; justify-content:center}
 
-  /* jednotné rozloženie metrík – rovnaké ako 7-dňová */
+  /* jednotné rozloženie metrík – ako 7-dňová */
   .metrics{display:flex; flex-direction:column; align-items:center; justify-content:center; gap:6px; width:100%}
   .metric{display:flex; flex-direction:column; align-items:center; gap:6px; width:auto}
   .metric .m-ico{line-height:1; font-size:16px}
   .metric .m-txt{min-width:0; white-space:normal; text-align:center; font-size:13.5px; font-weight:500; color:#e9f3ff; letter-spacing:.02px; line-height:1.2}
 
-  /* alias pre istotu (7-dňová už používa túto triedu) */
   .metrics--mini .metric{display:flex; flex-direction:column; gap:6px}
 
-  /* mobil – rovnaké zmenšenie ako pri 7-dňovej */
   @media (max-width:480px){ .metrics{gap:4px} .metric .m-txt{font-size:12.6px} }
   @media (max-width:360px){ .metric .m-txt{font-size:12px} }
 
@@ -235,7 +237,7 @@
   <div id="err"></div>
 
   <script>
-    const APP_VERSION = '2025-08-15-mobile-match-7day-1';
+    const APP_VERSION = '2025-08-15-title-truncation-fix-1';
     const $ = s => document.querySelector(s);
     const NBSP_NARROW = '\u202F';
     const fmt0 = (v,u='') => (v==null || Number.isNaN(v)) ? '—' : (Math.round(v) + u);
@@ -340,7 +342,7 @@
         const t0=ts[i], t1=ts[i+1];
         if(date>=t0 && date<=t1){
           const mid=(t0.getTime()+t1.getTime())/2;
-          return (date < new Date(mid)) ? codes[i] : codes[i+1];
+          return (date.getTime() < mid) ? codes[i] : codes[i+1];
         }
       }
       return codes[codes.length-1] ?? 0;
@@ -353,7 +355,7 @@
       let startH=9,endH=18;
       const sr=(d.daily && d.daily.sunrise && d.daily.sunrise[0]) ? d.daily.sunrise[0] : null;
       const ss=(d.daily && d.daily.sunset && d.daily.sunset[0]) ? d.daily.sunset[0] : null;
-      if(sr && ss){
+      if(sr a nd ss){
         const sh=new Date(sr).getHours(), eh=new Date(ss).getHours();
         if(!Number.isNaN(sh) && !Number.isNaN(eh) && sh<eh){startH=sh;endH=eh;}
       }
