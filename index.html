@@ -69,7 +69,7 @@
 
   footer{padding:18px 10px; text-align:center; color:#cfe8ff; font-size:14px; border-top:1px solid rgba(255,255,255,.12)}
 
-  /* === HORIZONTÁLNE ZOZNAMY – GRID FIX PRE MOBIL === */
+  /* === HORIZONTÁLNE ZOZNAMY – GRID (bez orezania) === */
   .colset{
     --cols:4;
     --gap:8px;
@@ -79,7 +79,7 @@
     gap: var(--gap);
     overflow-x:auto;
     overflow-y:hidden;
-    scrollbar-gutter: stable;        /* žiadne 'both-edges' */
+    scrollbar-gutter: stable;
     -webkit-overflow-scrolling:touch;
     overscroll-behavior-x:contain;
     touch-action:pan-x pan-y;
@@ -91,10 +91,17 @@
 
   .col{
     min-width:0;
-    background:var(--panel); border:1px solid var(--stroke); border-radius:12px; padding:12px;
-    display:grid; grid-template-rows:auto auto auto auto; align-items:center; justify-items:center;
-    text-align:center; min-height:182px; position:relative; row-gap:8px; overflow:visible;
+    background:var(--panel);
+    border:1px solid var(--stroke);
+    border-radius:12px;
+    padding:12px;
+    display:grid;
+    grid-template-rows:auto auto auto auto;
+    align-items:center; justify-items:center;
+    text-align:center; min-height:182px; position:relative; row-gap:8px;
     scroll-snap-align:start;
+    overflow:hidden;                 /* <<< nič neprelezie von */
+    contain: layout paint;           /* stabilné vykreslenie na mobile */
   }
 
   .c-top{
@@ -124,9 +131,28 @@
   .c-ico{font-size:26px; line-height:1; display:flex; align-items:center; justify-content:center}
 
   .metrics{display:flex; flex-direction:column; align-items:center; justify-content:center; gap:6px; width:100%}
-  .metric{display:inline-flex; align-items:center; justify-content:center; gap:8px; width:100%}
-  .metric .m-ico{display:flex; align-items:center; justify-content:center; font-size:16px; line-height:1}
-  .metric .m-txt{font-size:13.5px; font-weight:500; color:#e9f3ff; letter-spacing:.05px; line-height:1.25; text-align:center; white-space:normal; word-break:normal}
+
+  /* === FIX PRE TEXT V METRIKÁCH (žiadne strihanie) === */
+  .metric{
+    display:grid;                     /* grid namiesto inline-flex */
+    grid-template-columns:auto 1fr;   /* ikona + elastický text */
+    align-items:center;
+    justify-content:center;
+    column-gap:8px;
+    width:100%;
+  }
+  .metric .m-ico{
+    line-height:1;
+    font-size:16px;
+  }
+  .metric .m-txt{
+    min-width:0;                      /* kľúčové – môže sa zmenšiť */
+    white-space:normal;
+    overflow-wrap:anywhere;
+    word-break:normal;
+    text-align:center;
+    font-size:13.5px; font-weight:500; color:#e9f3ff; letter-spacing:.05px; line-height:1.25;
+  }
 
   .colset::-webkit-scrollbar{height:10px}
   .colset::-webkit-scrollbar-track{background:#0f1c2a; border-radius:8px}
@@ -224,7 +250,7 @@
   <div id="err"></div>
 
   <script>
-    const APP_VERSION = '2025-08-15-mobile-grid-fix-1';
+    const APP_VERSION = '2025-08-15-mobile-final-fix';
     const $ = s => document.querySelector(s);
     const NBSP_NARROW = '\u202F';
     const fmt0 = (v,u='') => (v==null || Number.isNaN(v)) ? '—' : (Math.round(v) + u);
@@ -328,7 +354,8 @@
       const ts=timesISO.map(t=>new Date(t));
       for(let i=0;i<ts.length-1;i++){
         const t0=ts[i], t1=ts[i+1];
-        if(date>=t0 && date<=t1){
+        ifdate: {
+          if(!(date>=t0 && date<=t1)) break date;
           const mid=(t0.getTime()+t1.getTime())/2;
           return (date < new Date(mid)) ? codes[i] : codes[i+1];
         }
@@ -455,8 +482,7 @@
     }
 
     function renderAll(){
-      const d=state.last || {};
-      const cur=d.current || {};
+      const d=state.last || {}; const cur=d.current || {};
       $('#place').textContent=state.place;
       $('#temp').textContent=fmt0(cur.temperature_2m,'°');
       $('#apparent').textContent=fmt0(cur.apparent_temperature,'°');
@@ -534,7 +560,7 @@
                     +'<div class="c-ico">'+wmoEmoji(code, isNightAt(dt, d.daily||{}), {temp, wind, precip: pr})+'</div>'
                     +'<div class="metrics">'
                     +  '<div class="metric"><span class="m-ico">💧</span><span class="m-txt">Zrážky '+fmt0(pr, NBSP_NARROW+'mm/h')+'</span></div>'
-                    +  '<div class="metric"><span class="m-ico">'+windEmoji()+'</span><span class="m-txt">Vietor '+fmt0(wind, NBSP_NARROW+'km/h')+'</span></div>'
+                    +  '<div class="metric"><span class="m-ico">💨</span><span class="m-txt">Vietor '+fmt0(wind, NBSP_NARROW+'km/h')+'</span></div>'
                     +'</div>';
         wrap.appendChild(el);
       }
@@ -587,7 +613,7 @@
                     +'<div class="c-ico">'+wmoEmoji(code, isNightAt(t,d.daily||{}), {temp: tmp, wind, precip: prep})+'</div>'
                     +'<div class="metrics">'
                     +  '<div class="metric"><span class="m-ico">💧</span><span class="m-txt">Zrážky '+(prep!=null?fmt0(prep, NBSP_NARROW+'mm/h'):'—')+'</span></div>'
-                    +  '<div class="metric"><span class="m-ico">'+windEmoji()+'</span><span class="m-txt">Vietor '+(wind!=null?fmt0(wind, NBSP_NARROW+'km/h'):'—')+'</span></div>'
+                    +  '<div class="metric"><span class="m-ico">💨</span><span class="m-txt">Vietor '+(wind!=null?fmt0(wind, NBSP_NARROW+'km/h'):'—')+'</span></div>'
                     +'</div>';
         box.appendChild(el);
       }
