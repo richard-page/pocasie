@@ -91,32 +91,33 @@
     background:var(--panel); border:1px solid var(--stroke); border-radius:12px;
     padding:14px;
     display:grid; grid-template-rows:auto auto auto auto;
-    align-items:center; justify-items:center;       /* centruje vnútro dlaždice */
+    align-items:center; justify-items:center;        /* centrovanie obsahu */
     text-align:center; min-height:182px; position:relative; row-gap:12px;
     min-width:0; overflow:hidden; scroll-snap-align:start
   }
 
-  /* TOP tituly – isté centrovanie + na mobile povolené zalomenie */
+  /* TOP titulky — perfektné centrovanie + bez elipsy */
   .c-top{
     width:100%;
-    min-height:1.9em;
+    min-height:2.2em;
     display:flex; align-items:center; justify-content:center;
-    padding-inline:4px; overflow:hidden
+    padding-inline:6px
   }
   .c-top__inner{
     display:block; text-align:center; max-width:100%;
-    white-space:nowrap; overflow:hidden; text-overflow:ellipsis
+    /* žiadna elipsa, aby sa nezobrazovalo „Doobe…“ */
+    white-space:nowrap; overflow:visible; text-overflow:clip;
   }
-  /* mobil: nech sa môže zalomiť na 2 riadky a stále je to presne v strede */
+  /* mobil: povoliť zalomenie a stále držať stred */
   @media (max-width:480px){
-    #parts .c-top, #min15 .c-top{ min-height:2.2em }
     #parts .c-top__inner, #min15 .c-top__inner{
-      white-space:normal; text-wrap:balance; line-height:1.15
+      white-space:normal; text-wrap:balance; word-break:keep-all; line-height:1.15;
+      overflow:visible; text-overflow:clip;
     }
   }
 
   /* veľkosti titulkov */
-  #parts .c-top__inner, #min15 .c-top__inner{ font-size:clamp(10px, 3.2vw, 16px) }
+  #parts .c-top__inner, #min15 .c-top__inner{ font-size:clamp(10px, 3.4vw, 16px) }
   #days .c-top{ min-height:auto }
   #days .c-top__inner{ white-space:normal; text-wrap:balance; font-size:inherit }
 
@@ -236,7 +237,7 @@
   <div id="err"></div>
 
   <script>
-    const APP_VERSION = '2025-08-16-center-polish';
+    const APP_VERSION = '2025-08-16-center-lock-v1';
     const $ = s => document.querySelector(s);
     const NBSP_NARROW = '\u202F';
     const fmt0 = (v,u='') => (v==null || Number.isNaN(v)) ? '—' : (Math.round(v) + u);
