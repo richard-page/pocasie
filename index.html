@@ -92,11 +92,10 @@
     display:grid; grid-template-rows:auto auto auto auto;
     align-items:center; justify-items:center;
     text-align:center; min-height:182px; position:relative; row-gap:12px;
-    min-width:0; overflow:visible; /* kľúčové: nič neorezávať */
+    min-width:0; overflow:hidden; /* nič nevyčnieva – nadpis zmenšíme JS */
     scroll-snap-align:start
   }
 
-  /* Nadpis v karte – vždy 1 riadok, bez rezu */
   .c-top{
     width:100%;
     min-height:2.2em;
@@ -105,9 +104,10 @@
   }
   .c-top__inner{
     display:block; max-width:100%; text-align:center;
-    white-space:nowrap; overflow:visible; text-overflow:clip;
+    white-space:nowrap; overflow:hidden; text-overflow:clip;
     line-height:1.15; font-weight:700;
-    font-size:clamp(12px,3.6vw,17px);
+    /* počiatočná veľkosť – fitTitles() prípadne zmenší */
+    font-size:17px;
   }
 
   .temps{display:grid; place-items:center; width:100%; min-width:0}
@@ -231,7 +231,7 @@
   <div id="err"></div>
 
   <script>
-    const APP_VERSION = '2025-08-16-mobile-titles-fix-final';
+    const APP_VERSION = '2025-08-16-title-autofit';
     const $ = s => document.querySelector(s);
     const NBSP_NARROW = '\u202F';
     const fmt0 = (v,u='') => (v==null || Number.isNaN(v)) ? '—' : (Math.round(v) + u);
@@ -447,6 +447,29 @@
       }, {enableHighAccuracy:true, timeout:10000, maximumAge:300000});
     }
 
+    /* ---------- TITLES AUTOFIT ---------- */
+    function fitOneTitle(span){
+      if(!span) return;
+      // reset to base
+      span.style.fontSize = '';
+      const box = span.parentElement; if(!box) return;
+      const maxW = Math.max(0, box.clientWidth - 2); if(maxW<=0) return;
+
+      // binary search between 11px..20px
+      let lo=11, hi=20, best=11;
+      for(let k=0;k<12;k++){
+        const mid = (lo+hi)/2;
+        span.style.fontSize = mid+'px';
+        const w = span.scrollWidth; // presná šírka textu
+        if (w <= maxW){ best = mid; lo = mid; } else { hi = mid; }
+      }
+      span.style.fontSize = best+'px';
+    }
+    function fitTitles(root=document){
+      root.querySelectorAll('.c-top__inner').forEach(fitOneTitle);
+    }
+    /* ----------------------------------- */
+
     async function fetchWeather(){
       const tz=Intl.DateTimeFormat().resolvedOptions().timeZone;
       const p=new URLSearchParams({
@@ -459,6 +482,7 @@
       const r=await fetch('https://api.open-meteo.com/v1/forecast?'+p+'&v='+APP_VERSION);
       state.last=await r.json();
       renderAll(); drawHourly(); await fetchAQ().catch(()=>{}); renderDays(state.last); fetchHistory().catch(()=>{});
+      fitTitles(); // po prvom rendri
     }
 
     function renderAll(){
@@ -555,6 +579,8 @@
       const vecer=sunset?new Date(sunset.getTime()+30*60*1000):(function(){const t=new Date(base); t.setHours(21,0,0,0); return t;})();
       slot(vecer,'Večer');
       const noc=new Date(base); noc.setDate(base.getDate()+1); noc.setHours(2,0,0,0); slot(noc,'Noc');
+
+      fitTitles(wrap);
     }
 
     function renderDays(data){
@@ -579,6 +605,7 @@
                     +'<div class="metrics"><div class="metric">'+iconHTML+'<span class="m-txt">'+(pp!=null?pp+' %':'—')+'</span></div></div>';
         box.appendChild(el);
       }
+      fitTitles(box);
     }
 
     function renderMin15(){
@@ -602,6 +629,7 @@
                     +'</div>';
         box.appendChild(el);
       }
+      fitTitles(box);
     }
 
     function enableDragScroll(el){
@@ -667,7 +695,12 @@
     function initDragBars(){ ['parts','days','min15'].forEach(id=>{ const el=document.getElementById(id); if(el){ enableDragScroll(el) } }) }
 
     initGeolocation();
-    window.addEventListener('resize', ()=>{ if(state.last){ drawHourly(); renderMin15() }});
+    window.addEventListener('resize', ()=>{ if(state.last){ drawHourly(); renderMin15(); fitTitles(); }});
+
+    // Refit pri zmene veľkosti kontajnerov (bez ohľadu na okno)
+    const ro = new ResizeObserver(() => fitTitles());
+    ['parts','days','min15'].forEach(id=>{ const el=document.getElementById(id); if(el) ro.observe(el); });
+
     setTimeout(()=>{ if(!state.last) fetchWeather().catch(()=>toast('Načítanie počasia zlyhalo')) },1200);
     initDragBars();
 
