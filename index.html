@@ -96,14 +96,14 @@
     scroll-snap-align:start
   }
 
- .c-top {
+.c-top {
   width: 100%;
-  min-height: 2.2em;           /* viac priestoru na výšku */
+  min-height: 2.2em;
   display: flex;
-  align-items: center;         /* vertikálne centrovanie */
-  justify-content: center;     /* horizontálne centrovanie */
-  padding-inline: 10px;        /* trochu viac priestoru zľava/zprava */
-  overflow: hidden;            /* ochrana proti pretečeniu */
+  align-items: center;
+  justify-content: center;
+  padding-inline: 10px;
+  overflow: hidden;
 }
 
 .c-top__inner {
@@ -111,17 +111,21 @@
   max-width: 100%;
   text-align: center;
 
-  /* >>> kľúč na 1 riadok bez zalomenia <<< */
-  white-space: nowrap;
-  overflow: hidden;
-  text-overflow: ellipsis;
+  white-space: nowrap;   /* vždy v jednom riadku */
+  overflow: visible;     /* už nič nereže */
+  text-overflow: unset;  /* žiadne „…“ */
 
   word-break: keep-all;
   overflow-wrap: normal;
 
-  line-height: 1.2;             /* opticky do stredu */
+  line-height: 1.2;
   font-weight: 600;
   font-size: clamp(11px, 3.4vw, 16px);
+}
+
+/* pridané: karta má dosť miesta aj pre najdlhšie slovo */
+.karta, .col {
+  min-width: 95px;
 }
 
     /* kľúčové tri */
