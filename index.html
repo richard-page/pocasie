@@ -19,63 +19,118 @@
   body{ color:var(--txt); font-family:Poppins,system-ui,-apple-system,Segoe UI,Roboto,Arial; background:linear-gradient(180deg,var(--bg1),var(--bg0)); overflow-x:hidden; overflow-y:auto; -webkit-text-size-adjust:100%; -webkit-tap-highlight-color:transparent; min-height:100dvh }
   .wrap{width:100%; max-width:1120px; margin-inline:auto; padding:22px 14px 40px}
   header h1{margin:0 0 14px; text-align:center; font-size:28px; letter-spacing:.3px}
+
   .toolbar{display:grid; grid-template-columns:1fr; gap:12px; margin:14px 0 14px}
   .searchCol{display:flex; flex-direction:column; gap:8px; position:relative}
   .search{width:100%; background:#152535; border:1px solid var(--stroke); color:#fff; border-radius:12px; padding:12px 14px; outline:none; font-size:16px; min-height:46px}
   .search:focus{border-color:#2e4a67}
   #suggestions{display:none; gap:6px; position:absolute; top:calc(100% + 6px); left:0; right:0; z-index:40; background:#0f1c2a; border:1px solid var(--stroke); border-radius:12px; padding:8px; max-height:55vh; overflow:auto}
   .sugg{background:#13263a; border:1px solid var(--stroke); border-radius:10px; padding:10px 12px; cursor:pointer}
+
   .card{background:linear-gradient(180deg, rgba(255,255,255,.06), rgba(255,255,255,.03)); border:1px solid var(--stroke); border-radius:var(--r); box-shadow:var(--shadow); padding:16px 14px}
   .card h3{margin:0 0 14px; text-align:center; font-size:18px}
   section.card{margin-top:18px !important}
+
   #place{white-space:nowrap; overflow:hidden; text-overflow:ellipsis; text-align:left; margin:0}
+
   .row{display:grid; grid-template-columns:1fr; gap:18px; margin-top:6px}
   .meta{display:grid; grid-template-columns:1fr; gap:10px; color:var(--muted); font-size:14px}
   .meta strong{color:#fff}
+
   .chipRow{display:flex; flex-direction:column; gap:10px; align-items:flex-start}
   .chip{display:inline-flex; align-items:center; gap:8px; background:#143344; border:1px solid var(--stroke); color:#d8f7ff; border-radius:999px; padding:8px 14px; font-size:13px; line-height:1}
   @media (min-width:900px){ .chipRow{flex-direction:row; flex-wrap:wrap} }
+
   .tempNow{font-size:44px; font-weight:700; line-height:1; margin:6px 0}
   .icon{width:64px; height:64px; display:flex; align-items:center; justify-content:center; font-size:48px}
   .gridInfo{display:grid; grid-template-columns:1fr auto; gap:16px; align-items:start}
+
   .chartWrap{height:240px}
   canvas{background:#0f1c2a; border:1px solid var(--stroke); border-radius:12px}
+
   .summarySection{margin-top:14px}
   .summarySection h3{margin-bottom:10px}
   #summary{margin:0 auto; max-width:780px; color:#dbeeff; background:#0f1c2a; border:1px solid var(--stroke); border-radius:10px; padding:12px; text-align:center}
+
   .histRow{display:flex; align-items:center; justify-content:center; gap:10px; flex-wrap:wrap}
   .badge{display:inline-block; padding:6px 10px; border-radius:10px; font-weight:700}
   .badge.max{background:#ff5e5e; color:#fff}
   .badge.min{background:#ffd265; color:#2b2300}
   .histSub{color:#a8bed5; font-size:12px; margin-top:6px; text-align:center}
+
   footer{padding:18px 10px; text-align:center; color:#cfe8ff; font-size:14px; border-top:1px solid rgba(255,255,255,.12)}
-  .colset{ --cols:4; display:flex; gap:var(--gap); overflow-x:auto; overflow-y:hidden; scrollbar-gutter:stable both-edges; -webkit-overflow-scrolling:touch; touch-action:pan-x pan-y; overscroll-behavior-x:contain; cursor:grab; padding:8px 0 12px; scroll-snap-type:x proximity }
+
+  /* horizontálne karty */
+  .colset{
+    --cols:4;
+    display:flex;
+    gap:var(--gap);
+    overflow-x:auto;
+    overflow-y:hidden;
+    scrollbar-gutter:stable both-edges;
+    -webkit-overflow-scrolling:touch;
+    touch-action:pan-x pan-y;
+    overscroll-behavior-x:contain;
+    cursor:grab;
+    padding:8px 0 12px;
+    scroll-snap-type:x proximity
+  }
   .colset.dragging{cursor:grabbing; user-select:none}
-  .col{ flex:0 0 calc((100% - (var(--cols) - 1)*var(--gap)) / var(--cols) - 0.5px); background:var(--panel); border:1px solid var(--stroke); border-radius:12px; padding:12px; display:grid; grid-template-rows:auto auto auto auto; align-items:center; justify-items:center; text-align:center; min-height:182px; position:relative; row-gap:8px; min-width:0; overflow:hidden; scroll-snap-align:start }
+
+  .col{
+    flex:0 0 calc((100% - (var(--cols) - 1)*var(--gap)) / var(--cols) - 0.5px);
+    background:var(--panel); border:1px solid var(--stroke); border-radius:12px; padding:12px;
+    display:grid; grid-template-rows:auto auto auto auto; align-items:center; justify-items:center;
+    text-align:center; min-height:182px; position:relative; row-gap:8px; min-width:0; overflow:hidden;
+    scroll-snap-align:start
+  }
+
+  /* TOP titulky – absolútne vycentrované a neorezávajú sa */
   .c-top{ position:relative; width:100%; height:1.75em; }
-  .c-top__inner{ position:absolute; left:50%; top:50%; transform:translate(-50%,-50%); white-space:nowrap; text-align:center; display:block; }
-  #parts .c-top__inner, #min15 .c-top__inner{ font-size:clamp(10px, 3.2vw, 16px); }
-  #days .c-top{ height:auto; } #days .c-top__inner{ position:static; transform:none; white-space:normal; text-wrap:balance; font-size:inherit; }
+  .c-top__inner{
+    position:absolute; left:50%; top:50%; transform:translate(-50%,-50%);
+    white-space:nowrap; text-align:center; display:block;
+  }
+
+  #parts .c-top__inner, #min15 .c-top__inner{ font-size:clamp(10px, 3.2vw, 16px) }
+  #days .c-top{ height:auto } 
+  #days .c-top__inner{ position:static; transform:none; white-space:normal; text-wrap:balance; font-size:inherit }
+
   .temps{display:grid; place-items:center; width:100%; min-width:0}
   .temps .c-max{font-size:28px; font-weight:700; color:#ff6c6c; line-height:1}
   .temps .c-min{font-size:18px; color:#ffbb7c; margin-top:4px; line-height:1}
+
   @media (max-width:420px){ .temps .c-max{font-size:26px} .temps .c-min{font-size:17px} }
-  @media (min-width:900px){ #parts{--cols:4} #days{--cols:7} #min15{--cols:6} .temps .c-max{font-size:32px} .temps .c-min{font-size:19px} }
+  @media (min-width:900px){
+    #parts{--cols:4}
+    #days{--cols:7}
+    #min15{--cols:6}
+    .temps .c-max{font-size:32px}
+    .temps .c-min{font-size:19px}
+  }
+
   .c-ico{font-size:26px; line-height:1; display:flex; align-items:center; justify-content:center}
+
   .metrics{display:flex; flex-direction:column; align-items:center; justify-content:center; gap:6px; width:100%}
   .metric{display:flex; flex-direction:column; align-items:center; gap:6px; width:auto}
   .metric .m-ico{line-height:1; font-size:16px}
   .metric .m-txt{min-width:0; white-space:normal; text-align:center; font-size:13.5px; font-weight:500; color:#e9f3ff; letter-spacing:.02px; line-height:1.22; padding-inline:6px}
   .metrics--mini .metric{display:flex; flex-direction:column; gap:6px}
-  @media (max-width:480px){ .metrics{gap:4px} .metric .m-txt{font-size:12.6px} }
-  @media (max-width:360px){ .metric .m-txt{font-size:12px} }
+
   .colset::-webkit-scrollbar{height:10px}
   .colset::-webkit-scrollbar-track{background:#0f1c2a; border-radius:8px}
   .colset::-webkit-scrollbar-thumb{background:#33516f; border-radius:8px}
   .colset::-webkit-scrollbar-thumb:hover{background:#3f6b94}
   .colset{scrollbar-width:thin; scrollbar-color:#33516f #0f1c2a}
-  @media (min-width:780px){ .wrap{padding:24px 16px 44px} .row{grid-template-columns:1.05fr 1fr; gap:18px} .meta{grid-template-columns:repeat(2,minmax(0,1fr))} .chartWrap{height:270px} }
+
+  @media (min-width:780px){
+    .wrap{padding:24px 16px 44px}
+    .row{grid-template-columns:1.05fr 1fr; gap:18px}
+    .meta{grid-template-columns:repeat(2,minmax(0,1fr))}
+    .chartWrap{height:270px}
+  }
   @media (min-width:1100px){ .chartWrap{height:300px} }
+
   #err{position:fixed;left:10px;right:10px;bottom:12px;background:#2a1111;border:1px solid #6b2a2a;color:#ffd9d9;border-radius:10px;padding:10px 12px;font-size:14px;display:none;z-index:99}
 </style>
 </head>
@@ -158,7 +213,7 @@
   <div id="err"></div>
 
   <script>
-    const APP_VERSION = '2025-08-15-rain-icon-threshold-20';
+    const APP_VERSION = '2025-08-16-stable-first-fetch';
     const $ = s => document.querySelector(s);
     const NBSP_NARROW = '\u202F';
     const fmt0 = (v,u='') => (v==null || Number.isNaN(v)) ? '—' : (Math.round(v) + u);
@@ -198,7 +253,7 @@
       const temp = args && args.temp!=null ? Number(args.temp) : null;
       const prob = args && args.prob!=null ? Number(args.prob) : null;
       const precipSum = args && args.precipSum!=null ? Number(args.precipSum) : null;
-      if (prob!=null && prob >= 20) return true;          // znížený prah na 20 %
+      if (prob!=null && prob >= 20) return true;
       if (code!=null && RAIN_CODES.has(code)) return true;
       if (precipSum!=null && precipSum >= 0.1) return true;
       if (precip!=null && precip > 0){ if (temp==null) return true; return temp>1 }
@@ -352,17 +407,17 @@
       await fetchWeather().catch(e=>toast(e.message||'Chyba načítania počasia'));
     }
 
-    function initGeolocation(){
-      if(!('geolocation'in navigator)){ fetchWeather().catch(()=>toast('Geolokácia nedostupná')); return; }
-      const placeEl=$('#place'); placeEl.textContent='Zisťujem polohu…';
-      navigator.geolocation.getCurrentPosition(async pos=>{
-        const coords = pos.coords || {};
-        const latitude = coords.latitude, longitude = coords.longitude;
-        if (latitude!=null && longitude!=null) await setLocation(latitude, longitude);
-        else fetchWeather().catch(()=>toast('Geolokácia zlyhala'));
-      }, ()=>{
-        fetchWeather().catch(()=>toast('Geolokácia zablokovaná'));
-      }, {enableHighAccuracy:true, timeout:10000, maximumAge:300000});
+    /* NOVÝ stabilný štart: najprv načítaj z uložených súradníc, potom skús geolokáciu */
+    async function initLoad(){
+      try{ await fetchWeather(); }catch(e){ toast('Načítanie počasia zlyhalo'); }
+      if('geolocation' in navigator){
+        navigator.geolocation.getCurrentPosition(async pos=>{
+          const c=pos.coords||{};
+          if(c.latitude!=null && c.longitude!=null){
+            try{ await setLocation(c.latitude, c.longitude); }catch(_){}
+          }
+        }, _=>{}, {enableHighAccuracy:true, timeout:10000, maximumAge:300000});
+      }
     }
 
     async function fetchWeather(){
@@ -433,7 +488,13 @@
       const t24=(d.hourly && d.hourly.temperature_2m) ? d.hourly.temperature_2m.slice(i,i+24) : [];
       if(hourlyChart) try{ hourlyChart.destroy(); }catch(_){}
       if (window.Chart){
-        hourlyChart=new Chart($('#hourly'),{ type:'line', data:{labels, datasets:[{label:'Teplota (°C)', data:t24, borderWidth:2, pointRadius:2, tension:.35}]}, options:{responsive:true, maintainAspectRatio:false, interaction:{mode:'nearest', intersect:false}, scales:{x:{grid:{color:'rgba(255,255,255,.08)'}}, y:{grid:{color:'rgba(255,255,255,.08)'}}}, plugins:{legend:{labels:{color:'#fff'}, onClick:()=>{}, onHover:e=>{if(e&&e.native) e.native.target.style.cursor='default';}}}} );
+        hourlyChart=new Chart($('#hourly'),{
+          type:'line',
+          data:{labels, datasets:[{label:'Teplota (°C)', data:t24, borderWidth:2, pointRadius:2, tension:.35}]},
+          options:{responsive:true, maintainAspectRatio:false, interaction:{mode:'nearest', intersect:false},
+            scales:{x:{grid:{color:'rgba(255,255,255,.08)'}}, y:{grid:{color:'rgba(255,255,255,.08)'}}},
+            plugins:{legend:{labels:{color:'#fff'}, onClick:()=>{}, onHover:e=>{if(e&&e.native) e.native.target.style.cursor='default';}}}}
+        );
       }
     }
 
@@ -575,10 +636,14 @@
 
     function initDragBars(){ ['parts','days','min15'].forEach(id=>{ const el=document.getElementById(id); if(el){ enableDragScroll(el) } }) }
 
-    initGeolocation();
+    /* spusti stabilný počiatočný fetch hneď */
+    initLoad();
     window.addEventListener('resize', ()=>{ if(state.last){ drawHourly(); renderMin15() }});
-    setTimeout(()=>{ if(!state.last) fetchWeather().catch(()=>toast('Načítanie počasia zlyhalo')) },1200);
     initDragBars();
+
+    /* zobraziť prípadnú JS chybu do toastu (ľahší debug) */
+    window.addEventListener('error', e=>{ try{ toast('Skript: '+e.message) }catch(_){} });
+    window.addEventListener('unhandledrejection', e=>{ try{ toast('Chyba: '+(e.reason?.message||'Neznáma')) }catch(_){} });
 
     if(!window.__wx_auto_refresh){
       window.__wx_auto_refresh=setInterval(()=>{
