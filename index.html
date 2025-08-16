@@ -95,14 +95,14 @@
     min-width:0; overflow:hidden; scroll-snap-align:start
   }
 
-  /* TITULKY – presné centrovanie pomocou flexu */
+  /* TOP TITULKY – pevné centrovanie aj na mobile (flex, žiadny translate) */
   .c-top{
     width:100%;
-    height:1.8em;                /* priestor na 1 riadok */
+    height:1.75em;               /* priestor na 1 riadok */
     display:flex;
     align-items:center;
     justify-content:center;
-    padding-inline:4px;          /* mikromedzera od okrajov */
+    padding-inline:4px;           /* mikro-odsadenie od okrajov */
     overflow:hidden;
   }
   .c-top__inner{
@@ -114,12 +114,10 @@
     text-align:center;
   }
 
-  /* veľkosti – jedným riadkom pre parts + min15 */
+  /* veľkosti */
   #parts .c-top__inner, #min15 .c-top__inner{ font-size:clamp(10px, 3.2vw, 16px) }
-
-  /* 7-dňová – môže ísť na 2 riadky */
   #days .c-top{ height:auto }
-  #days .c-top__inner{ white-space:normal; text-wrap:balance; }
+  #days .c-top__inner{ white-space:normal; text-wrap:balance; font-size:inherit }
 
   .temps{display:grid; place-items:center; width:100%; min-width:0}
   .temps .c-max{font-size:28px; font-weight:700; color:#ff6c6c; line-height:1}
@@ -237,7 +235,7 @@
   <div id="err"></div>
 
   <script>
-    const APP_VERSION = '2025-08-16-flex-centered-titles';
+    const APP_VERSION = '2025-08-16-center-fix-flex';
     const $ = s => document.querySelector(s);
     const NBSP_NARROW = '\u202F';
     const fmt0 = (v,u='') => (v==null || Number.isNaN(v)) ? '—' : (Math.round(v) + u);
@@ -354,7 +352,7 @@
       let startH=9,endH=18;
       const sr=(d.daily && d.daily.sunrise && d.daily.sunrise[0]) ? d.daily.sunrise[0] : null;
       const ss=(d.daily && d.daily.sunset && d.daily.sunset[0]) ? d.daily.sunset[0] : null;
-      if(sr a nd ss){
+      if(sr && ss){
         const sh=new Date(sr).getHours(), eh=new Date(ss).getHours();
         if(!Number.isNaN(sh) && !Number.isNaN(eh) && sh<eh){startH=sh;endH=eh;}
       }
@@ -570,7 +568,7 @@
         const sum=days.precipitation_sum ? days.precipitation_sum[i] : null;
         const avgT = (max!=null && min!=null) ? (max+min)/2 : null;
 
-        const rainy = (pp != null && pp > 0) || willRain({ code, prob:pp, precipSum:sum });
+        const rainy = (pp != null && pp > 0) || willRain({ code, prob: pp, precipSum: sum });
         const dayIco = rainy ? '🌧️' : wmoEmoji(code, false, {prob: pp, temp: avgT});
 
         const el=document.createElement('div'); el.className='col';
