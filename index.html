@@ -96,46 +96,25 @@
     scroll-snap-align:start
   }
 
-.c-top {
-  width: 100%;
-  min-height: 2.4em;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  padding-inline: 8px;
-}
-
-.c-top__inner {
-  white-space: nowrap;    /* vždy jeden riadok */
-  overflow: visible;      /* nezrezáva text */
-  text-overflow: unset;   /* žiadne „…“ */
-
-  font-weight: 600;
-  font-size: clamp(11px, 3.4vw, 16px);
-  line-height: 1.2;
-  text-align: center;
-}
-
-/* toto je dôležité: karty musia mať dosť miesta */
-.karta, .col {
-  min-width: 100px;       /* zväčšené, aby sa celé slovo zmestilo */
-}
-
-
-    /* kľúčové tri */
-    white-space:nowrap;
-    overflow:hidden;
-    text-overflow:ellipsis;
-
-    /* žiadne tvrdé lámanie slov */
-    word-break:keep-all;
-    overflow-wrap:normal;
-
-    line-height:1.1;
-    font-weight:700;
-    /* jemne menšie na úzkych mobiloch, nech sa vojde 1 riadok */
-    font-size:clamp(10px, 3.2vw, 15px);
+  /* Nadpis karty: vždy 1 riadok, centrovaný, bez skracovania */
+  .c-top{
+    width:100%;
+    min-height:2.4em;
+    display:flex; align-items:center; justify-content:center;
+    padding-inline:8px;
   }
+  .c-top__inner{
+    white-space:nowrap;
+    overflow:visible;
+    text-overflow:unset;
+    font-weight:600;
+    font-size:clamp(11px, 3.4vw, 16px);
+    line-height:1.2;
+    text-align:center;
+  }
+
+  /* jemné minimum, aby sa „Poobede“ zmestilo na 1 riadok */
+  .karta, .col{ min-width:100px; }
 
   .temps{display:grid; place-items:center; width:100%; min-width:0}
   .temps .c-max{font-size:28px; font-weight:700; color:#ff6c6c; line-height:1}
@@ -175,7 +154,7 @@
     .chartWrap{height:270px}
   }
   @media (min-width:1100px){ .chartWrap{height:300px} }
-  
+
   #err{position:fixed;left:10px;right:10px;bottom:12px;background:#2a1111;border:1px solid #6b2a2a;color:#ffd9d9;border-radius:10px;padding:10px 12px;font-size:14px;display:none;z-index:99}
 </style>
 </head>
@@ -258,7 +237,7 @@
   <div id="err"></div>
 
   <script>
-    const APP_VERSION = '2025-08-16-mobile-singleline-titles-fixed';
+    const APP_VERSION = '2025-08-16-remove-rain-metrics-v1';
     const $ = s => document.querySelector(s);
     const NBSP_NARROW = '\u202F';
     const fmt0 = (v,u='') => (v==null || Number.isNaN(v)) ? '—' : (Math.round(v) + u);
@@ -557,6 +536,7 @@
       return '<div class="c-top"><span class="c-top__inner">'+html+'</span></div>';
     }
 
+    /* DNEŠNÉ ČASTI – bez riadku Zrážky, len vietor */
     function renderParts(){
       const wrap=$('#parts'); wrap.innerHTML='';
       const d=state.last || {}; const base=new Date((d.current && d.current.time) ? d.current.time : Date.now());
@@ -571,7 +551,6 @@
                     +'<div class="temps"><div class="c-max">'+fmt0(temp,'°')+'</div><div class="c-min">'+(temp!=null?fmt0(temp-5,'°'):'—')+'</div></div>'
                     +'<div class="c-ico">'+wmoEmoji(code, isNightAt(dt, d.daily||{}), {temp, wind, precip: pr})+'</div>'
                     +'<div class="metrics">'
-                    +  '<div class="metric"><span class="m-ico">💧</span><span class="m-txt">Zrážky '+fmt0(pr, NBSP_NARROW+'mm/h')+'</span></div>'
                     +  '<div class="metric"><span class="m-ico">'+windEmoji()+'</span><span class="m-txt">Vietor '+fmt0(wind, NBSP_NARROW+'km/h')+'</span></div>'
                     +'</div>';
         wrap.appendChild(el);
@@ -584,6 +563,7 @@
       const noc=new Date(base); noc.setDate(base.getDate()+1); noc.setHours(2,0,0,0); slot(noc,'Noc');
     }
 
+    /* 7-DNÍ – odstránený blok s percentom zrážok */
     function renderDays(data){
       const box=$('#days'); box.innerHTML='';
       const days=(data.daily || {}); const times=days.time || [];
@@ -597,17 +577,15 @@
         const pp=days.precipitation_probability_max ? days.precipitation_probability_max[i] : null;
         const avgT = (max!=null && min!=null) ? (max+min)/2 : null;
         const dayIco = wmoEmoji(code, false, {prob: pp, temp: avgT});
-        const will = willRain({code, prob:pp});
-        const iconHTML = will ? '<span class="m-ico">💧</span>' : '';
         const el=document.createElement('div'); el.className='col';
         el.innerHTML=tLabel(top)
                     +'<div class="temps"><div class="c-max">'+fmt0(max,'°')+'</div><div class="c-min">'+fmt0(min,'°')+'</div></div>'
-                    +'<div class="c-ico">'+dayIco+'</div>'
-                    +'<div class="metrics"><div class="metric">'+iconHTML+'<span class="m-txt">'+(pp!=null?pp+' %':'—')+'</span></div></div>';
+                    +'<div class="c-ico">'+dayIco+'</div>';
         box.appendChild(el);
       }
     }
 
+    /* 15-MIN – bez riadku Zrážky, len vietor */
     function renderMin15(){
       const d=state.last || {}; const box=$('#min15'); box.innerHTML='';
       if(!(d.hourly && d.hourly.time && d.hourly.time.length)){ box.innerHTML='<div style="opacity:.8;color:#bcd1e5;padding:8px 10px;">Bez dát</div>'; return; }
@@ -624,7 +602,6 @@
                     +'<div class="temps"><div class="c-max">'+fmt0(tmp,'°')+'</div><div class="c-min">'+(tmp!=null?fmt0(tmp-5,'°'):'—')+'</div></div>'
                     +'<div class="c-ico">'+wmoEmoji(code, isNightAt(t,d.daily||{}), {temp: tmp, wind, precip: prep})+'</div>'
                     +'<div class="metrics">'
-                    +  '<div class="metric"><span class="m-ico">💧</span><span class="m-txt">Zrážky '+(prep!=null?fmt0(prep, NBSP_NARROW+'mm/h'):'—')+'</span></div>'
                     +  '<div class="metric"><span class="m-ico">'+windEmoji()+'</span><span class="m-txt">Vietor '+(wind!=null?fmt0(wind, NBSP_NARROW+'km/h'):'—')+'</span></div>'
                     +'</div>';
         box.appendChild(el);
