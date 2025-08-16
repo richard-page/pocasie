@@ -94,7 +94,7 @@
     text-align:center; min-height:182px; position:relative; row-gap:12px;
     min-width:0; overflow:visible;
     scroll-snap-align:start;
-    cursor:pointer;                 /* klikateľné aj na PC */
+    cursor:pointer;
   }
   .colset.dragging .col{ cursor:grabbing; }
 
@@ -143,7 +143,7 @@
   }
   .col.open .drawer{
     margin-top:6px;
-    max-height:220px; /* stačí na pár riadkov */
+    max-height:240px;
     opacity:1;
   }
   .drawer .line{display:flex; align-items:center; gap:10px; margin:6px 0; font-size:14px}
@@ -259,7 +259,7 @@
   <div id="err"></div>
 
   <script>
-    const APP_VERSION = '2025-08-16-accordion-all-v2';
+    const APP_VERSION = '2025-08-16-accordion-fallback-v3';
     const $ = s => document.querySelector(s);
     const NBSP_NARROW = '\u202F';
     const fmt0 = (v,u='') => (v==null || Number.isNaN(v)) ? '—' : (Math.round(v) + u);
@@ -279,7 +279,6 @@
     const uvCat = u => u<3?'nízky':u<6?'mierny':u<8?'vysoký':u<11?'veľmi vysoký':'extrémny';
     const windEmoji = ()=> '💨';
 
-    /* hmla – nepoužívame 🌫️; vyberáme alternatívu podľa kontextu */
     function wmoEmoji(code, night=false, ctx={}){
       const k = Number(code);
       function fogAlt(){
@@ -292,28 +291,15 @@
         if(w!=null && w>=20) return '💨';
         return night ? '🌙' : '☁️';
       }
-      if ([45,48].includes(k)) return fogAlt();
+      if ([45,48].includes(k)) return fogAlt();             // hmla = alternatíva
       if ([0,1].includes(k)) return night ? '🌙' : '☀️';
       if (k===2) return night ? '🌙' : '⛅';
       if (k===3) return '☁️';
-      if ([51,53,55].includes(k)) return '🌦️';               // mrholenie – ako prehánky
+      if ([51,53,55].includes(k)) return '🌦️';             // mrholenie = „prehánky“
       if ([61,63,65,80,81,82].includes(k)) return ([80,81,82].includes(k) ? '🌦️' : '🌧️');
       if ([71,73,75,77,85,86].includes(k)) return '❄️';
       if ([95,96,99].includes(k)) return '⛈️';
       return night ? '🌙' : '🌤️';
-    }
-
-    function willRain(args){
-      const code = args && args.code!=null ? Number(args.code) : null;
-      const precip = args && args.precip!=null ? Number(args.precip) : null;
-      const temp = args && args.temp!=null ? Number(args.temp) : null;
-      const prob = args && args.prob!=null ? Number(args.prob) : null;
-      const precipSum = args && args.precipSum!=null ? Number(args.precipSum) : null;
-      if (prob!=null && prob >= 30) return true;
-      if (code!=null && RAIN_CODES.has(code)) return true;
-      if (precipSum!=null && precipSum >= 0.1) return true;
-      if (precip!=null && precip > 0){ if (temp==null) return true; return temp>1 }
-      return false;
     }
 
     function isNightAt(dtLike, daily){
@@ -339,8 +325,9 @@
     };
 
     function valueAtHourLocal(timesISO, arr, date){
+      if(!timesISO || !arr || !timesISO.length) return null;
       const key = localHourKey(date);
-      let idx = timesISO.findIndex(t => t.slice(0,13) === key);
+      let idx = timesISO.findIndex(t => (t||'').slice(0,13) === key);
       if (idx >= 0) return arr[idx];
       let best=0, bestDiff=1e18;
       timesISO.forEach((t,i)=>{ const diff=Math.abs(new Date(t)-new Date(date)); if(diff<bestDiff){best=i;bestDiff=diff;} });
@@ -349,6 +336,7 @@
 
     const lerp=(a,b,t)=>a+(b-a)*t;
     function valueAt15min(timesISO, arr, date){
+      if(!timesISO || !arr) return null;
       const ts=timesISO.map(t=>new Date(t));
       for(let i=0;i<ts.length-1;i++){
         const t0=ts[i], t1=ts[i+1];
@@ -361,12 +349,13 @@
       return null;
     }
     function codeAt15min(timesISO, codes, date){
+      if(!timesISO || !codes) return 0;
       const ts=timesISO.map(t=>new Date(t));
       for(let i=0;i<ts.length-1;i++){
         const t0=ts[i], t1=ts[i+1];
         if (date>=t0 && date<=t1){
           const mid=(t0.getTime()+t1.getTime())/2;
-          return (date.getTime() < mid) ? codes[i] : codes[i+1];
+          return (date.getTime() < mid) ? (codes[i]??0) : (codes[i+1]??0);
         }
       }
       return codes[codes.length-1] ?? 0;
@@ -385,7 +374,7 @@
       }
       const freq={};
       for(let i=0;i<times.length;i++){
-        if(!times[i].startsWith(day)) continue;
+        if(!times[i] || !times[i].startsWith(day)) continue;
         const h=Number(times[i].slice(11,13)); if(h<startH || h>endH) continue;
         const c=(codes[i]??0); freq[c]=(freq[c]||0)+1;
       }
@@ -420,13 +409,13 @@
 
     async function reverseGeocodeOpenMeteo(lat, lon){
       try{
-        const url = 'https://geocoding-api.open-meteo.com/v1/reverse?latitude='+lat+'&longitude='+lon+'&language=sk&format=json';
-        const j = await fetch(url).then(r=>r.json());
-        const r = j && j.results && j.results[0] ? j.results[0] : null;
+        const url='https://geocoding-api.open-meteo.com/v1/reverse?latitude='+lat+'&longitude='+lon+'&language=sk&format=json';
+        const j=await fetch(url).then(r=>r.json());
+        const r=j && j.results && j.results[0] ? j.results[0] : null;
         if (r){
-          const name = r.name || r.city || r.town || r.village || '';
-          const admin = r.admin1 ? ', '+r.admin1 : '';
-          const cc = r.country_code ? ', '+r.country_code : '';
+          const name=r.name||r.city||r.town||r.village||'';
+          const admin=r.admin1?(', '+r.admin1):'';
+          const cc=r.country_code?(', '+r.country_code):'';
           if (name) return name+admin+cc;
           if (r.admin1) return r.admin1+cc;
         }
@@ -435,23 +424,21 @@
     }
     async function reverseGeocodeNominatim(lat, lon){
       try{
-        const url = 'https://nominatim.openstreetmap.org/reverse?lat='+lat+'&lon='+lon+'&format=json&accept-language=sk';
-        const res=await fetch(url, {headers:{'Accept':'application/json'}});
+        const url='https://nominatim.openstreetmap.org/reverse?lat='+lat+'&lon='+lon+'&format=json&accept-language=sk';
+        const res=await fetch(url,{headers:{'Accept':'application/json'}});
         const data=await res.json();
         const a=data.address||{};
         const name=a.city||a.town||a.village||a.municipality||a.hamlet||a.suburb||'';
         const admin=a.state||a.county||a.region||'';
         const cc=a.country_code?(', '+a.country_code.toUpperCase()):'';
         if(name) return name+(admin? ', '+admin:'')+cc;
-        if (admin) return admin+cc;
+        if(admin) return admin+cc;
       }catch(e){}
       return null;
     }
     async function reverseGeocode(lat, lon){
-      const a = await reverseGeocodeOpenMeteo(lat, lon);
-      if (a) return a;
-      const b = await reverseGeocodeNominatim(lat, lon);
-      if (b) return b;
+      const a=await reverseGeocodeOpenMeteo(lat, lon); if(a) return a;
+      const b=await reverseGeocodeNominatim(lat, lon); if(b) return b;
       return 'Moja poloha';
     }
 
@@ -467,8 +454,7 @@
       if(!('geolocation'in navigator)){ fetchWeather().catch(()=>toast('Geolokácia nedostupná')); return; }
       const placeEl=$('#place'); placeEl.textContent='Zisťujem polohu…';
       navigator.geolocation.getCurrentPosition(async pos=>{
-        const coords = pos.coords || {};
-        const latitude = coords.latitude, longitude = coords.longitude;
+        const {latitude, longitude}=pos.coords||{};
         if (latitude!=null && longitude!=null) await setLocation(latitude, longitude);
         else fetchWeather().catch(()=>toast('Geolokácia zlyhala'));
       }, ()=>{
@@ -476,18 +462,46 @@
       }, {enableHighAccuracy:true, timeout:10000, maximumAge:300000});
     }
 
-    /* --- FETCH: pridávam hourly probability, tlak, vlhkosť, rosný bod, nárazy --- */
+    /* ------- ROBUSTNÝ FETCH S FALLBACKOM ------- */
     async function fetchWeather(){
       const tz=Intl.DateTimeFormat().resolvedOptions().timeZone;
-      const p=new URLSearchParams({
+
+      const baseParams={
         latitude:state.lat, longitude:state.lon, timezone:tz,
         current:'temperature_2m,apparent_temperature,relative_humidity_2m,pressure_msl,wind_speed_10m,weather_code,uv_index',
-        hourly:'temperature_2m,precipitation,precipitation_probability,weather_code,wind_speed_10m,wind_gusts_10m,relative_humidity_2m,pressure_msl,dew_point_2m',
         daily:'weather_code,temperature_2m_max,temperature_2m_min,precipitation_probability_max,precipitation_sum,uv_index_max,wind_speed_10m_max,wind_gusts_10m_max,sunrise,sunset',
         forecast_days:'7'
-      });
-      const r=await fetch('https://api.open-meteo.com/v1/forecast?'+p+'&v='+APP_VERSION);
-      state.last=await r.json();
+      };
+
+      // „bohatá“ verzia (môže spôsobiť 400 na starších modeloch)
+      const richHourly='temperature_2m,precipitation,precipitation_probability,weather_code,wind_speed_10m,wind_gusts_10m,relative_humidity_2m,pressure_msl,dew_point_2m';
+      // „bezpečná“ verzia
+      const safeHourly='temperature_2m,precipitation,weather_code,wind_speed_10m';
+
+      async function tryFetch(hourlyList){
+        const p=new URLSearchParams({...baseParams, hourly:hourlyList});
+        const res=await fetch('https://api.open-meteo.com/v1/forecast?'+p+'&v='+APP_VERSION);
+        if(!res.ok) throw new Error('HTTP '+res.status);
+        const j=await res.json();
+        if(j && j.error) throw new Error('API error');
+        return j;
+      }
+
+      try{
+        state.last=await tryFetch(richHourly);
+      }catch(_){
+        // fallback – jednoduchšia sada, aby aplikácia nikdy nezostala prázdna
+        state.last=await tryFetch(safeHourly);
+      }
+
+      // doplň názov miesta ak bol „—“
+      if(state.place==='—'){
+        try{
+          const label=await reverseGeocode(state.lat, state.lon);
+          if(label) { state.place=label; savePrefs(); }
+        }catch(_){}
+      }
+
       renderAll(); drawHourly(); await fetchAQ().catch(()=>{}); renderDays(state.last); fetchHistory().catch(()=>{});
     }
 
@@ -540,8 +554,8 @@
       const hours=(d.hourly && d.hourly.time) ? d.hourly.time : [];
       if(!hours.length) return;
       const key=localHourKey(cur.time || hours[0]);
-      let i=hours.findIndex(h=>h.slice(0,13)===key); if(i<0)i=0;
-      const labels=hours.slice(i,i+24).map(h=>h.split('T')[1]);
+      let i=hours.findIndex(h=>(h||'').slice(0,13)===key); if(i<0)i=0;
+      const labels=hours.slice(i,i+24).map(h=>(h||'').split('T')[1]||'');
       const t24=(d.hourly && d.hourly.temperature_2m) ? d.hourly.temperature_2m.slice(i,i+24) : [];
       if(hourlyChart) try{ hourlyChart.destroy(); }catch(_){}
       if (window.Chart){
@@ -558,66 +572,50 @@
 
     function tLabel(html){ return '<div class="c-top"><span class="c-top__inner">'+html+'</span></div>'; }
 
-    /* ---- Pomocné agregácie na zrážky / trvanie / vietor atď. ---- */
+    /* ---- Agregácie ---- */
     function sumInRange(times, arr, start, end){
+      if(!times || !arr) return 0;
       let s=0;
       for(let i=0;i<times.length;i++){
-        const t=new Date(times[i]);
-        if(t>=start && t<end){
-          const v=arr[i]; if(Number.isFinite(v)) s+=v;
-        }
+        const t=new Date(times[i]); if(t>=start && t<end){ const v=arr[i]; if(Number.isFinite(v)) s+=v; }
       }
       return s;
     }
-    function maxInRange(times, arr, start, end){
-      let m=null;
-      for(let i=0;i<times.length;i++){
-        const t=new Date(times[i]);
-        if(t>=start && t<end){
-          const v=arr[i]; if(Number.isFinite(v)) m = (m==null? v : Math.max(m,v));
-        }
-      }
-      return m;
-    }
     function avgInRange(times, arr, start, end){
+      if(!times || !arr) return null;
       let s=0,c=0;
       for(let i=0;i<times.length;i++){
-        const t=new Date(times[i]);
-        if(t>=start && t<end){
-          const v=arr[i]; if(Number.isFinite(v)){ s+=v; c++; }
-        }
+        const t=new Date(times[i]); if(t>=start && t<end){ const v=arr[i]; if(Number.isFinite(v)){ s+=v; c++; } }
       }
       return c? (s/c) : null;
     }
     function wetHoursInRange(times, precip, start, end, thr=0.1){
+      if(!times || !precip) return 0;
       let h=0;
       for(let i=0;i<times.length;i++){
-        const t=new Date(times[i]);
-        if(t>=start && t<end){
-          const v=precip[i]; if(Number.isFinite(v) && v>=thr) h++;
-        }
+        const t=new Date(times[i]); if(t>=start && t<end){ const v=precip[i]; if(Number.isFinite(v) && v>=thr) h++; }
       }
-      return h; // hodiny
+      return h;
     }
     function probMaxInRange(times, prob, start, end){
-      if(!prob) return null;
-      return maxInRange(times, prob, start, end);
+      if(!times || !prob) return null;
+      let m=null;
+      for(let i=0;i<times.length;i++){
+        const t=new Date(times[i]); if(t>=start && t<end){ const v=prob[i]; if(Number.isFinite(v)) m = (m==null? v : Math.max(m,v)); }
+      }
+      return m;
     }
     function codesModeInRange(times, codes, start, end){
-      const freq={};
+      const freq={}; if(!times || !codes) return 0;
       for(let i=0;i<times.length;i++){
-        const t=new Date(times[i]);
-        if(t>=start && t<end){
-          const c=codes[i]??0;
-          freq[c]=(freq[c]||0)+1;
-        }
+        const t=new Date(times[i]); if(t>=start && t<end){ const c=(codes[i]??0); freq[c]=(freq[c]||0)+1; }
       }
       let best=0, cnt=-1;
       Object.keys(freq).forEach(k=>{ const v=freq[k]; if(v>cnt){cnt=v; best=Number(k)} });
       return best;
     }
 
-    /* ---- Klikací drag-scroll s prahom, aby klik fungoval na PC ---- */
+    /* ---- Drag + klik (PC aj mobil) ---- */
     function enableDragScroll(el){
       let isDown=false, startX=0, startScroll=0, lastX=0, lastT=0, vx=0, moved=false;
       const DRAG_THRESHOLD=6;
@@ -657,7 +655,6 @@
         isDown=false; el.classList.remove('dragging');
         try{ el.releasePointerCapture(e.pointerId) }catch(_){}
         if(moved){ momentum(vx); }
-        // flag na krátky čas, aby click handlery vedeli ignorovať drag
         el.dataset.justDragged = moved ? '1' : '0';
         setTimeout(()=>{ el.dataset.justDragged='0'; }, 50);
       });
@@ -666,15 +663,13 @@
       el.addEventListener('wheel', (e)=>{ const delta = Math.abs(e.deltaY) > Math.abs(e.deltaX) ? e.deltaY : e.deltaX; el.scrollLeft += delta * 0.6; e.preventDefault() }, {passive:false});
     }
 
-    /* ---- Delegované kliky na karty: toggle detailu (PC aj mobil) ---- */
     function attachAccordion(container){
       container.addEventListener('click', (e)=>{
-        if(container.dataset.justDragged === '1') return; // ignoruj krátko po ťahaní
+        if(container.dataset.justDragged === '1') return;
         let card = e.target.closest('.col');
         if(!card || !container.contains(card)) return;
         card.classList.toggle('open');
       });
-      // prístupnosť: Enter/Space
       container.addEventListener('keydown', (e)=>{
         if(e.key!=='Enter' && e.key!==' ') return;
         const card = e.target.closest('.col');
@@ -692,27 +687,26 @@
 
       const base=new Date((d.current && d.current.time) ? d.current.time : h.time[0]);
       const dayStart=new Date(base); dayStart.setHours(0,0,0,0);
-      const dayEnd=new Date(dayStart); dayEnd.setDate(dayEnd.getDate()+1);
 
       const SLOTS=[
         {label:'Doobede', startH:6,  endH:12},
         {label:'Poobede', startH:12, endH:18},
         {label:'Večer',   startH:18, endH:24},
-        {label:'Noc',     startH:0,  endH:6, shift:+1} // do ďalšieho dňa
+        {label:'Noc',     startH:0,  endH:6, shift:+1}
       ];
 
       SLOTS.forEach(s=>{
-        const start=new Date(dayStart);
-        const end=new Date(dayStart);
+        const start=new Date(dayStart); const end=new Date(dayStart);
         if(s.shift===+1){ start.setDate(start.getDate()+1); end.setDate(end.getDate()+1); }
         start.setHours(s.startH,0,0,0); end.setHours(s.endH,0,0,0);
 
-        const temp = valueAtHourLocal(h.time, h.temperature_2m, new Date((start.getTime()+end.getTime())/2));
-        const wind = avgInRange(h.time, h.wind_speed_10m, start, end);
-        const prcpSum = sumInRange(h.time, h.precipitation, start, end);
-        const wetH = wetHoursInRange(h.time, h.precipitation, start, end);
-        const prob = probMaxInRange(h.time, h.precipitation_probability, start, end);
-        const code = codesModeInRange(h.time, h.weather_code, start, end);
+        const mid=new Date((start.getTime()+end.getTime())/2);
+        const temp=valueAtHourLocal(h.time, h.temperature_2m, mid);
+        const wind=avgInRange(h.time, h.wind_speed_10m, start, end);
+        const prcpSum=sumInRange(h.time, h.precipitation, start, end);
+        const wetH=wetHoursInRange(h.time, h.precipitation, start, end);
+        const prob=probMaxInRange(h.time, h.precipitation_probability, start, end);
+        const code=codesModeInRange(h.time, h.weather_code, start, end);
 
         const drawerTxt = `${prob!=null?Math.round(prob):'—'} % | ${fmt1(prcpSum,NBSP_NARROW+'mm')} | ${wetH?('0–'+wetH+' h'):'0 h'}`;
 
@@ -748,12 +742,12 @@
 
         const max=days.temperature_2m_max?days.temperature_2m_max[i]:null;
         const min=days.temperature_2m_min?days.temperature_2m_min[i]:null;
-        const code = days.weather_code?days.weather_code[i]:null;
-        const prob = days.precipitation_probability_max?days.precipitation_probability_max[i]:null;
-        const sumDaily = days.precipitation_sum?days.precipitation_sum[i]:null;
+        const code=days.weather_code?days.weather_code[i]:null;
+        const prob=days.precipitation_probability_max?days.precipitation_probability_max[i]:null;
+        const sumDaily=days.precipitation_sum?days.precipitation_sum[i]:null;
 
-        const sumHourly = sumInRange(h.time||[], h.precipitation||[], start, end);
-        const wetH = wetHoursInRange(h.time||[], h.precipitation||[], start, end);
+        const sumHourly=sumInRange(h.time||[], h.precipitation||[], start, end);
+        const wetH=wetHoursInRange(h.time||[], h.precipitation||[], start, end);
 
         const top = start.toLocaleDateString('sk-SK',{weekday:'short'})+' '+start.toLocaleDateString('sk-SK',{day:'2-digit',month:'2-digit'});
         const dayIco = wmoEmoji(code, false, {prob, temp:(max!=null&&min!=null)?(max+min)/2:null});
@@ -809,7 +803,7 @@
           '<div class="drawer">'+
             '<div class="line"><span class="dot"></span><span><strong>Zrážky:</strong> '+infoTxt+'</span></div>'+
             '<div class="line"><span class="dot"></span><span><strong>Vietor:</strong> '+(wind!=null?fmt1(wind,NBSP_NARROW+'km/h'):'—')+'</span></div>'+
-          </div>';
+          '</div>';
         box.appendChild(el);
       }
 
