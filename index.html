@@ -92,10 +92,11 @@
     display:grid; grid-template-rows:auto auto auto auto;
     align-items:center; justify-items:center;
     text-align:center; min-height:182px; position:relative; row-gap:12px;
-    min-width:0; overflow:hidden; /* nič nevyčnieva – nadpis zmenšíme JS */
+    min-width:0; overflow:hidden; /* nič nevyčnieva – text prispôsobí JS */
     scroll-snap-align:start
   }
 
+  /* Nadpis v karte – vždy 1 riadok, dynamická veľkosť */
   .c-top{
     width:100%;
     min-height:2.2em;
@@ -105,9 +106,7 @@
   .c-top__inner{
     display:block; max-width:100%; text-align:center;
     white-space:nowrap; overflow:hidden; text-overflow:clip;
-    line-height:1.15; font-weight:700;
-    /* počiatočná veľkosť – fitTitles() prípadne zmenší */
-    font-size:17px;
+    line-height:1.15; font-weight:700; font-size:18px; /* štart, zmenší sa JS-om */
   }
 
   .temps{display:grid; place-items:center; width:100%; min-width:0}
@@ -231,7 +230,7 @@
   <div id="err"></div>
 
   <script>
-    const APP_VERSION = '2025-08-16-title-autofit';
+    const APP_VERSION = '2025-08-16-mobile-titles-autofit';
     const $ = s => document.querySelector(s);
     const NBSP_NARROW = '\u202F';
     const fmt0 = (v,u='') => (v==null || Number.isNaN(v)) ? '—' : (Math.round(v) + u);
@@ -447,28 +446,29 @@
       }, {enableHighAccuracy:true, timeout:10000, maximumAge:300000});
     }
 
-    /* ---------- TITLES AUTOFIT ---------- */
+    /* --- Autofit nadpisov kariet --- */
     function fitOneTitle(span){
       if(!span) return;
-      // reset to base
+      // reset (pre istotu)
       span.style.fontSize = '';
       const box = span.parentElement; if(!box) return;
-      const maxW = Math.max(0, box.clientWidth - 2); if(maxW<=0) return;
+      const maxW = Math.max(0, box.clientWidth - 4); // malá rezerva
+      if(maxW <= 0) return;
 
-      // binary search between 11px..20px
-      let lo=11, hi=20, best=11;
+      // binárne hľadanie medzi 11–22 px
+      let lo = 11, hi = 22, best = 11;
       for(let k=0;k<12;k++){
-        const mid = (lo+hi)/2;
-        span.style.fontSize = mid+'px';
-        const w = span.scrollWidth; // presná šírka textu
+        const mid = (lo + hi) / 2;
+        span.style.fontSize = mid + 'px';
+        const w = span.scrollWidth;
         if (w <= maxW){ best = mid; lo = mid; } else { hi = mid; }
       }
-      span.style.fontSize = best+'px';
+      span.style.fontSize = Math.round(best*100)/100 + 'px';
     }
     function fitTitles(root=document){
       root.querySelectorAll('.c-top__inner').forEach(fitOneTitle);
     }
-    /* ----------------------------------- */
+    /* -------------------------------- */
 
     async function fetchWeather(){
       const tz=Intl.DateTimeFormat().resolvedOptions().timeZone;
@@ -550,9 +550,7 @@
       }
     }
 
-    function tLabel(html){
-      return '<div class="c-top"><span class="c-top__inner">'+html+'</span></div>';
-    }
+    const tLabel = (html) => '<div class="c-top"><span class="c-top__inner">'+html+'</span></div>';
 
     function renderParts(){
       const wrap=$('#parts'); wrap.innerHTML='';
@@ -565,12 +563,12 @@
         const code=valueAtHourLocal(h.time, h.weather_code, dt);
         const el=document.createElement('div'); el.className='col';
         el.innerHTML=tLabel(label)
-                    +'<div class="temps"><div class="c-max">'+fmt0(temp,'°')+'</div><div class="c-min">'+(temp!=null?fmt0(temp-5,'°'):'—')+'</div></div>'
-                    +'<div class="c-ico">'+wmoEmoji(code, isNightAt(dt, d.daily||{}), {temp, wind, precip: pr})+'</div>'
-                    +'<div class="metrics">'
-                    +  '<div class="metric"><span class="m-ico">💧</span><span class="m-txt">Zrážky '+fmt0(pr, NBSP_NARROW+'mm/h')+'</span></div>'
-                    +  '<div class="metric"><span class="m-ico">'+windEmoji()+'</span><span class="m-txt">Vietor '+fmt0(wind, NBSP_NARROW+'km/h')+'</span></div>'
-                    +'</div>';
+          +'<div class="temps"><div class="c-max">'+fmt0(temp,'°')+'</div><div class="c-min">'+(temp!=null?fmt0(temp-5,'°'):'—')+'</div></div>'
+          +'<div class="c-ico">'+wmoEmoji(code, isNightAt(dt, d.daily||{}), {temp, wind, precip: pr})+'</div>'
+          +'<div class="metrics">'
+          +  '<div class="metric"><span class="m-ico">💧</span><span class="m-txt">Zrážky '+fmt0(pr, NBSP_NARROW+'mm/h')+'</span></div>'
+          +  '<div class="metric"><span class="m-ico">'+windEmoji()+'</span><span class="m-txt">Vietor '+fmt0(wind, NBSP_NARROW+'km/h')+'</span></div>'
+          +'</div>';
         wrap.appendChild(el);
       }
       const doobeda=new Date(base); doobeda.setHours(10,0,0,0); slot(doobeda,'Doobede');
@@ -600,9 +598,9 @@
         const iconHTML = will ? '<span class="m-ico">💧</span>' : '';
         const el=document.createElement('div'); el.className='col';
         el.innerHTML=tLabel(top)
-                    +'<div class="temps"><div class="c-max">'+fmt0(max,'°')+'</div><div class="c-min">'+fmt0(min,'°')+'</div></div>'
-                    +'<div class="c-ico">'+dayIco+'</div>'
-                    +'<div class="metrics"><div class="metric">'+iconHTML+'<span class="m-txt">'+(pp!=null?pp+' %':'—')+'</span></div></div>';
+          +'<div class="temps"><div class="c-max">'+fmt0(max,'°')+'</div><div class="c-min">'+fmt0(min,'°')+'</div></div>'
+          +'<div class="c-ico">'+dayIco+'</div>'
+          +'<div class="metrics"><div class="metric">'+iconHTML+'<span class="m-txt">'+(pp!=null?pp+' %':'—')+'</span></div></div>';
         box.appendChild(el);
       }
       fitTitles(box);
@@ -621,12 +619,12 @@
         const wind=valueAt15min(d.hourly.time, d.hourly.wind_speed_10m, t);
         const el=document.createElement('div'); el.className='col';
         el.innerHTML=tLabel(t.toLocaleTimeString('sk-SK',{hour:'2-digit',minute:'2-digit'}))
-                    +'<div class="temps"><div class="c-max">'+fmt0(tmp,'°')+'</div><div class="c-min">'+(tmp!=null?fmt0(tmp-5,'°'):'—')+'</div></div>'
-                    +'<div class="c-ico">'+wmoEmoji(code, isNightAt(t,d.daily||{}), {temp: tmp, wind, precip: prep})+'</div>'
-                    +'<div class="metrics">'
-                    +  '<div class="metric"><span class="m-ico">💧</span><span class="m-txt">Zrážky '+(prep!=null?fmt0(prep, NBSP_NARROW+'mm/h'):'—')+'</span></div>'
-                    +  '<div class="metric"><span class="m-ico">'+windEmoji()+'</span><span class="m-txt">Vietor '+(wind!=null?fmt0(wind, NBSP_NARROW+'km/h'):'—')+'</span></div>'
-                    +'</div>';
+          +'<div class="temps"><div class="c-max">'+fmt0(tmp,'°')+'</div><div class="c-min">'+(tmp!=null?fmt0(tmp-5,'°'):'—')+'</div></div>'
+          +'<div class="c-ico">'+wmoEmoji(code, isNightAt(t,d.daily||{}), {temp: tmp, wind, precip: prep})+'</div>'
+          +'<div class="metrics">'
+          +  '<div class="metric"><span class="m-ico">💧</span><span class="m-txt">Zrážky '+(prep!=null?fmt0(prep, NBSP_NARROW+'mm/h'):'—')+'</span></div>'
+          +  '<div class="metric"><span class="m-ico">'+windEmoji()+'</span><span class="m-txt">Vietor '+(wind!=null?fmt0(wind, NBSP_NARROW+'km/h'):'—')+'</span></div>'
+          +'</div>';
         box.appendChild(el);
       }
       fitTitles(box);
@@ -695,11 +693,14 @@
     function initDragBars(){ ['parts','days','min15'].forEach(id=>{ const el=document.getElementById(id); if(el){ enableDragScroll(el) } }) }
 
     initGeolocation();
-    window.addEventListener('resize', ()=>{ if(state.last){ drawHourly(); renderMin15(); fitTitles(); }});
 
-    // Refit pri zmene veľkosti kontajnerov (bez ohľadu na okno)
-    const ro = new ResizeObserver(() => fitTitles());
+    // Refit pri resize okna aj pri zmene šírky kontajnerov
+    window.addEventListener('resize', ()=>{ if(state.last){ drawHourly(); renderMin15(); fitTitles(); }});
+    const ro = new ResizeObserver(()=>fitTitles());
     ['parts','days','min15'].forEach(id=>{ const el=document.getElementById(id); if(el) ro.observe(el); });
+
+    // Po načítaní fontov ešte raz prepočítaj (aby metrika Poppins neskolabovala)
+    if (document.fonts && document.fonts.ready) { document.fonts.ready.then(()=>fitTitles()); }
 
     setTimeout(()=>{ if(!state.last) fetchWeather().catch(()=>toast('Načítanie počasia zlyhalo')) },1200);
     initDragBars();
