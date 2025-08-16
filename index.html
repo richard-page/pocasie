@@ -89,24 +89,37 @@
   .col{
     flex:0 0 calc((100% - (var(--cols) - 1)*var(--gap)) / var(--cols) - 0.5px);
     background:var(--panel); border:1px solid var(--stroke); border-radius:12px;
-    padding:14px;                  /* viac vnútorného priestoru */
+    padding:14px;
     display:grid; grid-template-rows:auto auto auto auto; align-items:center; justify-items:center;
-    text-align:center; min-height:182px; position:relative; row-gap:12px; /* väčší rozstup blokov */
+    text-align:center; min-height:182px; position:relative; row-gap:12px;
     min-width:0; overflow:hidden; scroll-snap-align:start
   }
 
-  /* TOP TITULKY — ABSOLÚTNE PRESNÉ CENTROVANIE */
-  .c-top{ position:relative; width:100%; height:1.75em }
+  /* TITULKY – presné centrovanie pomocou flexu */
+  .c-top{
+    width:100%;
+    height:1.8em;                /* priestor na 1 riadok */
+    display:flex;
+    align-items:center;
+    justify-content:center;
+    padding-inline:4px;          /* mikromedzera od okrajov */
+    overflow:hidden;
+  }
   .c-top__inner{
-    position:absolute; left:50%; top:50%;
-    transform:translate(-50%,-50%);
-    white-space:nowrap; text-align:center; display:block
+    display:block;
+    max-width:100%;
+    white-space:nowrap;
+    overflow:hidden;
+    text-overflow:ellipsis;
+    text-align:center;
   }
 
-  /* veľkosti */
+  /* veľkosti – jedným riadkom pre parts + min15 */
   #parts .c-top__inner, #min15 .c-top__inner{ font-size:clamp(10px, 3.2vw, 16px) }
+
+  /* 7-dňová – môže ísť na 2 riadky */
   #days .c-top{ height:auto }
-  #days .c-top__inner{ position:static; transform:none; white-space:normal; text-wrap:balance; font-size:inherit }
+  #days .c-top__inner{ white-space:normal; text-wrap:balance; }
 
   .temps{display:grid; place-items:center; width:100%; min-width:0}
   .temps .c-max{font-size:28px; font-weight:700; color:#ff6c6c; line-height:1}
@@ -118,9 +131,9 @@
     .temps .c-max{font-size:32px} .temps .c-min{font-size:19px}
   }
 
-  .c-ico{font-size:26px; line-height:1; display:flex; align-items:center; justify-content:center; margin:2px 0 4px} /* drobný odstup okolo ikony */
+  .c-ico{font-size:26px; line-height:1; display:flex; align-items:center; justify-content:center; margin:2px 0 4px}
 
-  .metrics{display:flex; flex-direction:column; align-items:center; justify-content:center; gap:10px; width:100%} /* väčší rozstup medzi metrikami */
+  .metrics{display:flex; flex-direction:column; align-items:center; justify-content:center; gap:10px; width:100%}
   .metric{display:flex; flex-direction:column; align-items:center; gap:8px; width:auto}
   .metric .m-ico{line-height:1; font-size:18px}
   .metric .m-txt{min-width:0; white-space:normal; text-align:center; font-size:13.5px; font-weight:500; color:#e9f3ff; letter-spacing:.02px; line-height:1.28; padding-inline:8px}
@@ -224,7 +237,7 @@
   <div id="err"></div>
 
   <script>
-    const APP_VERSION = '2025-08-16-rain-override-v2';
+    const APP_VERSION = '2025-08-16-flex-centered-titles';
     const $ = s => document.querySelector(s);
     const NBSP_NARROW = '\u202F';
     const fmt0 = (v,u='') => (v==null || Number.isNaN(v)) ? '—' : (Math.round(v) + u);
@@ -341,7 +354,7 @@
       let startH=9,endH=18;
       const sr=(d.daily && d.daily.sunrise && d.daily.sunrise[0]) ? d.daily.sunrise[0] : null;
       const ss=(d.daily && d.daily.sunset && d.daily.sunset[0]) ? d.daily.sunset[0] : null;
-      if(sr && ss){
+      if(sr a nd ss){
         const sh=new Date(sr).getHours(), eh=new Date(ss).getHours();
         if(!Number.isNaN(sh) && !Number.isNaN(eh) && sh<eh){startH=sh;endH=eh;}
       }
@@ -557,7 +570,7 @@
         const sum=days.precipitation_sum ? days.precipitation_sum[i] : null;
         const avgT = (max!=null && min!=null) ? (max+min)/2 : null;
 
-        const rainy = (pp != null && pp > 0) || willRain({ code, prob: pp, precipSum: sum });
+        const rainy = (pp != null && pp > 0) || willRain({ code, prob:pp, precipSum:sum });
         const dayIco = rainy ? '🌧️' : wmoEmoji(code, false, {prob: pp, temp: avgT});
 
         const el=document.createElement('div'); el.className='col';
