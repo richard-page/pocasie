@@ -98,24 +98,29 @@
 
 .c-top {
   width: 100%;
-  min-height: 2.4em;        /* výška bloku */
+  min-height: 2.4em;
   display: flex;
-  align-items: center;      /* vertikálne do stredu */
-  justify-content: center;  /* horizontálne do stredu */
+  align-items: center;
+  justify-content: center;
   padding-inline: 8px;
-  overflow: hidden;
 }
 
 .c-top__inner {
-  white-space: nowrap;
-  overflow: hidden;
-  text-overflow: ellipsis;
+  white-space: nowrap;    /* vždy jeden riadok */
+  overflow: visible;      /* nezrezáva text */
+  text-overflow: unset;   /* žiadne „…“ */
 
   font-weight: 600;
   font-size: clamp(11px, 3.4vw, 16px);
-  line-height: 1;           /* presne 1:1, aby to sedelo na stred */
+  line-height: 1.2;
   text-align: center;
 }
+
+/* toto je dôležité: karty musia mať dosť miesta */
+.karta, .col {
+  min-width: 100px;       /* zväčšené, aby sa celé slovo zmestilo */
+}
+
 
     /* kľúčové tri */
     white-space:nowrap;
