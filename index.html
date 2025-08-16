@@ -98,26 +98,23 @@
 
 .c-top {
   width: 100%;
-  min-height: 2.4em;
+  min-height: 2.4em;        /* výška bloku */
   display: flex;
-  align-items: center;      /* vertikálne na stred */
-  justify-content: center;  /* horizontálne na stred */
+  align-items: center;      /* vertikálne do stredu */
+  justify-content: center;  /* horizontálne do stredu */
   padding-inline: 8px;
   overflow: hidden;
 }
 
 .c-top__inner {
-  display: flex;            /* z inline-block na flex */
-  align-items: center;      /* zarovná text na stred vertikálne */
-  justify-content: center;  /* zarovná text na stred horizontálne */
-
   white-space: nowrap;
-  overflow: visible;
-  text-overflow: unset;
+  overflow: hidden;
+  text-overflow: ellipsis;
 
-  line-height: 1.2;
   font-weight: 600;
   font-size: clamp(11px, 3.4vw, 16px);
+  line-height: 1;           /* presne 1:1, aby to sedelo na stred */
+  text-align: center;
 }
 
     /* kľúčové tri */
