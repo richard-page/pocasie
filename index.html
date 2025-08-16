@@ -98,7 +98,7 @@
   .c-top{
     position:relative;
     width:100%;
-    height:1.75em; /* priestor pre 1 riadok */
+    height:1.75em;
   }
   .c-top__inner{
     position:absolute; left:50%; top:50%;
@@ -113,13 +113,8 @@
   #min15 .c-top__inner{
     font-size:clamp(10px, 3.2vw, 16px);
   }
-  #days .c-top{
-    height:auto;
-  }
-  #days .c-top__inner{
-    position:static; transform:none; white-space:normal; text-wrap:balance;
-    font-size:inherit;
-  }
+  #days .c-top{ height:auto; }
+  #days .c-top__inner{ position:static; transform:none; white-space:normal; text-wrap:balance; font-size:inherit; }
 
   .temps{display:grid; place-items:center; width:100%; min-width:0}
   .temps .c-max{font-size:28px; font-weight:700; color:#ff6c6c; line-height:1}
@@ -243,7 +238,7 @@
   <div id="err"></div>
 
   <script>
-    const APP_VERSION = '2025-08-15-center-absolute-v1';
+    const APP_VERSION = '2025-08-15-no-drop-emoji-v1';
     const $ = s => document.querySelector(s);
     const NBSP_NARROW = '\u202F';
     const fmt0 = (v,u='') => (v==null || Number.isNaN(v)) ? '—' : (Math.round(v) + u);
@@ -549,7 +544,7 @@
                     +'<div class="temps"><div class="c-max">'+fmt0(temp,'°')+'</div><div class="c-min">'+(temp!=null?fmt0(temp-5,'°'):'—')+'</div></div>'
                     +'<div class="c-ico">'+wmoEmoji(code, isNightAt(dt, d.daily||{}), {temp, wind, precip: pr})+'</div>'
                     +'<div class="metrics metrics--mini">'
-                    +  '<div class="metric"><span class="m-ico">💧</span><span class="m-txt">Zrážky '+fmt0(pr, NBSP_NARROW+'mm/h')+'</span></div>'
+                    +  '<div class="metric"><span class="m-txt">Zrážky '+fmt0(pr, NBSP_NARROW+'mm/h')+'</span></div>'
                     +  '<div class="metric"><span class="m-ico">💨</span><span class="m-txt">Vietor '+fmt0(wind, NBSP_NARROW+'km/h')+'</span></div>'
                     +'</div>';
         wrap.appendChild(el);
@@ -575,13 +570,11 @@
         const pp=days.precipitation_probability_max ? days.precipitation_probability_max[i] : null;
         const avgT = (max!=null && min!=null) ? (max+min)/2 : null;
         const dayIco = wmoEmoji(code, false, {prob: pp, temp: avgT});
-        const will = willRain({code, prob:pp});
-        const iconHTML = will ? '<span class="m-ico">💧</span>' : '';
         const el=document.createElement('div'); el.className='col';
         el.innerHTML='<div class="c-top"><span class="c-top__inner">'+top+'</span></div>'
                     +'<div class="temps"><div class="c-max">'+fmt0(max,'°')+'</div><div class="c-min">'+fmt0(min,'°')+'</div></div>'
                     +'<div class="c-ico">'+dayIco+'</div>'
-                    +'<div class="metrics metrics--mini"><div class="metric">'+iconHTML+'<span class="m-txt">'+(pp!=null?pp+' %':'—')+'</span></div></div>';
+                    +'<div class="metrics metrics--mini"><div class="metric"><span class="m-txt">'+(pp!=null?pp+' %':'—')+'</span></div></div>';
         box.appendChild(el);
       }
     }
@@ -602,7 +595,7 @@
                     +'<div class="temps"><div class="c-max">'+fmt0(tmp,'°')+'</div><div class="c-min">'+(tmp!=null?fmt0(tmp-5,'°'):'—')+'</div></div>'
                     +'<div class="c-ico">'+wmoEmoji(code, isNightAt(t,d.daily||{}), {temp: tmp, wind, precip: prep})+'</div>'
                     +'<div class="metrics metrics--mini">'
-                    +  '<div class="metric"><span class="m-ico">💧</span><span class="m-txt">Zrážky '+(prep!=null?fmt0(prep, NBSP_NARROW+'mm/h'):'—')+'</span></div>'
+                    +  '<div class="metric"><span class="m-txt">Zrážky '+(prep!=null?fmt0(prep, NBSP_NARROW+'mm/h'):'—')+'</span></div>'
                     +  '<div class="metric"><span class="m-ico">💨</span><span class="m-txt">Vietor '+(wind!=null?fmt0(wind, NBSP_NARROW+'km/h'):'—')+'</span></div>'
                     +'</div>';
         box.appendChild(el);
