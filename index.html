@@ -96,17 +96,33 @@
     scroll-snap-align:start
   }
 
-  /* Nadpis v karte – VŽDY 1 riadok + elipsa, centrované */
-  .c-top{
-    width:100%;
-    min-height:1.9em;
-    display:flex; align-items:center; justify-content:center;
-    padding-inline:6px;
-  }
-  .c-top__inner{
-    display:inline-block;
-    max-width:100%;
-    text-align:center;
+ .c-top {
+  width: 100%;
+  min-height: 2.2em;           /* viac priestoru na výšku */
+  display: flex;
+  align-items: center;         /* vertikálne centrovanie */
+  justify-content: center;     /* horizontálne centrovanie */
+  padding-inline: 10px;        /* trochu viac priestoru zľava/zprava */
+  overflow: hidden;            /* ochrana proti pretečeniu */
+}
+
+.c-top__inner {
+  display: inline-block;
+  max-width: 100%;
+  text-align: center;
+
+  /* >>> kľúč na 1 riadok bez zalomenia <<< */
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+
+  word-break: keep-all;
+  overflow-wrap: normal;
+
+  line-height: 1.2;             /* opticky do stredu */
+  font-weight: 600;
+  font-size: clamp(11px, 3.4vw, 16px);
+}
 
     /* kľúčové tri */
     white-space:nowrap;
