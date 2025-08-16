@@ -88,58 +88,44 @@
 
   .col{
     flex:0 0 calc((100% - (var(--cols) - 1)*var(--gap)) / var(--cols) - 0.5px);
-    background:var(--panel); border:1px solid var(--stroke); border-radius:12px; padding:12px;
+    background:var(--panel); border:1px solid var(--stroke); border-radius:12px;
+    padding:14px;                  /* viac vnútorného priestoru */
     display:grid; grid-template-rows:auto auto auto auto; align-items:center; justify-items:center;
-    text-align:center; min-height:182px; position:relative; row-gap:8px; min-width:0; overflow:hidden;
-    scroll-snap-align:start
+    text-align:center; min-height:182px; position:relative; row-gap:12px; /* väčší rozstup blokov */
+    min-width:0; overflow:hidden; scroll-snap-align:start
   }
 
   /* TOP TITULKY — ABSOLÚTNE PRESNÉ CENTROVANIE */
-  .c-top{
-    position:relative;
-    width:100%;
-    height:1.75em;
-  }
+  .c-top{ position:relative; width:100%; height:1.75em }
   .c-top__inner{
     position:absolute; left:50%; top:50%;
     transform:translate(-50%,-50%);
-    white-space:nowrap;
-    text-align:center;
-    display:block;
+    white-space:nowrap; text-align:center; display:block
   }
 
   /* veľkosti */
-  #parts .c-top__inner,
-  #min15 .c-top__inner{
-    font-size:clamp(10px, 3.2vw, 16px);
-  }
-  #days .c-top{ height:auto; }
-  #days .c-top__inner{ position:static; transform:none; white-space:normal; text-wrap:balance; font-size:inherit; }
+  #parts .c-top__inner, #min15 .c-top__inner{ font-size:clamp(10px, 3.2vw, 16px) }
+  #days .c-top{ height:auto }
+  #days .c-top__inner{ position:static; transform:none; white-space:normal; text-wrap:balance; font-size:inherit }
 
   .temps{display:grid; place-items:center; width:100%; min-width:0}
   .temps .c-max{font-size:28px; font-weight:700; color:#ff6c6c; line-height:1}
   .temps .c-min{font-size:18px; color:#ffbb7c; margin-top:4px; line-height:1}
 
-  @media (max-width:420px){
-    .temps .c-max{font-size:26px}
-    .temps .c-min{font-size:17px}
-  }
+  @media (max-width:420px){ .temps .c-max{font-size:26px} .temps .c-min{font-size:17px} }
   @media (min-width:900px){
-    #parts{--cols:4}
-    #days{--cols:7}
-    #min15{--cols:6}
-    .temps .c-max{font-size:32px}
-    .temps .c-min{font-size:19px}
+    #parts{--cols:4} #days{--cols:7} #min15{--cols:6}
+    .temps .c-max{font-size:32px} .temps .c-min{font-size:19px}
   }
 
-  .c-ico{font-size:26px; line-height:1; display:flex; align-items:center; justify-content:center}
+  .c-ico{font-size:26px; line-height:1; display:flex; align-items:center; justify-content:center; margin:2px 0 4px} /* drobný odstup okolo ikony */
 
-  .metrics{display:flex; flex-direction:column; align-items:center; justify-content:center; gap:6px; width:100%}
-  .metric{display:flex; flex-direction:column; align-items:center; gap:6px; width:auto}
-  .metric .m-ico{line-height:1; font-size:16px}
-  .metric .m-txt{min-width:0; white-space:normal; text-align:center; font-size:13.5px; font-weight:500; color:#e9f3ff; letter-spacing:.02px; line-height:1.22; padding-inline:6px}
-  .metrics--mini .metric{display:flex; flex-direction:column; gap:6px}
-  @media (max-width:480px){ .metrics{gap:4px} .metric .m-txt{font-size:12.6px} }
+  .metrics{display:flex; flex-direction:column; align-items:center; justify-content:center; gap:10px; width:100%} /* väčší rozstup medzi metrikami */
+  .metric{display:flex; flex-direction:column; align-items:center; gap:8px; width:auto}
+  .metric .m-ico{line-height:1; font-size:18px}
+  .metric .m-txt{min-width:0; white-space:normal; text-align:center; font-size:13.5px; font-weight:500; color:#e9f3ff; letter-spacing:.02px; line-height:1.28; padding-inline:8px}
+
+  @media (max-width:480px){ .metrics{gap:8px} .metric .m-txt{font-size:12.6px} }
   @media (max-width:360px){ .metric .m-txt{font-size:12px} }
 
   .colset::-webkit-scrollbar{height:10px}
@@ -571,7 +557,6 @@
         const sum=days.precipitation_sum ? days.precipitation_sum[i] : null;
         const avgT = (max!=null && min!=null) ? (max+min)/2 : null;
 
-        // ak je akákoľvek šanca na zrážky, preferuj dažďovú ikonu
         const rainy = (pp != null && pp > 0) || willRain({ code, prob: pp, precipSum: sum });
         const dayIco = rainy ? '🌧️' : wmoEmoji(code, false, {prob: pp, temp: avgT});
 
