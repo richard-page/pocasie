@@ -91,33 +91,26 @@
     background:var(--panel); border:1px solid var(--stroke); border-radius:12px;
     padding:14px;
     display:grid; grid-template-rows:auto auto auto auto;
-    align-items:center; justify-items:center;        /* centrovanie obsahu */
+    align-items:center; justify-items:center;            /* všetko do stredu */
     text-align:center; min-height:182px; position:relative; row-gap:12px;
     min-width:0; overflow:hidden; scroll-snap-align:start
   }
 
-  /* TOP titulky — perfektné centrovanie + bez elipsy */
+  /* TOP titulky – perfektné centrovanie + bez elipsy */
   .c-top{
     width:100%;
     min-height:2.2em;
     display:flex; align-items:center; justify-content:center;
-    padding-inline:6px
+    padding-inline:6px; overflow:visible; text-overflow:clip
   }
   .c-top__inner{
-    display:block; text-align:center; max-width:100%;
-    /* žiadna elipsa, aby sa nezobrazovalo „Doobe…“ */
-    white-space:nowrap; overflow:visible; text-overflow:clip;
-  }
-  /* mobil: povoliť zalomenie a stále držať stred */
-  @media (max-width:480px){
-    #parts .c-top__inner, #min15 .c-top__inner{
-      white-space:normal; text-wrap:balance; word-break:keep-all; line-height:1.15;
-      overflow:visible; text-overflow:clip;
-    }
+    display:inline-block; text-align:center; max-width:100%;
+    white-space:normal; text-wrap:balance; word-break:keep-all;
+    overflow:visible; text-overflow:clip; line-height:1.15
   }
 
-  /* veľkosti titulkov */
-  #parts .c-top__inner, #min15 .c-top__inner{ font-size:clamp(10px, 3.4vw, 16px) }
+  /* veľkosť titulkov */
+  #parts .c-top__inner, #min15 .c-top__inner{ font-size:clamp(11px, 3.6vw, 16px) }
   #days .c-top{ min-height:auto }
   #days .c-top__inner{ white-space:normal; text-wrap:balance; font-size:inherit }
 
@@ -237,7 +230,7 @@
   <div id="err"></div>
 
   <script>
-    const APP_VERSION = '2025-08-16-center-lock-v1';
+    const APP_VERSION = '2025-08-16-center-lock-v2';
     const $ = s => document.querySelector(s);
     const NBSP_NARROW = '\u202F';
     const fmt0 = (v,u='') => (v==null || Number.isNaN(v)) ? '—' : (Math.round(v) + u);
@@ -478,7 +471,7 @@
       const uvi=(cur.uv_index!=null ? cur.uv_index : (d.daily && d.daily.uv_index_max && d.daily.uv_index_max[0]!=null ? d.daily.uv_index_max[0] : null));
       $('#uv').textContent = uvi!=null ? ('UV index '+fmt1(uvi)+' • '+uvCat(uvi)) : 'UV index —';
 
-      const dd=d.daily || {};
+      const dd=daily = d.daily || {};
       const tmax=dd.temperature_2m_max && dd.temperature_2m_max[0];
       const tmin=dd.temperature_2m_min && dd.temperature_2m_min[0];
       const ps=dd.precipitation_sum && dd.precipitation_sum[0];
