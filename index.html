@@ -101,14 +101,27 @@
       scroll-snap-align:start
     }
 
-    .c-top{
-      opacity:.9;
-      white-space:normal;
-      overflow:visible;
-      text-overflow:clip;
-      line-height:1.1;
-      text-align:center
-    }
+  .c-top{
+    width:100%;
+    min-height:2.4em;
+    display:flex; align-items:center; justify-content:center;
+    padding-inline:8px;
+  }
+  .c-top__inner{
+    white-space:nowrap;
+    overflow:visible;
+    text-overflow:unset;
+    font-weight:600;
+    font-size:clamp(11px, 3.4vw, 16px);
+    line-height:1.2;
+    text-align:center;
+  }
+
+  / jemné minimum, aby sa „Poobede“ zmestilo na 1 riadok */
+  .karta, .col{ min-width:100px; }
+
+Zpráva #🛠・príkazy
+
 
     .temps{display:grid; place-items:center; width:100%; min-width:0}
     .temps .c-max{font-size:28px; font-weight:700; color:#ff6c6c; line-height:1}
