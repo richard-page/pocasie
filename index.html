@@ -91,17 +91,17 @@
     background:var(--panel); border:1px solid var(--stroke); border-radius:12px;
     padding:14px;
     display:grid; grid-template-rows:auto auto auto auto;
-    align-items:center; justify-items:center;            /* všetko do stredu */
+    align-items:center; justify-items:center;      /* všetko centrum */
     text-align:center; min-height:182px; position:relative; row-gap:12px;
     min-width:0; overflow:hidden; scroll-snap-align:start
   }
 
-  /* TOP titulky – perfektné centrovanie + bez elipsy */
+  /* Titulky: perfektné centrovanie + bez elipsy */
   .c-top{
     width:100%;
     min-height:2.2em;
     display:flex; align-items:center; justify-content:center;
-    padding-inline:6px; overflow:visible; text-overflow:clip
+    padding-inline:8px; overflow:visible; text-overflow:clip
   }
   .c-top__inner{
     display:inline-block; text-align:center; max-width:100%;
@@ -110,19 +110,13 @@
   }
 
   /* veľkosť titulkov */
-  #parts .c-top__inner, #min15 .c-top__inner{ font-size:clamp(11px, 3.6vw, 16px) }
+  #parts .c-top__inner, #min15 .c-top__inner{ font-size:clamp(11px, 3.8vw, 16px) }
   #days .c-top{ min-height:auto }
   #days .c-top__inner{ white-space:normal; text-wrap:balance; font-size:inherit }
 
   .temps{display:grid; place-items:center; width:100%; min-width:0}
   .temps .c-max{font-size:28px; font-weight:700; color:#ff6c6c; line-height:1}
   .temps .c-min{font-size:18px; color:#ffbb7c; margin-top:4px; line-height:1}
-
-  @media (max-width:420px){ .temps .c-max{font-size:26px} .temps .c-min{font-size:17px} }
-  @media (min-width:900px){
-    #parts{--cols:4} #days{--cols:7} #min15{--cols:6}
-    .temps .c-max{font-size:32px} .temps .c-min{font-size:19px}
-  }
 
   .c-ico{font-size:26px; line-height:1; display:flex; align-items:center; justify-content:center; margin:2px 0 4px}
 
@@ -131,8 +125,21 @@
   .metric .m-ico{line-height:1; font-size:18px}
   .metric .m-txt{min-width:0; white-space:normal; text-align:center; font-size:13.5px; font-weight:500; color:#e9f3ff; letter-spacing:.02px; line-height:1.28; padding-inline:8px}
 
-  @media (max-width:480px){ .metrics{gap:8px} .metric .m-txt{font-size:12.6px} }
-  @media (max-width:360px){ .metric .m-txt{font-size:12px} }
+  /* EXTRA mobilná úprava do 640 px – väčší priestor a stabilné centrovanie */
+  @media (max-width:640px){
+    .col{min-height:198px; row-gap:14px}
+    .c-top{min-height:2.6em; padding-inline:10px}
+    #parts .c-top__inner, #min15 .c-top__inner{ font-size:clamp(12px, 4.4vw, 17px) }
+    .temps .c-max{font-size:30px}
+    .temps .c-min{font-size:20px}
+    .metric .m-txt{font-size:14px}
+  }
+
+  @media (max-width:420px){ .temps .c-max{font-size:26px} .temps .c-min{font-size:17px} }
+  @media (min-width:900px){
+    #parts{--cols:4} #days{--cols:7} #min15{--cols:6}
+    .temps .c-max{font-size:32px} .temps .c-min{font-size:19px}
+  }
 
   .colset::-webkit-scrollbar{height:10px}
   .colset::-webkit-scrollbar-track{background:#0f1c2a; border-radius:8px}
@@ -230,7 +237,7 @@
   <div id="err"></div>
 
   <script>
-    const APP_VERSION = '2025-08-16-center-lock-v2';
+    const APP_VERSION = '2025-08-16-center-mobile-640-v1';
     const $ = s => document.querySelector(s);
     const NBSP_NARROW = '\u202F';
     const fmt0 = (v,u='') => (v==null || Number.isNaN(v)) ? '—' : (Math.round(v) + u);
@@ -240,7 +247,7 @@
       0:['Jasno'],1:['Prevažne jasno'],2:['Polojasno'],3:['Zamračené'],
       45:['Hmla'],48:['Mrznúca hmla'],
       51:['Slabé mrholenie'],53:['Mrholenie'],55:['Silné mrholenie'],
-      61:['Slabý dážď'],63:['Dážď'],65:['Lejak'],66:['Mrznúci dážď'],67:['Mrznúci dážď'],
+      61:['Slabý dážď'],63:['Dážď'],65,['Lejak'],66:['Mrznúci dážď'],67:['Mrznúci dážď'],
       71:['Slabé sneženie'],73:['Sneženie'],75:['Silné sneženie'],77:['Snehové zrná'],
       80:['Prehánky'],81:['Prehánky'],82:['Silné prehánky'],
       85:['Snehové prehánky'],86:['Silné snehové prehánky'],
@@ -471,7 +478,7 @@
       const uvi=(cur.uv_index!=null ? cur.uv_index : (d.daily && d.daily.uv_index_max && d.daily.uv_index_max[0]!=null ? d.daily.uv_index_max[0] : null));
       $('#uv').textContent = uvi!=null ? ('UV index '+fmt1(uvi)+' • '+uvCat(uvi)) : 'UV index —';
 
-      const dd=daily = d.daily || {};
+      const dd = d.daily || {};
       const tmax=dd.temperature_2m_max && dd.temperature_2m_max[0];
       const tmin=dd.temperature_2m_min && dd.temperature_2m_min[0];
       const ps=dd.precipitation_sum && dd.precipitation_sum[0];
