@@ -90,33 +90,34 @@
     flex:0 0 calc((100% - (var(--cols) - 1)*var(--gap)) / var(--cols) - 0.5px);
     background:var(--panel); border:1px solid var(--stroke); border-radius:12px;
     padding:14px;
-    display:grid; grid-template-rows:auto auto auto auto; align-items:center; justify-items:center;
+    display:grid; grid-template-rows:auto auto auto auto;
+    align-items:center; justify-items:center;       /* centruje vnútro dlaždice */
     text-align:center; min-height:182px; position:relative; row-gap:12px;
     min-width:0; overflow:hidden; scroll-snap-align:start
   }
 
-  /* TOP TITULKY – pevné centrovanie aj na mobile (flex, žiadny translate) */
+  /* TOP tituly – isté centrovanie + na mobile povolené zalomenie */
   .c-top{
     width:100%;
-    height:1.75em;               /* priestor na 1 riadok */
-    display:flex;
-    align-items:center;
-    justify-content:center;
-    padding-inline:4px;           /* mikro-odsadenie od okrajov */
-    overflow:hidden;
+    min-height:1.9em;
+    display:flex; align-items:center; justify-content:center;
+    padding-inline:4px; overflow:hidden
   }
   .c-top__inner{
-    display:block;
-    max-width:100%;
-    white-space:nowrap;
-    overflow:hidden;
-    text-overflow:ellipsis;
-    text-align:center;
+    display:block; text-align:center; max-width:100%;
+    white-space:nowrap; overflow:hidden; text-overflow:ellipsis
+  }
+  /* mobil: nech sa môže zalomiť na 2 riadky a stále je to presne v strede */
+  @media (max-width:480px){
+    #parts .c-top, #min15 .c-top{ min-height:2.2em }
+    #parts .c-top__inner, #min15 .c-top__inner{
+      white-space:normal; text-wrap:balance; line-height:1.15
+    }
   }
 
-  /* veľkosti */
+  /* veľkosti titulkov */
   #parts .c-top__inner, #min15 .c-top__inner{ font-size:clamp(10px, 3.2vw, 16px) }
-  #days .c-top{ height:auto }
+  #days .c-top{ min-height:auto }
   #days .c-top__inner{ white-space:normal; text-wrap:balance; font-size:inherit }
 
   .temps{display:grid; place-items:center; width:100%; min-width:0}
@@ -235,7 +236,7 @@
   <div id="err"></div>
 
   <script>
-    const APP_VERSION = '2025-08-16-center-fix-flex';
+    const APP_VERSION = '2025-08-16-center-polish';
     const $ = s => document.querySelector(s);
     const NBSP_NARROW = '\u202F';
     const fmt0 = (v,u='') => (v==null || Number.isNaN(v)) ? '—' : (Math.round(v) + u);
