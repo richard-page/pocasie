@@ -44,7 +44,7 @@
   #place{white-space:nowrap; overflow:hidden; text-overflow:ellipsis; text-align:left; margin:0}
 
   .row{display:grid; grid-template-columns:1fr; gap:18px; margin-top:6px}
-  .meta{display:grid; grid-template-columns:1fr; gap:10px; color:var(--muted); font-size:14px}
+  .meta{display:grid; grid-template-columns:1fr; gap:10px; color:#a8bed5; font-size:14px}
   .meta strong{color:#fff}
 
   .chipRow{display:flex; flex-direction:column; gap:10px; align-items:flex-start}
@@ -90,16 +90,16 @@
     flex:0 0 calc((100% - (var(--cols) - 1)*var(--gap)) / var(--cols));
     background:var(--panel); border:1px solid var(--stroke); border-radius:12px;
     padding:12px;
-    display:grid; grid-template-rows:auto auto auto auto auto; /* názov, teploty, ikona, percento, zásuvka */
+    display:grid; grid-template-rows:auto auto auto auto auto auto; /* + precSub */
     align-items:start; justify-items:center;
-    text-align:center; min-height:168px; position:relative; row-gap:8px;
+    text-align:center; min-height:170px; position:relative; row-gap:8px;
     min-width:0; overflow:visible;
     scroll-snap-align:start;
     transition:box-shadow .2s ease;
   }
   .col:hover{ box-shadow:0 8px 18px rgba(0,0,0,.22) }
 
-  /* Nadpis karty – podľa tvojej špecifikácie */
+  /* Nadpis karty – podľa špecifikácie */
   .c-top{
     width:100%;
     min-height:2.4em;
@@ -124,10 +124,13 @@
 
   .c-ico{font-size:26px; line-height:1; display:flex; align-items:center; justify-content:center; margin:0}
 
-  /* riadok s percentom zrážok – skrátené medzery */
+  /* percentá + skrátené medzery */
   .prec{display:flex; align-items:center; gap:6px; margin:2px 0 0}
   .prec .drop{font-size:16px; line-height:1}
   .prec .pct{font-size:13px; color:#cfe8ff; line-height:1}
+
+  /* NOVÉ: malý popis zrážok pod percentami */
+  .precSub{font-size:12px; color:#a8bed5; line-height:1; margin-top:2px}
 
   /* zásuvka (rozbalenie) */
   .drawer{
@@ -256,7 +259,7 @@
 
 <script>
 /* ================== KONŠTANTY & POMOCNÍCI ================== */
-const APP_VERSION = '2025-08-18-final-drawers';
+const APP_VERSION = '2025-08-18-precSub';
 const $ = s => document.querySelector(s);
 const NBSP_NARROW = '\u202F';
 
@@ -279,7 +282,6 @@ const uvCat = u => u<3?'nízky':u<6?'mierny':u<8?'vysoký':u<11?'veľmi vysoký'
 const windEmoji = ()=> '💨';
 
 function wmoEmoji(code, night=false, ctx={}){
-  // Špeciálne: hmla nech neukazuje "hmlu", ale jemnú alternatívu
   const k = Number(code);
   function fogAlt(){
     const t = Number.isFinite(ctx.temp) ? ctx.temp : null;
@@ -291,13 +293,13 @@ function wmoEmoji(code, night=false, ctx={}){
     if(w!=null && w>=20) return '💨';
     return night ? '🌙' : '☁️';
   }
-  if ([45,48].includes(k)) return fogAlt();              // hmla -> alternatíva
+  if ([45,48].includes(k)) return fogAlt();  // hmlu nenútim
   if ([0,1].includes(k)) return night ? '🌙' : '☀️';
   if (k===2) return night ? '🌙' : '⛅';
   if (k===3) return '☁️';
-  if ([51,53,55].includes(k)) return '🌦️';              // mrholenie → prehánky vizuálne
-  if ([61,63,65].includes(k)) return '🌧️';              // dážď
-  if ([80,81,82].includes(k)) return '🌦️';              // prehánky odlíšené od dažďa
+  if ([51,53,55].includes(k)) return '🌦️';  // mrholenie
+  if ([61,63,65].includes(k)) return '🌧️';  // dážď
+  if ([80,81,82].includes(k)) return '🌦️';  // prehánky
   if ([71,73,75,77,85,86].includes(k)) return '❄️';
   if ([95,96,99].includes(k)) return '⛈️';
   return night ? '🌙' : '🌤️';
@@ -596,14 +598,12 @@ function renderParts(){
   const h=d.hourly||{};
   function slot(dt,label, dt2){
     const start=new Date(dt); const end=new Date(dt2);
-    // Základné hodnoty pre hlavičku
     const temp=valueAtHourLocal(h.time, h.temperature_2m, dt);
     const prh=valueAtHourLocal(h.time, h.precipitation, dt);
     const wind=valueAtHourLocal(h.time, h.wind_speed_10m, dt);
     const code=valueAtHourLocal(h.time, h.weather_code, dt);
     const prob=valueAtHourLocal(h.time, h.precipitation_probability, dt);
 
-    // Štatistiky okna pre zásuvku
     const ws=windowStats(start,end,h);
     const pct = ws.probMax!=null ? Math.round(ws.probMax) : (prob!=null?Math.round(prob):null);
     const mmTxt = (ws.mmMin==null && ws.mmMax===0) ? '0 mm' :
@@ -617,6 +617,7 @@ function renderParts(){
       '<div class="temps"><div class="c-max">'+fmt0(temp,'°')+'</div><div class="c-min">'+(temp!=null?fmt0(temp-5,'°'):'—')+'</div></div>'+
       '<div class="c-ico">'+wmoEmoji(code, isNightAt(dt, d.daily||{}), {temp, wind, precip: prh, prob: pct})+'</div>'+
       '<div class="prec"><span class="drop">💧</span><span class="pct">'+(pct!=null? pct+' %':'—')+'</span></div>'+
+      '<div class="precSub">Zrážky '+mmTxt+'</div>'+
       '<div class="drawer">'+
         '<div class="line"><span class="dot"></span><span><strong>Zrážky:</strong> '+(pct!=null?pct+' %':'—')+' | '+mmTxt+' | '+durTxt+'</span></div>'+
         '<div class="line"><span class="dot"></span><span><strong>Vietor:</strong> '+(ws.windAvg!=null?fmt1(ws.windAvg, NBSP_NARROW+'km/h'):'—')+'</span></div>'+
@@ -625,29 +626,25 @@ function renderParts(){
     el.addEventListener('keypress', (ev)=>{ if(ev.key==='Enter'||ev.key===' ') {ev.preventDefault(); el.classList.toggle('open');} });
     wrap.appendChild(el);
   }
-  // Doobede 10–15
   const doobedaS=new Date(base); doobedaS.setHours(10,0,0,0);
   const doobedaE=new Date(base); doobedaE.setHours(15,0,0,0);
   slot(doobedaS,'Doobede', doobedaE);
 
-  // Poobede 15–19
   const poobedeS=new Date(base); poobedeS.setHours(15,0,0,0);
   const poobedeE=new Date(base); poobedeE.setHours(19,0,0,0);
   slot(poobedeS,'Poobede', poobedeE);
 
-  // Večer okolo západu + 2h
   const sunset=(d.daily && d.daily.sunset && d.daily.sunset[0]) ? new Date(d.daily.sunset[0]) : null;
   const vecerS=sunset?new Date(sunset.getTime()-60*60*1000):(function(){const t=new Date(base); t.setHours(19,0,0,0); return t;})();
   const vecerE=sunset?new Date(sunset.getTime()+2*60*60*1000):(function(){const t=new Date(base); t.setHours(22,0,0,0); return t;})();
   slot(vecerS,'Večer', vecerE);
 
-  // Noc 02:00 – 05:00 nasledujúci deň
   const nocS=new Date(base); nocS.setDate(base.getDate()+1); nocS.setHours(2,0,0,0);
   const nocE=new Date(base); nocE.setDate(base.getDate()+1); nocE.setHours(5,0,0,0);
   slot(nocS,'Noc', nocE);
 }
 
-/* ================== RENDER – 7 DNÍ (s klikom) ================== */
+/* ================== RENDER – 7 DNÍ ================== */
 function renderDays(data){
   const box=$('#days'); box.innerHTML='';
   const days=(data.daily || {}); const times=days.time || [];
@@ -661,16 +658,15 @@ function renderDays(data){
     const min=days.temperature_2m_min ? days.temperature_2m_min[i] : null;
     const pp=days.precipitation_probability_max ? days.precipitation_probability_max[i] : null;
 
-    // trvanie dažďa podľa hourly
     const dayS=new Date(times[i]+'T00:00:00'); const dayE=new Date(times[i]+'T23:59:59');
     const ws=windowStats(dayS,dayE,hourly);
     const pct = (pp!=null?pp:(ws.probMax!=null?ws.probMax:null));
-    const mmTxt = (days.precipitation_sum && days.precipitation_sum[i]!=null)
-                  ? fmt1(days.precipitation_sum[i], NBSP_NARROW+'mm')
-                  : (ws.mmMin==null && ws.mmMax===0 ? '0 mm' :
-                     (ws.mmMin==null ? ('0–'+fmt1(ws.mmMax, NBSP_NARROW+'mm')) :
-                                       (fmt1(ws.mmMin, NBSP_NARROW+'mm')+'–'+fmt1(ws.mmMax, NBSP_NARROW+'mm'))));
-    const durTxt=(ws.wetHours||0)+' h';
+
+    const sum = (days.precipitation_sum && days.precipitation_sum[i]!=null) ? days.precipitation_sum[i] : null;
+    const mmTxt = (sum!=null) ? fmt1(sum, NBSP_NARROW+'mm')
+                : (ws.mmMin==null && ws.mmMax===0 ? '0 mm'
+                   : (ws.mmMin==null ? ('0–'+fmt1(ws.mmMax, NBSP_NARROW+'mm'))
+                                     : (fmt1(ws.mmMin, NBSP_NARROW+'mm')+'–'+fmt1(ws.mmMax, NBSP_NARROW+'mm'))));
 
     const avgT = (max!=null && min!=null) ? (max+min)/2 : null;
     const dayIco = wmoEmoji(code, false, {prob: pct, temp: avgT});
@@ -681,8 +677,9 @@ function renderDays(data){
       '<div class="temps"><div class="c-max">'+fmt0(max,'°')+'</div><div class="c-min">'+fmt0(min,'°')+'</div></div>'+
       '<div class="c-ico">'+dayIco+'</div>'+
       '<div class="prec"><span class="drop">💧</span><span class="pct">'+(pct!=null? pct+' %':'—')+'</span></div>'+
+      '<div class="precSub">Zrážky '+mmTxt+'</div>'+
       '<div class="drawer">'+
-        '<div class="line"><span class="dot"></span><span><strong>Zrážky:</strong> '+(pct!=null?pct+' %':'—')+' | '+mmTxt+' | '+durTxt+'</span></div>'+
+        '<div class="line"><span class="dot"></span><span><strong>Zrážky:</strong> '+(pct!=null?pct+' %':'—')+' | '+mmTxt+' | '+(ws.wetHours||0)+' h</span></div>'+
         '<div class="line"><span class="dot"></span><span><strong>Vietor max:</strong> '+(days.wind_speed_10m_max && days.wind_speed_10m_max[i]!=null ? fmt1(days.wind_speed_10m_max[i], NBSP_NARROW+'km/h') : '—')+'</span></div>'+
       '</div>';
     el.addEventListener('click', ()=> el.classList.toggle('open'));
@@ -692,7 +689,7 @@ function renderDays(data){
   }
 }
 
-/* ================== RENDER – 15 MIN (s klikom) ================== */
+/* ================== RENDER – 15 MIN ================== */
 function renderMin15(){
   const d=state.last || {}; const box=$('#min15'); box.innerHTML='';
   if(!(d.hourly && d.hourly.time && d.hourly.time.length)){
@@ -716,6 +713,7 @@ function renderMin15(){
       '<div class="temps"><div class="c-max">'+fmt0(tmp,'°')+'</div><div class="c-min">'+(tmp!=null?fmt0(tmp-5,'°'):'—')+'</div></div>'+
       '<div class="c-ico">'+wmoEmoji(code, isNightAt(t,d.daily||{}), {temp: tmp, wind, precip: prep, prob: prob})+'</div>'+
       '<div class="prec"><span class="drop">💧</span><span class="pct">'+(prob!=null? Math.round(prob)+' %':'—')+'</span></div>'+
+      '<div class="precSub">Zrážky '+(prep!=null?fmt1(prep, NBSP_NARROW+'mm/h'):'—')+'</div>'+
       '<div class="drawer">'+
         '<div class="line"><span class="dot"></span><span><strong>Zrážky:</strong> '+(prob!=null?Math.round(prob)+' %':'—')+' | '+(prep!=null?fmt1(prep, NBSP_NARROW+'mm/h'):'—')+'</span></div>'+
         '<div class="line"><span class="dot"></span><span><strong>Vietor:</strong> '+(wind!=null?fmt1(wind, NBSP_NARROW+'km/h'):'—')+'</span></div>'+
