@@ -45,7 +45,7 @@
   #place{white-space:nowrap; overflow:hidden; text-overflow:ellipsis; text-align:left; margin:0}
 
   .row{display:grid; grid-template-columns:1fr; gap:18px; margin-top:6px}
-  .meta{display:grid; grid-template-columns:1fr; gap:10px; color:var(--muted); font-size:14px}
+  .meta{display:grid; grid-template-columns:1fr; gap:10px; color:#a8bed5; font-size:14px}
   .meta strong{color:#fff}
 
   .chipRow{display:flex; flex-direction:column; gap:10px; align-items:flex-start}
@@ -84,25 +84,24 @@
     padding:8px 0 12px;
     scroll-snap-type:x proximity
   }
-  .colset.dragging{cursor:grabbing; user-select:none}
+  .colset.dragging{user-select:none}
 
   .col{
     flex:0 0 calc((100% - (var(--cols) - 1)*var(--gap)) / var(--cols));
     background:var(--panel); border:1px solid var(--stroke); border-radius:12px;
-    padding:14px;
+    padding:12px;
     display:grid; grid-template-rows:auto auto auto auto auto;
     align-items:center; justify-items:center;
-    text-align:center; min-height:182px; position:relative; row-gap:12px;
+    text-align:center; min-height:156px; position:relative; row-gap:8px;
     min-width:0; overflow:visible;
     scroll-snap-align:start;
     cursor:pointer;
   }
-  .colset.dragging .col{ cursor:grabbing; }
 
-  /* Nadpis karty (tvoje CSS) */
+  /* Nadpis karty */
   .c-top{
     width:100%;
-    min-height:2.4em;
+    min-height:2.1em;
     display:flex; align-items:center; justify-content:center;
     padding-inline:8px;
   }
@@ -119,48 +118,51 @@
   .karta, .col{ min-width:100px; }
 
   .temps{display:grid; place-items:center; width:100%; min-width:0}
-  .temps .c-max{font-size:28px; font-weight:700; color:#ff6c6c; line-height:1}
-  .temps .c-min{font-size:18px; color:#ffbb7c; margin-top:4px; line-height:1}
+  .temps .c-max{font-size:26px; font-weight:700; color:#ff6c6c; line-height:1}
+  .temps .c-min{font-size:17px; color:#ffbb7c; margin-top:2px; line-height:1}
 
-  .c-ico{font-size:26px; line-height:1; display:flex; align-items:center; justify-content:center; margin:2px 0 4px}
+  .c-ico{font-size:24px; line-height:1; display:flex; align-items:center; justify-content:center; margin:2px 0 2px}
 
-  .metrics{display:flex; flex-direction:column; align-items:center; justify-content:center; gap:10px; width:100%}
-  .metric{display:flex; flex-direction:column; align-items:center; gap:8px; width:auto}
-  .metric .m-ico{line-height:1; font-size:18px}
-  .metric .m-txt{min-width:0; white-space:normal; text-align:center; font-size:13.5px; font-weight:500; color:#e9f3ff; letter-spacing:.02px; line-height:1.28; padding-inline:8px}
+  .metrics{display:flex; flex-direction:column; align-items:center; justify-content:center; gap:4px; width:100%}
+  .metric{display:flex; flex-direction:column; align-items:center; gap:4px; width:auto}
+  .metric .m-ico{line-height:1; font-size:16px}
+  .metric .m-txt{min-width:0; white-space:normal; text-align:center; font-size:13px; font-weight:500; color:#e9f3ff; letter-spacing:.02px; line-height:1.2; padding-inline:6px}
 
-  /* rozbaľovací detail v karte */
+  /* rozbaľovací detail – keď je ZATVORENÝ, nezaberá žiadne miesto */
   .drawer{
     width:100%;
     background:#0f1c2a;
     border:1px solid var(--stroke);
     border-radius:10px;
-    padding:10px 12px;
-    text-align:left;
     max-height:0;
     overflow:hidden;
-    opacity:.0;
-    transition:max-height .25s ease, opacity .25s ease, margin-top .25s ease;
+    opacity:0;
+    margin-top:0;
+    padding:0 12px;           /* ← žiadny vertikálny padding pri zatvorení */
+    border-width:0;           /* ← žiadny border pri zatvorení */
+    transition:max-height .25s ease, opacity .25s ease, margin-top .25s ease, padding .2s ease, border-width .2s ease;
   }
   .col.open .drawer{
     margin-top:6px;
     max-height:260px;
     opacity:1;
+    padding:10px 12px;        /* ← padding sa doplní až po otvorení */
+    border-width:1px;
   }
   .drawer .line{display:flex; align-items:center; gap:10px; margin:6px 0; font-size:14px}
   .drawer .dot{width:6px; height:6px; border-radius:50%; background:#3ad0e6}
 
   @media (max-width:640px){
-    .col{min-height:198px; row-gap:14px}
-    .c-top{min-height:2.2em}
-    .temps .c-max{font-size:30px}
-    .temps .c-min{font-size:20px}
-    .metric .m-txt{font-size:14px}
+    .col{min-height:168px; row-gap:10px}
+    .c-top{min-height:2.1em}
+    .temps .c-max{font-size:28px}
+    .temps .c-min{font-size:18px}
+    .metric .m-txt{font-size:13.5px}
   }
   @media (max-width:420px){ .temps .c-max{font-size:26px} .temps .c-min{font-size:17px} }
   @media (min-width:900px){
     #parts{--cols:4} #days{--cols:7} #min15{--cols:6}
-    .temps .c-max{font-size:32px} .temps .c-min{font-size:19px}
+    .temps .c-max{font-size:28px} .temps .c-min{font-size:18px}
   }
 
   .colset::-webkit-scrollbar{height:10px}
@@ -259,7 +261,7 @@
   <div id="err"></div>
 
   <script>
-    const APP_VERSION = '2025-08-17-final-accordion-v8';
+    const APP_VERSION = '2025-08-17-tight-cards-v2';
     const $ = s => document.querySelector(s);
     const NBSP_NARROW = '\u202F';
     const fmt0 = (v,u='') => (v==null || Number.isNaN(v)) ? '—' : (Math.round(v) + u);
@@ -281,7 +283,6 @@
 
     function wmoEmoji(code, night=false, ctx={}){
       const k = Number(code);
-      // Hmla = alternatíva (nechceme hmlové emoji)
       function fogAlt(){
         const t = Number.isFinite(ctx.temp) ? ctx.temp : null;
         const w = Number.isFinite(ctx.wind) ? ctx.wind : null;
@@ -315,8 +316,7 @@
           return (dt < sr || dt >= ss);
         }
       }catch(e){}
-      const h = dt.getHours();
-      return (h<6 || h>=21);
+      const h = dt.getHours(); return (h<6 || h>=21);
     }
 
     const pad = n => String(n).padStart(2,'0');
@@ -362,7 +362,6 @@
       return codes[codes.length-1] ?? 0;
     }
 
-    // 🔧 DOPLNENÉ: dominantný WMO kód v intervale (chýbalo – spôsobilo pád)
     function codesModeInRange(times, codes, start, end){
       if(!times || !codes) return 0;
       const freq={};
@@ -401,7 +400,6 @@
       return best;
     }
 
-    /* --------- Agregácie + odhady --------- */
     function sumInRange(times, arr, start, end){
       if(!times || !arr) return 0;
       let s=0;
@@ -471,7 +469,6 @@
     const LS_KEY='wx_prefs_v3';
 
     const toast=msg=>{ const el=$('#err'); if(!el) return; el.textContent=msg; el.style.display='block'; setTimeout(()=>{el.style.display='none'}, 4500) };
-    window.addEventListener('error', e=>toast(e.message||'Chyba'));
 
     try{
       const raw=localStorage.getItem(LS_KEY);
@@ -634,7 +631,6 @@
 
     function tLabel(html){ return '<div class="c-top"><span class="c-top__inner">'+html+'</span></div>'; }
 
-    /* ---- Drag + klik (PC aj mobil) ---- */
     function enableDragScroll(el){
       let isDown=false, startX=0, startScroll=0, lastX=0, lastT=0, vx=0, moved=false;
       const DRAG_THRESHOLD=6;
@@ -808,10 +804,10 @@
       const start=new Date((d.current && d.current.time) ? d.current.time : d.hourly.time[0]);
       const m=start.getMinutes(); const add=(15-(m%15))%15; if(add>0) start.setMinutes(m+add,0,0);
 
-      for(let k=0;k<96;k++){
+      for(let k=0;k<24*4;k++){
         const t=new Date(start.getTime()+k*15*60*1000);
         const tmp=valueAt15min(d.hourly.time, d.hourly.temperature_2m, t);
-        const prepRate=valueAt15min(d.hourly.time, d.hourly.precipitation, t); // mm/h
+        const prepRate=valueAt15min(d.hourly.time, d.hourly.precipitation, t);
         let prob=valueAt15min(d.hourly.time, d.hourly.precipitation_probability, t);
         if(prob==null && d.daily && d.daily.precipitation_probability_max) prob=d.daily.precipitation_probability_max[0] ?? null;
         const code=codeAt15min(d.hourly.time, d.hourly.weather_code, t);
@@ -830,7 +826,7 @@
           '</div>'+
           '<div class="drawer">'+
             '<div class="line"><span class="dot"></span><span><strong>Zrážky:</strong> '+(prob!=null?Math.round(prob)+' %':'—')+' | '+('0–'+fmt1(mmQuarter, NBSP_NARROW+'mm'))+' | '+durTxt+'</span></div>'+
-            '<div class="line"><span class="dot"></span><span><strong>Vietor:</strong> '+(wind!=null?fmt1(wind,NBSP_NARROW+'km/h'):'—')+'</span></div>'+
+            <div class="line"><span class="dot"></span><span><strong>Vietor:</strong> '+(wind!=null?fmt1(wind,NBSP_NARROW+'km/h'):'—')+'</span></div>'+
           '</div>';
         box.appendChild(el);
       }
