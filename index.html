@@ -23,7 +23,8 @@
   *{box-sizing:border-box}
   html,body{min-height:100%; margin:0; padding:0}
   body{
-    color:var(--txt); font-family:Poppins,system-ui,-apple-system,Segoe UI,Roboto,Arial;
+    color:var(--txt);
+    font-family:Poppins,system-ui,-apple-system,Segoe UI,Roboto,Arial;
     background:linear-gradient(180deg,var(--bg1),var(--bg0));
     overflow-x:hidden; overflow-y:auto; -webkit-text-size-adjust:100%; -webkit-tap-highlight-color:transparent; min-height:100dvh
   }
@@ -98,7 +99,7 @@
   }
   .colset.dragging .col{ cursor:grabbing; }
 
-  /* Nadpis karty – podľa tvojej požiadavky */
+  /* Nadpis karty (vyžiadané) */
   .c-top{
     width:100%;
     min-height:2.4em;
@@ -156,7 +157,6 @@
     .temps .c-min{font-size:20px}
     .metric .m-txt{font-size:14px}
   }
-
   @media (max-width:420px){ .temps .c-max{font-size:26px} .temps .c-min{font-size:17px} }
   @media (min-width:900px){
     #parts{--cols:4} #days{--cols:7} #min15{--cols:6}
@@ -259,7 +259,7 @@
   <div id="err"></div>
 
   <script>
-    const APP_VERSION = '2025-08-17-final-accordion-v4';
+    const APP_VERSION = '2025-08-17-final-accordion-v7';
     const $ = s => document.querySelector(s);
     const NBSP_NARROW = '\u202F';
     const fmt0 = (v,u='') => (v==null || Number.isNaN(v)) ? '—' : (Math.round(v) + u);
@@ -281,6 +281,7 @@
 
     function wmoEmoji(code, night=false, ctx={}){
       const k = Number(code);
+      // "Okrem hmly to tam nechcem" -> hmla = alternatíva (nie ikonka hmly)
       function fogAlt(){
         const t = Number.isFinite(ctx.temp) ? ctx.temp : null;
         const w = Number.isFinite(ctx.wind) ? ctx.wind : null;
@@ -291,11 +292,11 @@
         if(w!=null && w>=20) return '💨';
         return night ? '🌙' : '☁️';
       }
-      if ([45,48].includes(k)) return fogAlt();                   // hmla = alternatíva
+      if ([45,48].includes(k)) return fogAlt();
       if ([0,1].includes(k)) return night ? '🌙' : '☀️';
       if (k===2) return night ? '🌙' : '⛅';
       if (k===3) return '☁️';
-      if ([51,53,55].includes(k)) return '🌦️';                   // mrholenie ~ prehánky
+      if ([51,53,55].includes(k)) return '🌦️'; // mrholenie -> prehánky štýl
       if ([61,63,65,80,81,82].includes(k)) return ([80,81,82].includes(k) ? '🌦️' : '🌧️');
       if ([71,73,75,77,85,86].includes(k)) return '❄️';
       if ([95,96,99].includes(k)) return '⛈️';
@@ -319,7 +320,7 @@
     }
 
     const pad = n => String(n).padStart(2,'0');
-    const localHourKey = date => {
+    const localHourKey = (date)=>{
       const d = typeof date==='string' ? new Date(date) : new Date(date);
       return d.getFullYear() + '-' + pad(d.getMonth()+1) + '-' + pad(d.getDate()) + 'T' + pad(d.getHours());
     };
@@ -353,7 +354,7 @@
       const ts=timesISO.map(t=>new Date(t));
       for(let i=0;i<ts.length-1;i++){
         const t0=ts[i], t1=ts[i+1];
-        if (date>=t0 && date<=t1){
+        if(date>=t0 && date<=t1){
           const mid=(t0.getTime()+t1.getTime())/2;
           return (date.getTime() < mid) ? (codes[i]??0) : (codes[i+1]??0);
         }
@@ -384,6 +385,65 @@
       return best;
     }
 
+    /* --------- Agregácie + odhady --------- */
+    function sumInRange(times, arr, start, end){
+      if(!times || !arr) return 0;
+      let s=0;
+      for(let i=0;i<times.length;i++){
+        const t=new Date(times[i]); if(t>=start && t<end){ const v=arr[i]; if(Number.isFinite(v)) s+=v; }
+      }
+      return s;
+    }
+    function avgInRange(times, arr, start, end){
+      if(!times || !arr) return null;
+      let s=0,c=0;
+      for(let i=0;i<times.length;i++){
+        const t=new Date(times[i]); if(t>=start && t<end){ const v=arr[i]; if(Number.isFinite(v)){ s+=v; c++; } }
+      }
+      return c? (s/c) : null;
+    }
+    function wetHoursInRange(times, precip, start, end, thr=0.1){
+      if(!times || !precip) return 0;
+      let h=0;
+      for(let i=0;i<times.length;i++){
+        const t=new Date(times[i]); if(t>=start && t<end){ const v=precip[i]; if(Number.isFinite(v) && v>=thr) h++; }
+      }
+      return h;
+    }
+    function probMaxInRange(times, prob, start, end){
+      if(!times || !prob) return null;
+      let m=null;
+      for(let i=0;i<times.length;i++){
+        const t=new Date(times[i]); if(t>=start && t<end){ const v=prob[i]; if(Number.isFinite(v)) m = (m==null? v : Math.max(m,v)); }
+      }
+      return m;
+    }
+    function ratioRainyHours(times, precip, codes, start, end){
+      if(!times) return null;
+      let rainy=0, total=0;
+      for(let i=0;i<times.length;i++){
+        const t=new Date(times[i]);
+        if(t>=start && t<end){
+          total++;
+          const p = precip && Number.isFinite(precip[i]) ? precip[i] : 0;
+          const c = codes ? (codes[i]??0) : 0;
+          if(p>=0.1 || RAIN_CODES.has(c)) rainy++;
+        }
+      }
+      return total? Math.round(100*rainy/total) : null;
+    }
+    function mmRange(sum, prob){
+      // heuristika: min = 0 ak pravd. < 50 %, inak 50 % zo sumy
+      const min = (prob!=null && prob>=50) ? (sum*0.5) : 0;
+      const max = sum;
+      return (fmt1(min) + NBSP_NARROW + '–' + fmt1(max, NBSP_NARROW+'mm'));
+    }
+    function durRange(hoursWet){
+      const min = (hoursWet>0) ? Math.max(0, hoursWet-1) : 0;
+      const max = hoursWet;
+      return min+'–'+max+' h';
+    }
+
     const aqiCat = v=>{
       if(v==null||Number.isNaN(v)) return '—';
       if(v<=50) return 'dobrá'; if(v<=100) return 'mierne zhoršená';
@@ -395,7 +455,10 @@
     let hourlyChart=null;
     const LS_KEY='wx_prefs_v3';
 
-    const toast=msg=>{ const el=$('#err'); if(!el) return; el.textContent=msg; el.style.display='block'; setTimeout(()=>{el.style.display='none'}, 5000) };
+    const toast=msg=>{ const el=$('#err'); if(!el) return; el.textContent=msg; el.style.display='block'; setTimeout(()=>{el.style.display='none'}, 4500) };
+
+    // ukáž chybu JS (ak by niečo spadlo)
+    window.addEventListener('error', e=>toast(e.message||'Chyba'));
 
     try{
       const raw=localStorage.getItem(LS_KEY);
@@ -465,15 +528,13 @@
     /* ------- FETCH s FALLBACKOM ------- */
     async function fetchWeather(){
       const tz=Intl.DateTimeFormat().resolvedOptions().timeZone;
-
       const baseParams={
         latitude:state.lat, longitude:state.lon, timezone:tz,
         current:'temperature_2m,apparent_temperature,relative_humidity_2m,pressure_msl,wind_speed_10m,weather_code,uv_index',
         daily:'weather_code,temperature_2m_max,temperature_2m_min,precipitation_probability_max,precipitation_sum,uv_index_max,wind_speed_10m_max,wind_gusts_10m_max,sunrise,sunset',
         forecast_days:'7'
       };
-
-      const richHourly='temperature_2m,precipitation,precipitation_probability,weather_code,wind_speed_10m,wind_gusts_10m,relative_humidity_2m,pressure_msl,dew_point_2m';
+      const richHourly='temperature_2m,precipitation,precipitation_probability,weather_code,wind_speed_10m,wind_gusts_10m,relative_humidity_2m,pressure_msl';
       const safeHourly='temperature_2m,precipitation,weather_code,wind_speed_10m';
 
       async function tryFetch(hourlyList){
@@ -565,49 +626,6 @@
 
     function tLabel(html){ return '<div class="c-top"><span class="c-top__inner">'+html+'</span></div>'; }
 
-    /* ---- Agregácie ---- */
-    function sumInRange(times, arr, start, end){
-      if(!times || !arr) return 0;
-      let s=0;
-      for(let i=0;i<times.length;i++){
-        const t=new Date(times[i]); if(t>=start && t<end){ const v=arr[i]; if(Number.isFinite(v)) s+=v; }
-      }
-      return s;
-    }
-    function avgInRange(times, arr, start, end){
-      if(!times || !arr) return null;
-      let s=0,c=0;
-      for(let i=0;i<times.length;i++){
-        const t=new Date(times[i]); if(t>=start && t<end){ const v=arr[i]; if(Number.isFinite(v)){ s+=v; c++; } }
-      }
-      return c? (s/c) : null;
-    }
-    function wetHoursInRange(times, precip, start, end, thr=0.1){
-      if(!times || !precip) return 0;
-      let h=0;
-      for(let i=0;i<times.length;i++){
-        const t=new Date(times[i]); if(t>=start && t<end){ const v=precip[i]; if(Number.isFinite(v) && v>=thr) h++; }
-      }
-      return h;
-    }
-    function probMaxInRange(times, prob, start, end){
-      if(!times || !prob) return null;
-      let m=null;
-      for(let i=0;i<times.length;i++){
-        const t=new Date(times[i]); if(t>=start && t<end){ const v=prob[i]; if(Number.isFinite(v)) m = (m==null? v : Math.max(m,v)); }
-      }
-      return m;
-    }
-    function codesModeInRange(times, codes, start, end){
-      const freq={}; if(!times || !codes) return 0;
-      for(let i=0;i<times.length;i++){
-        const t=new Date(times[i]); if(t>=start && t<end){ const c=(codes[i]??0); freq[c]=(freq[c]||0)+1; }
-      }
-      let best=0, cnt=-1;
-      Object.keys(freq).forEach(k=>{ const v=freq[k]; if(v>cnt){cnt=v; best=Number(k)} });
-      return best;
-    }
-
     /* ---- Drag + klik (PC aj mobil) ---- */
     function enableDragScroll(el){
       let isDown=false, startX=0, startScroll=0, lastX=0, lastT=0, vx=0, moved=false;
@@ -620,6 +638,7 @@
         lastX=e.clientX; lastT=performance.now(); vx=0;
         el.setPointerCapture(e.pointerId);
         if(e.pointerType!=='mouse') e.preventDefault();
+        el.classList.remove('dragging');
       });
 
       el.addEventListener('pointermove', e=>{
@@ -649,7 +668,7 @@
         try{ el.releasePointerCapture(e.pointerId) }catch(_){}
         if(moved){ momentum(vx); }
         el.dataset.justDragged = moved ? '1' : '0';
-        setTimeout(()=>{ el.dataset.justDragged='0'; }, 50);
+        setTimeout(()=>{ el.dataset.justDragged='0'; }, 60);
       });
 
       el.addEventListener('pointercancel', ()=>{ isDown=false; el.classList.remove('dragging') });
@@ -660,7 +679,6 @@
       const isOpen = card.classList.toggle('open');
       card.setAttribute('aria-expanded', isOpen ? 'true' : 'false');
     }
-
     function attachAccordion(container){
       container.addEventListener('click', (e)=>{
         if(container.dataset.justDragged === '1') return;
@@ -679,7 +697,7 @@
 
     /* ------- DNEŠNÉ ČASTI ------- */
     function renderParts(){
-      const wrap=$('#parts'); wrap.innerHTML='';
+      const wrap=$('#parts'); if(!wrap) return; wrap.innerHTML='';
       const d=state.last || {}, h=d.hourly||{}, dd=d.daily||{};
       if(!(h.time && h.time.length)) { wrap.innerHTML='<div style="opacity:.8;color:#bcd1e5;padding:8px 10px;">Bez dát</div>'; return; }
 
@@ -704,11 +722,8 @@
         const prcpSum=sumInRange(h.time, h.precipitation, start, end);
         const wetH=wetHoursInRange(h.time, h.precipitation, start, end);
         let prob=probMaxInRange(h.time, h.precipitation_probability, start, end);
+        if(prob==null) prob = ratioRainyHours(h.time, h.precipitation, h.weather_code, start, end);
         if(prob==null && dd.precipitation_probability_max && dd.precipitation_probability_max[0]!=null) prob=dd.precipitation_probability_max[0];
-
-        // mm ako rozsah 0–X (bez komplikovaných odhadov)
-        const mmRange = '0–'+fmt1(prcpSum, NBSP_NARROW+'mm');
-        const durTxt = wetH?('0–'+wetH+' h'):'0 h';
 
         const code=codesModeInRange(h.time, h.weather_code, start, end);
 
@@ -721,7 +736,7 @@
             '<div class="metric"><span class="m-ico">💧</span><span class="m-txt">'+(prob!=null? (Math.round(prob)+' %'): '—')+'</span></div>'+
           '</div>'+
           '<div class="drawer">'+
-            '<div class="line"><span class="dot"></span><span><strong>Zrážky:</strong> '+(prob!=null?Math.round(prob)+' %':'—')+' | '+mmRange+' | '+durTxt+'</span></div>'+
+            '<div class="line"><span class="dot"></span><span><strong>Zrážky:</strong> '+(prob!=null?Math.round(prob)+' %':'—')+' | '+mmRange(prcpSum, prob)+' | '+durRange(wetH)+'</span></div>'+
             '<div class="line"><span class="dot"></span><span><strong>Vietor:</strong> '+(wind!=null?fmt1(wind,NBSP_NARROW+'km/h'):'—')+'</span></div>'+
           '</div>';
         wrap.appendChild(el);
@@ -733,10 +748,12 @@
 
     /* ------- 7 dní ------- */
     function renderDays(data){
-      const box=$('#days'); box.innerHTML='';
+      const box=$('#days'); if(!box) return; box.innerHTML='';
       const d=data||state.last||{}; const days=(d.daily||{}); const times=days.time||[];
       const h=state.last.hourly||{};
       const n=Math.min(7,times.length);
+
+      if(!n){ box.innerHTML='<div style="opacity:.8;color:#bcd1e5;padding:8px 10px;">Bez dát</div>'; return; }
 
       for(let i=0;i<n;i++){
         const start=new Date(times[i]+'T00:00:00');
@@ -745,17 +762,17 @@
         const max=days.temperature_2m_max?days.temperature_2m_max[i]:null;
         const min=days.temperature_2m_min?days.temperature_2m_min[i]:null;
         const code=days.weather_code?days.weather_code[i]:null;
-        const prob=days.precipitation_probability_max?days.precipitation_probability_max[i]:null;
-        const sumDaily=days.precipitation_sum?days.precipitation_sum[i]:null;
 
+        let prob=days.precipitation_probability_max?days.precipitation_probability_max[i]:null;
+        if(prob==null) prob = ratioRainyHours(h.time||[], h.precipitation||[], h.weather_code||[], start, end);
+
+        const sumDaily=(days.precipitation_sum && days.precipitation_sum[i]!=null) ? days.precipitation_sum[i] : null;
         const sumHourly=sumInRange(h.time||[], h.precipitation||[], start, end);
+        const totalMM = (sumDaily!=null ? sumDaily : sumHourly);
         const wetH=wetHoursInRange(h.time||[], h.precipitation||[], start, end);
 
         const top = start.toLocaleDateString('sk-SK',{weekday:'short'})+' '+start.toLocaleDateString('sk-SK',{day:'2-digit',month:'2-digit'});
         const dayIco = wmoEmoji(code, false, {prob, temp:(max!=null&&min!=null)?(max+min)/2:null});
-
-        const mmRange = '0–'+fmt1((sumDaily!=null?sumDaily:sumHourly), NBSP_NARROW+'mm');
-        const durTxt = wetH?('0–'+wetH+' h'):'0 h';
 
         const el=document.createElement('div'); el.className='col'; el.tabIndex=0; el.setAttribute('role','button'); el.setAttribute('aria-expanded','false');
         el.innerHTML=
@@ -764,7 +781,7 @@
           '<div class="c-ico">'+dayIco+'</div>'+
           '<div class="metrics"><div class="metric"><span class="m-ico">💧</span><span class="m-txt">'+(prob!=null?prob+' %':'—')+'</span></div></div>'+
           '<div class="drawer">'+
-            '<div class="line"><span class="dot"></span><span><strong>Zrážky:</strong> '+(prob!=null?prob+' %':'—')+' | '+mmRange+' | '+durTxt+'</span></div>'+
+            '<div class="line"><span class="dot"></span><span><strong>Zrážky:</strong> '+(prob!=null?prob+' %':'—')+' | '+mmRange(totalMM||0, prob)+' | '+durRange(wetH)+'</span></div>'+
             (days.wind_speed_10m_max && days.wind_speed_10m_max[i]!=null ? '<div class="line"><span class="dot"></span><span><strong>Vietor:</strong> do '+fmt1(days.wind_speed_10m_max[i],NBSP_NARROW+'km/h')+'</span></div>' : '')+
             (days.wind_gusts_10m_max && days.wind_gusts_10m_max[i]!=null ? '<div class="line"><span class="dot"></span><span><strong>Nárazy:</strong> do '+fmt1(days.wind_gusts_10m_max[i],NBSP_NARROW+'km/h')+'</span></div>' : '')+
           '</div>';
@@ -777,7 +794,7 @@
 
     /* ------- 15-minútové karty ------- */
     function renderMin15(){
-      const d=state.last || {}; const box=$('#min15'); box.innerHTML='';
+      const d=state.last || {}; const box=$('#min15'); if(!box) return; box.innerHTML='';
       if(!(d.hourly && d.hourly.time && d.hourly.time.length)){ box.innerHTML='<div style="opacity:.8;color:#bcd1e5;padding:8px 10px;">Bez dát</div>'; return; }
 
       const start=new Date((d.current && d.current.time) ? d.current.time : d.hourly.time[0]);
@@ -793,7 +810,6 @@
         const wind=valueAt15min(d.hourly.time, d.hourly.wind_speed_10m, t);
 
         const mmQuarter = Number.isFinite(prepRate) ? (prepRate*0.25) : 0;
-        const mmRange = '0–'+fmt1(mmQuarter, NBSP_NARROW+'mm');
         const durTxt = (mmQuarter>0) ? '0–0.25 h' : '0 h';
 
         const el=document.createElement('div'); el.className='col'; el.tabIndex=0; el.setAttribute('role','button'); el.setAttribute('aria-expanded','false');
@@ -805,9 +821,9 @@
             '<div class="metric"><span class="m-ico">💧</span><span class="m-txt">'+(prob!=null?Math.round(prob)+' %':'—')+'</span></div>'+
           '</div>'+
           '<div class="drawer">'+
-            '<div class="line"><span class="dot"></span><span><strong>Zrážky:</strong> '+(prob!=null?Math.round(prob)+' %':'—')+' | '+mmRange+' | '+durTxt+'</span></div>'+
+            '<div class="line"><span class="dot"></span><span><strong>Zrážky:</strong> '+(prob!=null?Math.round(prob)+' %':'—')+' | '+('0–'+fmt1(mmQuarter, NBSP_NARROW+'mm'))+' | '+durTxt+'</span></div>'+
             '<div class="line"><span class="dot"></span><span><strong>Vietor:</strong> '+(wind!=null?fmt1(wind,NBSP_NARROW+'km/h'):'—')+'</span></div>'+
-          </div>';
+          '</div>';
         box.appendChild(el);
       }
 
@@ -862,12 +878,12 @@
 
     document.getElementById('year').textContent=new Date().getFullYear();
 
-    function initDragBars(){ ['parts','days','min15'].forEach(id=>{ const el=document.getElementById(id); if(el){ enableDragScroll(el); attachAccordion(el); } }) }
+    function initSections(){ ['parts','days','min15'].forEach(id=>{ const el=document.getElementById(id); if(el){ enableDragScroll(el); attachAccordion(el); } }) }
 
     initGeolocation();
     window.addEventListener('resize', ()=>{ if(state.last){ drawHourly(); renderMin15() }});
     setTimeout(()=>{ if(!state.last) fetchWeather().catch(()=>toast('Načítanie počasia zlyhalo')) },1200);
-    initDragBars();
+    initSections();
 
     if(!window.__wx_auto_refresh){
       window.__wx_auto_refresh=setInterval(()=>{
