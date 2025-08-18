@@ -1,767 +1,723 @@
 <!DOCTYPE html>
 <html lang="sk">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Počasie - Open Meteo</title>
-    <script src="https://cdn.tailwindcss.com"></script>
-    <style>
-        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap');
-        
-        body { 
-            font-family: 'Inter', sans-serif; 
-            -webkit-font-smoothing: antialiased;
-            -moz-osx-font-smoothing: grayscale;
-        }
-        
-        .weather-gradient {
-            background: linear-gradient(135deg, #667eea 0%, #764ba2 50%, #f093fb 100%);
-            animation: gradientShift 10s ease infinite;
-        }
-        
-        @keyframes gradientShift {
-            0%, 100% { background-position: 0% 50%; }
-            50% { background-position: 100% 50%; }
-        }
-        
-        .glass-card {
-            background: rgba(255, 255, 255, 0.15);
-            backdrop-filter: blur(20px);
-            border: 1px solid rgba(255, 255, 255, 0.2);
-            box-shadow: 0 25px 45px rgba(0, 0, 0, 0.1);
-        }
-        
-        .glass-card-dark {
-            background: rgba(255, 255, 255, 0.1);
-            backdrop-filter: blur(15px);
-            border: 1px solid rgba(255, 255, 255, 0.15);
-        }
-        
-        .weather-icon {
-            font-size: 4rem;
-            filter: drop-shadow(0 4px 8px rgba(0, 0, 0, 0.2));
-            animation: float 3s ease-in-out infinite;
-        }
-        
-        @keyframes float {
-            0%, 100% { transform: translateY(0px); }
-            50% { transform: translateY(-10px); }
-        }
-        
-        .fade-in {
-            animation: fadeIn 0.6s ease-out;
-        }
-        
-        @keyframes fadeIn {
-            from { opacity: 0; transform: translateY(20px); }
-            to { opacity: 1; transform: translateY(0); }
-        }
-        
-        .slide-up {
-            animation: slideUp 0.5s ease-out;
-        }
-        
-        @keyframes slideUp {
-            from { opacity: 0; transform: translateY(30px); }
-            to { opacity: 1; transform: translateY(0); }
-        }
-        
-        .pulse-glow {
-            animation: pulseGlow 2s ease-in-out infinite;
-        }
-        
-        @keyframes pulseGlow {
-            0%, 100% { box-shadow: 0 0 20px rgba(255, 255, 255, 0.3); }
-            50% { box-shadow: 0 0 30px rgba(255, 255, 255, 0.5); }
-        }
-        
-        .search-input {
-            transition: all 0.3s ease;
-        }
-        
-        .search-input:focus {
-            transform: scale(1.02);
-            box-shadow: 0 10px 25px rgba(0, 0, 0, 0.2);
-        }
-        
-        .forecast-card {
-            transition: all 0.3s ease;
-        }
-        
-        .forecast-card:hover {
-            transform: translateY(-5px);
-            box-shadow: 0 15px 30px rgba(0, 0, 0, 0.2);
-        }
-        
-        /* Mobile optimizations */
-        @media (max-width: 640px) {
-            .weather-icon {
-                font-size: 3rem;
-            }
-            
-            .mobile-grid {
-                grid-template-columns: repeat(2, 1fr);
-                gap: 0.75rem;
-            }
-            
-            .mobile-forecast {
-                grid-template-columns: repeat(3, 1fr);
-                gap: 0.5rem;
-            }
-            
-            .mobile-text-sm {
-                font-size: 0.875rem;
-            }
-            
-            .mobile-padding {
-                padding: 1rem;
-            }
-        }
-        
-        /* Touch-friendly buttons */
-        .touch-button {
-            min-height: 44px;
-            min-width: 44px;
-        }
-        
-        /* Smooth scrolling */
-        html {
-            scroll-behavior: smooth;
-        }
-        
-        /* Enhanced scrollbar styling */
-        .scrollbar-hide {
-            -ms-overflow-style: none;
-            scrollbar-width: none;
-        }
-        
-        .scrollbar-hide::-webkit-scrollbar {
-            display: none;
-        }
-        
-        .smooth-scroll {
-            scroll-behavior: smooth;
-            -webkit-overflow-scrolling: touch;
-        }
-        
-        /* Hourly forecast cards */
-        .hourly-card {
-            background: rgba(255, 255, 255, 0.12);
-            backdrop-filter: blur(10px);
-            border: 1px solid rgba(255, 255, 255, 0.18);
-            transition: all 0.3s ease;
-            min-width: 80px;
-        }
-        
-        .hourly-card:hover {
-            background: rgba(255, 255, 255, 0.18);
-            transform: translateY(-2px);
-        }
-        
-        .hourly-card.current-hour {
-            background: rgba(255, 255, 255, 0.25);
-            border: 2px solid rgba(255, 255, 255, 0.4);
-            box-shadow: 0 0 20px rgba(255, 255, 255, 0.3);
-        }
-        
-        /* Loading animation */
-        .loading-spinner {
-            border: 3px solid rgba(255, 255, 255, 0.3);
-            border-radius: 50%;
-            border-top: 3px solid white;
-            width: 40px;
-            height: 40px;
-            animation: spin 1s linear infinite;
-        }
-        
-        @keyframes spin {
-            0% { transform: rotate(0deg); }
-            100% { transform: rotate(360deg); }
-        }
-    </style>
+  <meta charset="UTF-8" />
+  <meta
+    name="viewport"
+    content="width=device-width, initial-scale=1.0, viewport-fit=cover"
+  />
+  <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate" />
+  <meta http-equiv="Pragma" content="no-cache" />
+  <meta http-equiv="Expires" content="0" />
+  <title>Počasie - Open Meteo</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <style>
+    @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap');
+
+    :root {
+      --glass: rgba(255, 255, 255, 0.15);
+      --glass-dark: rgba(255, 255, 255, 0.1);
+    }
+
+    body {
+      font-family: 'Inter', sans-serif;
+      -webkit-font-smoothing: antialiased;
+      -moz-osx-font-smoothing: grayscale;
+    }
+
+    .weather-gradient {
+      background: linear-gradient(135deg, #667eea 0%, #764ba2 50%, #f093fb 100%);
+      animation: gradientShift 12s ease-in-out infinite;
+      background-size: 200% 200%;
+    }
+
+    @keyframes gradientShift {
+      0%, 100% { background-position: 0% 50%; }
+      50% { background-position: 100% 50%; }
+    }
+
+    .glass-card {
+      background: var(--glass);
+      backdrop-filter: blur(20px);
+      border: 1px solid rgba(255, 255, 255, 0.25);
+      box-shadow: 0 25px 45px rgba(0, 0, 0, 0.12);
+    }
+    .glass-card-dark {
+      background: var(--glass-dark);
+      backdrop-filter: blur(14px);
+      border: 1px solid rgba(255, 255, 255, 0.18);
+    }
+
+    .weather-icon {
+      font-size: 4rem;
+      filter: drop-shadow(0 4px 8px rgba(0, 0, 0, 0.25));
+      animation: float 3s ease-in-out infinite;
+    }
+    @keyframes float {
+      0%, 100% { transform: translateY(0); }
+      50% { transform: translateY(-10px); }
+    }
+
+    .fade-in { animation: fadeIn 0.6s ease-out; }
+    @keyframes fadeIn {
+      from { opacity: 0; transform: translateY(16px); }
+      to { opacity: 1; transform: translateY(0); }
+    }
+    .slide-up { animation: slideUp 0.5s ease-out; }
+    @keyframes slideUp {
+      from { opacity: 0; transform: translateY(24px); }
+      to { opacity: 1; transform: translateY(0); }
+    }
+
+    .pulse-glow { animation: pulseGlow 2.2s ease-in-out infinite; }
+    @keyframes pulseGlow {
+      0%, 100% { box-shadow: 0 0 20px rgba(255,255,255,.28); }
+      50% { box-shadow: 0 0 34px rgba(255,255,255,.45); }
+    }
+
+    .search-input { transition: all .25s ease; }
+    .search-input:focus {
+      transform: translateY(-1px);
+      box-shadow: 0 12px 28px rgba(0,0,0,.22);
+    }
+
+    .forecast-card { transition: transform .25s ease, box-shadow .25s ease; }
+    .forecast-card:hover {
+      transform: translateY(-6px);
+      box-shadow: 0 18px 36px rgba(0,0,0,.22);
+    }
+
+    .hourly-card {
+      background: rgba(255,255,255,.12);
+      backdrop-filter: blur(10px);
+      border: 1px solid rgba(255,255,255,.2);
+      transition: all .25s ease;
+      min-width: 92px;
+    }
+    .hourly-card:hover { background: rgba(255,255,255,.18); transform: translateY(-2px); }
+    .hourly-card.current-hour {
+      background: rgba(255,255,255,.25);
+      border: 2px solid rgba(255,255,255,.45);
+      box-shadow: 0 0 20px rgba(255,255,255,.3);
+    }
+
+    .loading-spinner {
+      border: 3px solid rgba(255,255,255,.3);
+      border-radius: 50%;
+      border-top: 3px solid white;
+      width: 40px; height: 40px;
+      animation: spin 1s linear infinite;
+    }
+    @keyframes spin { to { transform: rotate(360deg); } }
+
+    /* Mobile optimizations */
+    @media (max-width: 640px) {
+      .weather-icon { font-size: 3.25rem; }
+      .mobile-grid { display: grid; grid-template-columns: repeat(2, 1fr); gap: .75rem; }
+      .mobile-forecast { display: grid; grid-template-columns: repeat(3, 1fr); gap: .5rem; }
+      .mobile-padding { padding: 1rem; }
+      .mobile-text-sm { font-size: .9rem; }
+    }
+
+    /* Hide scrollbar (preserve scroll) */
+    .scrollbar-hide { -ms-overflow-style: none; scrollbar-width: none; }
+    .scrollbar-hide::-webkit-scrollbar { display: none; }
+
+    /* Suggestions dropdown */
+    .suggestions {
+      position: absolute; inset-inline: 0; top: 100%;
+      z-index: 20;
+      max-height: 260px; overflow: auto;
+    }
+
+    /* Center everything in cards on small screens */
+    .center-all * { text-align: center; justify-content: center; align-items: center; }
+  </style>
 </head>
-<body class="min-h-screen weather-gradient bg-size-200">
-    <div class="container mx-auto px-4 py-6 sm:py-8">
-        <!-- Header -->
-        <div class="text-center mb-6 sm:mb-8 fade-in">
-            <h1 class="text-3xl sm:text-4xl md:text-6xl font-bold text-white mb-2 sm:mb-4">
-                🌤️ Počasie
-            </h1>
-            <p class="text-lg sm:text-xl text-white/90 font-medium">
-                Presné údaje z Open Meteo
-            </p>
+<body class="min-h-screen weather-gradient">
+  <div class="container mx-auto px-4 py-6 sm:py-8">
+    <!-- Header -->
+    <header class="text-center mb-6 sm:mb-8 fade-in">
+      <h1 class="text-3xl sm:text-4xl md:text-6xl font-bold text-white mb-2 sm:mb-4">🌤️ Počasie</h1>
+      <p class="text-lg sm:text-xl text-white/90 font-medium">Presné údaje z Open-Meteo</p>
+    </header>
+
+    <!-- Search -->
+    <section class="max-w-2xl mx-auto mb-6 sm:mb-8 slide-up">
+      <div class="relative mb-4">
+        <input
+          type="text"
+          id="cityInput"
+          placeholder="Zadaj názov mesta..."
+          autocomplete="off"
+          aria-label="Vyhľadať mesto"
+          class="search-input w-full px-4 py-3 sm:py-4 rounded-2xl glass-card text-white placeholder-white/80 focus:outline-none focus:ring-2 focus:ring-white/50 text-base sm:text-lg font-medium"
+        />
+        <button
+          id="searchBtn"
+          class="touch-button absolute right-2 top-1/2 -translate-y-1/2 px-4 py-2 bg-white/30 hover:bg-white/40 rounded-xl text-white transition-all duration-300 font-medium"
+          aria-label="Hľadať"
+        >🔍</button>
+
+        <!-- Suggestions -->
+        <div id="suggestions" class="suggestions hidden glass-card rounded-xl mt-2 text-white">
+          <!-- populated dynamically -->
         </div>
+      </div>
 
-        <!-- Search Section -->
-        <div class="max-w-2xl mx-auto mb-6 sm:mb-8 slide-up">
-            <div class="relative mb-4">
-                <input 
-                    type="text" 
-                    id="cityInput" 
-                    placeholder="Zadaj názov mesta..."
-                    class="search-input w-full px-4 py-3 sm:py-4 rounded-2xl glass-card text-white placeholder-white/80 focus:outline-none focus:ring-2 focus:ring-white/50 text-base sm:text-lg font-medium"
-                >
-                <button 
-                    onclick="searchWeather()" 
-                    class="touch-button absolute right-2 top-1/2 transform -translate-y-1/2 px-4 py-2 bg-white/30 hover:bg-white/40 rounded-xl text-white transition-all duration-300 font-medium"
-                >
-                    🔍
-                </button>
-            </div>
-            
-            <!-- Quick Actions -->
-            <div class="flex flex-wrap justify-center gap-2 sm:gap-3 mb-4">
-                <button onclick="getCurrentLocation()" class="glass-card-dark rounded-xl px-3 py-2 text-white text-sm font-medium hover:bg-white/20 transition-all">
-                    📍 Moja poloha
-                </button>
-                <button onclick="toggleFavorites()" class="glass-card-dark rounded-xl px-3 py-2 text-white text-sm font-medium hover:bg-white/20 transition-all">
-                    ⭐ Oblúbené
-                </button>
-                <button onclick="toggleUnits()" class="glass-card-dark rounded-xl px-3 py-2 text-white text-sm font-medium hover:bg-white/20 transition-all" id="unitsToggle">
-                    °C / °F
-                </button>
-            </div>
+      <!-- Quick actions -->
+      <div class="flex flex-wrap justify-center gap-2 sm:gap-3 mb-4">
+        <button id="locBtn" class="glass-card-dark rounded-xl px-3 py-2 text-white text-sm font-medium hover:bg-white/20 transition-all">
+          📍 Moja poloha
+        </button>
+        <button id="favToggleBtn" class="glass-card-dark rounded-xl px-3 py-2 text-white text-sm font-medium hover:bg-white/20 transition-all">
+          ⭐ Oblúbené
+        </button>
+        <button id="unitsToggle" class="glass-card-dark rounded-xl px-3 py-2 text-white text-sm font-medium hover:bg-white/20 transition-all">
+          °C / °F
+        </button>
+      </div>
 
-            <!-- Favorites Panel -->
-            <div id="favoritesPanel" class="hidden glass-card rounded-2xl p-4 mb-4">
-                <div class="flex justify-between items-center mb-3">
-                    <h4 class="text-white font-semibold">Oblúbené mestá</h4>
-                    <button onclick="addToFavorites()" class="text-white/80 hover:text-white text-sm">+ Pridať aktuálne</button>
-                </div>
-                <div id="favoritesList" class="space-y-2">
-                    <!-- Favorites will be populated here -->
-                </div>
-            </div>
+      <!-- Favorites -->
+      <div id="favoritesPanel" class="hidden glass-card rounded-2xl p-4 mb-2">
+        <div class="flex justify-between items-center mb-3">
+          <h4 class="text-white font-semibold">Oblúbené mestá</h4>
+          <button id="favAddBtn" class="text-white/80 hover:text-white text-sm">+ Pridať aktuálne</button>
         </div>
+        <div id="favoritesList" class="space-y-2"></div>
+      </div>
+    </section>
 
-        <!-- Current Weather Card -->
-        <div id="currentWeather" class="glass-card rounded-3xl mobile-padding sm:p-8 mb-6 sm:mb-8 text-white max-w-4xl mx-auto fade-in pulse-glow">
-            <div class="text-center mb-6">
-                <h2 class="text-xl sm:text-2xl font-bold mb-3 sm:mb-4" id="cityName">Bratislava</h2>
-                <div class="weather-icon mb-4" id="weatherIcon">☀️</div>
-                <div class="text-4xl sm:text-5xl md:text-6xl font-bold mb-2 sm:mb-3" id="temperature">22°C</div>
-                <div class="text-lg sm:text-xl mb-4 sm:mb-6 font-medium opacity-90" id="description">Slnečno</div>
-            </div>
-            
-            <!-- Main Weather Stats -->
-            <div class="grid mobile-grid sm:grid-cols-2 md:grid-cols-4 gap-3 sm:gap-4 mb-6">
-                <div class="glass-card-dark rounded-xl p-3 sm:p-4 text-center">
-                    <div class="text-xs sm:text-sm opacity-80 mb-1">Pocitová</div>
-                    <div class="text-lg sm:text-xl font-bold" id="feelsLike">24°C</div>
-                </div>
-                <div class="glass-card-dark rounded-xl p-3 sm:p-4 text-center">
-                    <div class="text-xs sm:text-sm opacity-80 mb-1">Vlhkosť</div>
-                    <div class="text-lg sm:text-xl font-bold" id="humidity">65%</div>
-                </div>
-                <div class="glass-card-dark rounded-xl p-3 sm:p-4 text-center">
-                    <div class="text-xs sm:text-sm opacity-80 mb-1">Vietor</div>
-                    <div class="text-lg sm:text-xl font-bold" id="windSpeed">12 km/h</div>
-                </div>
-                <div class="glass-card-dark rounded-xl p-3 sm:p-4 text-center">
-                    <div class="text-xs sm:text-sm opacity-80 mb-1">Tlak</div>
-                    <div class="text-lg sm:text-xl font-bold" id="pressure">1013 hPa</div>
-                </div>
-            </div>
+    <!-- Current Weather -->
+    <section id="currentWeather" class="glass-card rounded-3xl mobile-padding sm:p-8 mb-6 sm:mb-8 text-white max-w-4xl mx-auto fade-in pulse-glow center-all">
+      <div class="text-center mb-6">
+        <h2 class="text-xl sm:text-2xl font-bold mb-3 sm:mb-4" id="cityName">Bratislava</h2>
+        <div class="weather-icon mb-4" id="weatherIcon" aria-hidden="true">☀️</div>
+        <div class="text-4xl sm:text-5xl md:text-6xl font-bold mb-2 sm:mb-3" id="temperature">--°C</div>
+        <div class="text-lg sm:text-xl mb-4 sm:mb-6 font-medium opacity-90" id="description">—</div>
+      </div>
 
-            <!-- Additional Weather Details -->
-            <div class="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-6 gap-2 sm:gap-3">
-                <div class="glass-card-dark rounded-lg p-2 sm:p-3 text-center">
-                    <div class="text-lg mb-1">🌇</div>
-                    <div class="text-xs opacity-80">Západ</div>
-                    <div class="text-sm font-semibold" id="sunset">19:45</div>
-                </div>
-                <div class="glass-card-dark rounded-lg p-2 sm:p-3 text-center">
-                    <div class="text-lg mb-1">🌅</div>
-                    <div class="text-xs opacity-80">Východ</div>
-                    <div class="text-sm font-semibold" id="sunrise">06:30</div>
-                </div>
-                <div class="glass-card-dark rounded-lg p-2 sm:p-3 text-center">
-                    <div class="text-lg mb-1">☀️</div>
-                    <div class="text-xs opacity-80">UV Index</div>
-                    <div class="text-sm font-semibold" id="uvIndex">5</div>
-                </div>
-                <div class="glass-card-dark rounded-lg p-2 sm:p-3 text-center">
-                    <div class="text-lg mb-1">👁️</div>
-                    <div class="text-xs opacity-80">Viditeľnosť</div>
-                    <div class="text-sm font-semibold" id="visibility">10 km</div>
-                </div>
-                <div class="glass-card-dark rounded-lg p-2 sm:p-3 text-center">
-                    <div class="text-lg mb-1">🌡️</div>
-                    <div class="text-xs opacity-80">Rosný bod</div>
-                    <div class="text-sm font-semibold" id="dewPoint">15°C</div>
-                </div>
-                <div class="glass-card-dark rounded-lg p-2 sm:p-3 text-center">
-                    <div class="text-lg mb-1">💨</div>
-                    <div class="text-xs opacity-80">Poryvy</div>
-                    <div class="text-sm font-semibold" id="windGusts">18 km/h</div>
-                </div>
-            </div>
+      <!-- Main stats -->
+      <div class="grid mobile-grid sm:grid-cols-2 md:grid-cols-4 gap-3 sm:gap-4 mb-6">
+        <div class="glass-card-dark rounded-xl p-3 sm:p-4 text-center">
+          <div class="text-xs sm:text-sm opacity-80 mb-1">Pocitová</div>
+          <div class="text-lg sm:text-xl font-bold" id="feelsLike">—</div>
         </div>
-
-        <!-- Hourly Forecast -->
-        <div class="max-w-6xl mx-auto mb-6 sm:mb-8 slide-up">
-            <h3 class="text-xl sm:text-2xl font-bold text-white mb-4 sm:mb-6 text-center">
-                ⏰ Hodinová predpoveď
-            </h3>
-            <div class="glass-card rounded-2xl p-4 sm:p-6 relative">
-                <div class="flex overflow-x-auto space-x-3 pb-4 scrollbar-hide smooth-scroll" id="hourlyForecast" style="scroll-behavior: smooth; -webkit-overflow-scrolling: touch;">
-                    <!-- Hourly forecast will be generated here -->
-                </div>
-                <!-- Scroll indicators -->
-                <div class="absolute left-2 top-1/2 transform -translate-y-1/2 bg-white/20 rounded-full p-2 cursor-pointer hover:bg-white/30 transition-all" onclick="scrollHourly('left')" id="scrollLeft">
-                    <svg class="w-4 h-4 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 19l-7-7 7-7"></path>
-                    </svg>
-                </div>
-                <div class="absolute right-2 top-1/2 transform -translate-y-1/2 bg-white/20 rounded-full p-2 cursor-pointer hover:bg-white/30 transition-all" onclick="scrollHourly('right')" id="scrollRight">
-                    <svg class="w-4 h-4 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"></path>
-                    </svg>
-                </div>
-            </div>
+        <div class="glass-card-dark rounded-xl p-3 sm:p-4 text-center">
+          <div class="text-xs sm:text-sm opacity-80 mb-1">Vlhkosť</div>
+          <div class="text-lg sm:text-xl font-bold" id="humidity">—</div>
         </div>
-
-        <!-- 7-Day Forecast -->
-        <div class="max-w-6xl mx-auto slide-up">
-            <h3 class="text-xl sm:text-2xl font-bold text-white mb-4 sm:mb-6 text-center">
-                📅 7-dňová predpoveď
-            </h3>
-            <div class="glass-card rounded-2xl p-4 sm:p-6">
-                <div class="grid mobile-forecast sm:grid-cols-4 lg:grid-cols-7 gap-3 sm:gap-4" id="forecast">
-                    <!-- Forecast cards will be generated here -->
-                </div>
-            </div>
+        <div class="glass-card-dark rounded-xl p-3 sm:p-4 text-center">
+          <div class="text-xs sm:text-sm opacity-80 mb-1">Vietor</div>
+          <div class="text-lg sm:text-xl font-bold" id="windSpeed">—</div>
         </div>
-
-        <!-- Additional Info Section -->
-        <div class="mt-8 sm:mt-12 text-center">
-            <div class="glass-card rounded-2xl p-4 sm:p-6 max-w-md mx-auto">
-                <p class="text-white/90 text-sm sm:text-base font-medium">
-                    📡 Údaje poskytované v reálnom čase
-                </p>
-                <p class="text-white/70 text-xs sm:text-sm mt-2">
-                    Posledná aktualizácia: <span id="lastUpdate">--:--</span>
-                </p>
-            </div>
+        <div class="glass-card-dark rounded-xl p-3 sm:p-4 text-center">
+          <div class="text-xs sm:text-sm opacity-80 mb-1">Tlak</div>
+          <div class="text-lg sm:text-xl font-bold" id="pressure">—</div>
         </div>
+      </div>
 
-        <!-- Loading indicator -->
-        <div id="loading" class="hidden fixed inset-0 bg-black/60 flex items-center justify-center z-50">
-            <div class="glass-card rounded-2xl p-6 sm:p-8 text-center max-w-sm mx-4">
-                <div class="loading-spinner mx-auto mb-4"></div>
-                <p class="text-white font-medium text-base sm:text-lg">Načítavam údaje...</p>
-                <p class="text-white/70 text-sm mt-2">Prosím čakaj</p>
-            </div>
+      <!-- Extra -->
+      <div class="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-6 gap-2 sm:gap-3">
+        <div class="glass-card-dark rounded-lg p-2 sm:p-3 text-center">
+          <div class="text-lg mb-1">🌇</div>
+          <div class="text-xs opacity-80">Západ</div>
+          <div class="text-sm font-semibold" id="sunset">—:—</div>
         </div>
+        <div class="glass-card-dark rounded-lg p-2 sm:p-3 text-center">
+          <div class="text-lg mb-1">🌅</div>
+          <div class="text-xs opacity-80">Východ</div>
+          <div class="text-sm font-semibold" id="sunrise">—:—</div>
+        </div>
+        <div class="glass-card-dark rounded-lg p-2 sm:p-3 text-center">
+          <div class="text-lg mb-1">☀️</div>
+          <div class="text-xs opacity-80">UV Index</div>
+          <div class="text-sm font-semibold" id="uvIndex">—</div>
+        </div>
+        <div class="glass-card-dark rounded-lg p-2 sm:p-3 text-center">
+          <div class="text-lg mb-1">👁️</div>
+          <div class="text-xs opacity-80">Viditeľnosť</div>
+          <div class="text-sm font-semibold" id="visibility">—</div>
+        </div>
+        <div class="glass-card-dark rounded-lg p-2 sm:p-3 text-center">
+          <div class="text-lg mb-1">🌡️</div>
+          <div class="text-xs opacity-80">Rosný bod</div>
+          <div class="text-sm font-semibold" id="dewPoint">—</div>
+        </div>
+        <div class="glass-card-dark rounded-lg p-2 sm:p-3 text-center">
+          <div class="text-lg mb-1">💨</div>
+          <div class="text-xs opacity-80">Poryvy</div>
+          <div class="text-sm font-semibold" id="windGusts">—</div>
+        </div>
+      </div>
+    </section>
 
-        <!-- Error message -->
-        <div id="errorMessage" class="hidden fixed top-4 left-4 right-4 sm:left-auto sm:right-4 sm:w-96 glass-card rounded-xl p-4 text-white z-50">
-            <div class="flex items-center">
-                <span class="text-2xl mr-3">⚠️</span>
-                <div>
-                    <p class="font-semibold">Chyba</p>
-                    <p class="text-sm opacity-90" id="errorText">Niečo sa pokazilo</p>
-                </div>
-            </div>
+    <!-- Hourly -->
+    <section class="max-w-6xl mx-auto mb-6 sm:mb-8 slide-up">
+      <h3 class="text-xl sm:text-2xl font-bold text-white mb-4 sm:mb-6 text-center">⏰ Hodinová predpoveď</h3>
+      <div class="glass-card rounded-2xl p-4 sm:p-6 relative">
+        <div id="hourlyForecast" class="flex overflow-x-auto space-x-3 pb-4 scrollbar-hide" style="-webkit-overflow-scrolling: touch;">
+          <!-- populated dynamically -->
         </div>
+        <!-- scroll controls -->
+        <button
+          id="scrollLeft"
+          class="absolute left-2 top-1/2 -translate-y-1/2 bg-white/20 hover:bg-white/30 rounded-full p-2 transition-all hidden"
+          aria-label="Posunúť doľava"
+        >
+          <svg class="w-4 h-4 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 19l-7-7 7-7"/>
+          </svg>
+        </button>
+        <button
+          id="scrollRight"
+          class="absolute right-2 top-1/2 -translate-y-1/2 bg-white/20 hover:bg-white/30 rounded-full p-2 transition-all hidden"
+          aria-label="Posunúť doprava"
+        >
+          <svg class="w-4 h-4 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"/>
+          </svg>
+        </button>
+      </div>
+    </section>
+
+    <!-- 7-day -->
+    <section class="max-w-6xl mx-auto slide-up">
+      <h3 class="text-xl sm:text-2xl font-bold text-white mb-4 sm:mb-6 text-center">📅 7-dňová predpoveď</h3>
+      <div class="glass-card rounded-2xl p-4 sm:p-6">
+        <div id="forecast" class="grid mobile-forecast sm:grid-cols-4 lg:grid-cols-7 gap-3 sm:gap-4">
+          <!-- populated dynamically -->
+        </div>
+      </div>
+    </section>
+
+    <!-- Footer info -->
+    <section class="mt-8 sm:mt-12 text-center">
+      <div class="glass-card rounded-2xl p-4 sm:p-6 max-w-md mx-auto">
+        <p class="text-white/90 text-sm sm:text-base font-medium">📡 Údaje poskytované v reálnom čase</p>
+        <p class="text-white/70 text-xs sm:text-sm mt-2">Posledná aktualizácia: <span id="lastUpdate">--:--</span></p>
+      </div>
+    </section>
+
+    <!-- Loading -->
+    <div id="loading" class="hidden fixed inset-0 bg-black/60 flex items-center justify-center z-50">
+      <div class="glass-card rounded-2xl p-6 sm:p-8 text-center max-w-sm mx-4">
+        <div class="loading-spinner mx-auto mb-4"></div>
+        <p class="text-white font-medium text-base sm:text-lg">Načítavam údaje...</p>
+        <p class="text-white/70 text-sm mt-2">Prosím čakaj</p>
+      </div>
     </div>
 
-    <script>
-        let currentCity = 'Bratislava';
-        let currentLat = 48.1486;
-        let currentLon = 17.1077;
+    <!-- Error toast -->
+    <div id="errorMessage" class="hidden fixed top-4 left-4 right-4 sm:left-auto sm:right-4 sm:w-96 glass-card rounded-xl p-4 text-white z-50" role="alert" aria-live="polite">
+      <div class="flex items-center">
+        <span class="text-2xl mr-3">⚠️</span>
+        <div>
+          <p class="font-semibold">Chyba</p>
+          <p class="text-sm opacity-90" id="errorText">Niečo sa pokazilo</p>
+        </div>
+      </div>
+    </div>
+  </div>
 
-        // Enhanced weather code to icon mapping
-        const weatherIcons = {
-            0: '☀️', 1: '🌤️', 2: '⛅', 3: '☁️', 45: '🌫️', 48: '🌫️',
-            51: '🌦️', 53: '🌦️', 55: '🌦️', 61: '🌧️', 63: '🌧️', 65: '🌧️',
-            71: '🌨️', 73: '🌨️', 75: '🌨️', 77: '❄️', 80: '🌦️', 81: '🌧️',
-            82: '⛈️', 85: '🌨️', 86: '🌨️', 95: '⛈️', 96: '⛈️', 99: '⛈️'
+  <script>
+    /***** STATE *****/
+    let currentCity = 'Bratislava';
+    let currentLat = 48.1486;
+    let currentLon = 17.1077;
+    let isCelsius = true;
+    let favorites = JSON.parse(localStorage.getItem('weatherFavorites')) || [];
+    let lastWeatherData = null;      // raw Open-Meteo response
+    let lastCityMeta = { name: 'Bratislava', country: 'Slovensko' };
+    let pendingAbort = null;
+
+    /***** ICONS & TEXT *****/
+    const weatherIcons = {
+      0:'☀️',1:'🌤️',2:'⛅',3:'☁️',45:'🌫️',48:'🌫️',
+      51:'🌦️',53:'🌦️',55:'🌦️',61:'🌧️',63:'🌧️',65:'🌧️',
+      71:'🌨️',73:'🌨️',75:'🌨️',77:'❄️',80:'🌦️',81:'🌧️',
+      82:'⛈️',85:'🌨️',86:'🌨️',95:'⛈️',96:'⛈️',99:'⛈️'
+    };
+    const weatherDescriptions = {
+      0:'Jasno',1:'Prevažne jasno',2:'Čiastočne oblačno',3:'Zamračené',
+      45:'Hmla',48:'Hmla s námrazou',51:'Slabé mrholenie',53:'Mierne mrholenie',
+      55:'Husté mrholenie',61:'Slabý dážď',63:'Mierny dážď',65:'Silný dážď',
+      71:'Slabé sneženie',73:'Mierne sneženie',75:'Silné sneženie',77:'Snehové zrná',
+      80:'Slabé prehánky',81:'Mierne prehánky',82:'Silné prehánky',
+      85:'Slabé snehové prehánky',86:'Silné snehové prehánky',
+      95:'Búrka',96:'Búrka s krupobitím',99:'Búrka so silným krupobitím'
+    };
+
+    /***** HELPERS *****/
+    const $ = (id) => document.getElementById(id);
+    function showError(message) {
+      $('errorText').textContent = message;
+      $('errorMessage').classList.remove('hidden');
+      setTimeout(()=>$('errorMessage').classList.add('hidden'), 4500);
+    }
+    function updateLastUpdate() {
+      const now = new Date();
+      $('lastUpdate').textContent = now.toLocaleTimeString('sk-SK',{hour:'2-digit',minute:'2-digit'});
+    }
+    function round(n, d=0){ const p = 10**d; return Math.round(n*p)/p; }
+
+    // Magnus formula for dew point (°C). T in °C, RH in %
+    function dewPointC(T, RH){
+      if (RH==null || T==null) return null;
+      const a=17.62, b=243.12;
+      const gamma = (a*T)/(b+T) + Math.log((RH||0)/100);
+      return (b*gamma)/(a-gamma);
+    }
+
+    function toKm(valueMeters){
+      if (valueMeters == null) return null;
+      return Math.max(0, Math.round(valueMeters/1000));
+    }
+
+    function showHideScrollButtons(container, leftBtn, rightBtn){
+      const canScrollLeft = container.scrollLeft > 4;
+      const canScrollRight = container.scrollWidth - container.clientWidth - container.scrollLeft > 4;
+      leftBtn.classList.toggle('hidden', !canScrollLeft);
+      rightBtn.classList.toggle('hidden', !canScrollRight);
+    }
+
+    /***** OPEN-METEO FETCHERS *****/
+    async function getCoordinates(city){
+      const url = `https://geocoding-api.open-meteo.com/v1/search?name=${encodeURIComponent(city)}&count=1&language=sk&format=json`;
+      const res = await fetch(url);
+      if(!res.ok) throw new Error('Nepodarilo sa nájsť mesto');
+      const data = await res.json();
+      if (data.results && data.results.length){
+        const r = data.results[0];
+        return { lat: r.latitude, lon: r.longitude, name: r.name, country: r.country || '' };
+      }
+      return null;
+    }
+
+    async function getSuggestions(q){
+      if(!q || q.length < 2) return [];
+      const url = `https://geocoding-api.open-meteo.com/v1/search?name=${encodeURIComponent(q)}&count=5&language=sk&format=json`;
+      const res = await fetch(url);
+      if(!res.ok) return [];
+      const data = await res.json();
+      return (data.results || []).map(r => ({
+        name: r.name, country: r.country || '', lat: r.latitude, lon: r.longitude
+      }));
+    }
+
+    async function fetchWeatherData(lat, lon){
+      if (pendingAbort) pendingAbort.abort();
+      pendingAbort = new AbortController();
+
+      // Add precipitation + probability in hourly; daily precipitation sum + prob
+      const url = `https://api.open-meteo.com/v1/forecast?latitude=${lat}&longitude=${lon}`+
+        `&current=temperature_2m,relative_humidity_2m,apparent_temperature,weather_code,`+
+        `surface_pressure,wind_speed_10m,wind_gusts_10m,visibility,uv_index`+
+        `&hourly=temperature_2m,weather_code,precipitation,precipitation_probability`+
+        `&daily=weather_code,temperature_2m_max,temperature_2m_min,sunrise,sunset,uv_index_max,precipitation_sum,precipitation_probability_max`+
+        `&timezone=auto`;
+      const res = await fetch(url, { signal: pendingAbort.signal });
+      if(!res.ok) throw new Error('Chyba pri načítavaní údajov');
+      return await res.json();
+    }
+
+    /***** UI UPDATERS *****/
+    function updateCurrentWeather(data, cityName, country){
+      const current = data.current;
+      const daily = data.daily;
+      const displayName = country ? `${cityName}, ${country}` : cityName;
+
+      $('cityName').textContent = displayName;
+      $('temperature').textContent = fmtTemp(current.temperature_2m);
+      $('feelsLike').textContent = fmtTemp(current.apparent_temperature);
+      $('humidity').textContent = `${current.relative_humidity_2m ?? '—'}%`;
+      $('windSpeed').textContent = `${Math.round(current.wind_speed_10m ?? 0)} km/h`;
+      $('pressure').textContent = `${Math.round(current.surface_pressure ?? 0)} hPa`;
+      $('windGusts').textContent = `${Math.round(current.wind_gusts_10m ?? 0)} km/h`;
+      $('visibility').textContent = `${toKm(current.visibility ?? 0)} km`;
+      $('uvIndex').textContent = `${Math.round(current.uv_index ?? 0)}`;
+
+      const dp = dewPointC(current.temperature_2m, current.relative_humidity_2m);
+      $('dewPoint').textContent = dp==null ? '—' : fmtTemp(dp, true);
+
+      if (daily.sunrise && daily.sunset){
+        const sr = new Date(daily.sunrise[0]);
+        const ss = new Date(daily.sunset[0]);
+        $('sunrise').textContent = sr.toLocaleTimeString('sk-SK',{hour:'2-digit',minute:'2-digit'});
+        $('sunset').textContent = ss.toLocaleTimeString('sk-SK',{hour:'2-digit',minute:'2-digit'});
+      }
+
+      const wc = current.weather_code;
+      $('weatherIcon').textContent = weatherIcons[wc] || '🌤️';
+      $('description').textContent = weatherDescriptions[wc] || 'Neznáme';
+
+      updateLastUpdate();
+    }
+
+    function updateHourlyForecast(data){
+      const hourly = data.hourly;
+      const box = $('hourlyForecast');
+      box.innerHTML = '';
+
+      // Start from current hour index
+      const now = Date.now();
+      let idx = hourly.time.findIndex(t => new Date(t).getTime() >= (now - 30*60*1000));
+      if (idx < 0) idx = 0;
+
+      const count = Math.min(24, hourly.time.length - idx);
+
+      for (let i = 0; i < count; i++){
+        const k = idx + i;
+        const t = new Date(hourly.time[k]);
+        const isNow = i === 0;
+        const temp = hourly.temperature_2m[k];
+        const prob = Math.round(hourly.precipitation_probability?.[k] ?? 0);
+        const precip = hourly.precipitation?.[k] ?? 0;
+        const wc = hourly.weather_code?.[k];
+        const card = document.createElement('div');
+        card.className = `hourly-card flex-shrink-0 text-white rounded-xl p-3 ${isNow?'current-hour':''}`;
+
+        card.innerHTML = `
+          <div class="text-xs font-medium mb-2 ${isNow ? 'text-white' : 'opacity-80'}">
+            ${isNow ? 'Teraz' : t.toLocaleTimeString('sk-SK',{hour:'2-digit',minute:'2-digit'})}
+          </div>
+          <div class="text-2xl mb-2">${weatherIcons[wc] || '🌤️'}</div>
+          <div class="text-sm font-bold mb-1">${fmtTempPlain(temp)}</div>
+          <div class="text-[11px] opacity-90">
+            💧 ${prob}% • ${round(precip,1)} mm
+          </div>
+        `;
+        box.appendChild(card);
+      }
+
+      // scroll buttons
+      const leftBtn = $('scrollLeft');
+      const rightBtn = $('scrollRight');
+      const check = () => showHideScrollButtons(box, leftBtn, rightBtn);
+      check();
+      box.addEventListener('scroll', check, { passive: true });
+      window.addEventListener('resize', check);
+      leftBtn.onclick = () => box.scrollBy({ left: -220, behavior:'smooth' });
+      rightBtn.onclick = () => box.scrollBy({ left: 220, behavior:'smooth' });
+    }
+
+    function updateForecast(data){
+      const d = data.daily;
+      const c = $('forecast');
+      c.innerHTML = '';
+
+      const days = ['Ned','Pon','Uto','Str','Štv','Pia','Sob'];
+      for (let i=0; i<Math.min(7, d.time.length); i++){
+        const date = new Date(d.time[i]);
+        const dayName = i===0 ? 'Dnes' : (i===1 ? 'Zajtra' : days[date.getDay()]);
+        const isToday = i===0;
+
+        const wc = d.weather_code[i];
+        const maxT = d.temperature_2m_max[i];
+        const minT = d.temperature_2m_min[i];
+        const uv = d.uv_index_max?.[i] ?? 0;
+        const precipSum = d.precipitation_sum?.[i] ?? 0;
+        const precipProbMax = d.precipitation_probability_max?.[i] ?? 0;
+
+        const card = document.createElement('div');
+        card.className = `forecast-card glass-card-dark rounded-xl p-3 sm:p-4 text-white text-center ${isToday?'ring-2 ring-white/40':''}`;
+        card.innerHTML = `
+          <div class="text-xs sm:text-sm font-bold mb-2 ${isToday?'text-white':'opacity-90'}">${dayName}</div>
+          <div class="text-2xl sm:text-3xl mb-3">${weatherIcons[wc] || '🌤️'}</div>
+          <div class="flex justify-between items-center mb-2">
+            <div class="text-sm sm:text-lg font-bold">${fmtTempPlain(maxT)}</div>
+            <div class="text-xs sm:text-sm opacity-70">${fmtTempPlain(minT)}</div>
+          </div>
+          <div class="text-[11px] opacity-90 mb-1">💧 ${Math.round(precipProbMax)}% • ${round(precipSum,1)} mm</div>
+          <div class="text-[11px] opacity-80 bg-white/10 rounded-full px-2 py-1 inline-block">UV ${Math.round(uv)}</div>
+        `;
+        c.appendChild(card);
+        setTimeout(()=>card.classList.add('slide-up'), i*90);
+      }
+    }
+
+    /***** UNITS *****/
+    function fmtTemp(valueC, noUnit=false){
+      if (valueC==null || isNaN(valueC)) return '—';
+      if (isCelsius) return `${Math.round(valueC)}°C`;
+      const f = Math.round(valueC * 9/5 + 32);
+      return noUnit ? `${f}` : `${f}°F`;
+    }
+    function fmtTempPlain(valueC){
+      if (valueC==null || isNaN(valueC)) return '—';
+      return isCelsius ? `${Math.round(valueC)}°` : `${Math.round(valueC*9/5+32)}°`;
+    }
+
+    function refreshUnits(){
+      if (!lastWeatherData) return;
+      // re-render from raw data to avoid double conversions
+      updateCurrentWeather(lastWeatherData, lastCityMeta.name, lastCityMeta.country);
+      updateHourlyForecast(lastWeatherData);
+      updateForecast(lastWeatherData);
+      $('unitsToggle').textContent = isCelsius ? '°C / °F' : '°F / °C';
+    }
+
+    /***** FAVORITES *****/
+    function updateFavoritesList(){
+      const container = $('favoritesList');
+      container.innerHTML = '';
+      if(!favorites.length){
+        container.innerHTML = '<p class="text-white/70 text-sm">Žiadne oblúbené mestá</p>';
+        return;
+      }
+      favorites.forEach((fav, i)=>{
+        const row = document.createElement('div');
+        row.className = 'flex justify-between items-center glass-card-dark rounded-lg p-2';
+        row.innerHTML = `
+          <button class="text-white hover:text-white/80 flex-1 text-left" aria-label="Načítať ${fav.name}">
+            ${fav.name}
+          </button>
+          <button class="text-red-400 hover:text-red-300 ml-2" aria-label="Odstrániť ${fav.name}">✕</button>
+        `;
+        const [loadBtn, delBtn] = row.querySelectorAll('button');
+        loadBtn.onclick = ()=>{ currentLat=fav.lat; currentLon=fav.lon; currentCity=fav.name; loadWeather(fav.name, true); toggleFavorites(); };
+        delBtn.onclick = ()=>{ favorites.splice(i,1); localStorage.setItem('weatherFavorites', JSON.stringify(favorites)); updateFavoritesList(); };
+        container.appendChild(row);
+      });
+    }
+    function addToFavorites(){
+      const entry = { name: lastCityMeta.country ? `${lastCityMeta.name}` : lastCityMeta.name, lat: currentLat, lon: currentLon };
+      const exists = favorites.some(f => f.name.toLowerCase()===entry.name.toLowerCase() || (Math.abs(f.lat-entry.lat)<1e-4 && Math.abs(f.lon-entry.lon)<1e-4));
+      if(!exists){
+        favorites.push(entry);
+        localStorage.setItem('weatherFavorites', JSON.stringify(favorites));
+        updateFavoritesList();
+        showError(`${entry.name} pridané do oblúbených`);
+      } else {
+        showError(`${entry.name} už je v oblúbených`);
+      }
+    }
+    function toggleFavorites(){
+      $('favoritesPanel').classList.toggle('hidden');
+      updateFavoritesList();
+    }
+
+    /***** GEO *****/
+    function getCurrentLocation(){
+      if(!navigator.geolocation){ showError('Geolokácia nie je podporovaná'); return; }
+      $('loading').classList.remove('hidden');
+      navigator.geolocation.getCurrentPosition(async (pos)=>{
+        currentLat = pos.coords.latitude;
+        currentLon = pos.coords.longitude;
+        try{
+          // proper reverse geocoding
+          const res = await fetch(`https://geocoding-api.open-meteo.com/v1/reverse?latitude=${currentLat}&longitude=${currentLon}&language=sk&format=json`);
+          const j = await res.json();
+          if (j && j.results && j.results.length){
+            const r = j.results[0];
+            currentCity = r.name;
+            lastCityMeta = { name: r.name, country: r.country || '' };
+          }
+        }catch(e){}
+        loadWeather(currentCity, true);
+      }, ()=>{
+        $('loading').classList.add('hidden');
+        showError('Nepodarilo sa získať polohu');
+      }, { enableHighAccuracy:true, maximumAge: 60_000, timeout: 10_000 });
+    }
+
+    /***** SEARCH + SUGGESTIONS *****/
+    let suggestTimer = null;
+    async function onSearchInput(e){
+      const q = e.target.value.trim();
+      clearTimeout(suggestTimer);
+      if (q.length < 2){ $('suggestions').classList.add('hidden'); $('suggestions').innerHTML=''; return; }
+      suggestTimer = setTimeout(async ()=>{
+        const list = await getSuggestions(q);
+        renderSuggestions(list);
+      }, 180);
+    }
+    function renderSuggestions(list){
+      const wrap = $('suggestions');
+      wrap.innerHTML = '';
+      if (!list.length){ wrap.classList.add('hidden'); return; }
+      list.forEach(item=>{
+        const btn = document.createElement('button');
+        btn.className = 'w-full text-left px-4 py-2 hover:bg-white/15 transition-colors text-sm';
+        btn.textContent = `${item.name}${item.country?', '+item.country:''}`;
+        btn.onclick = ()=>{
+          $('cityInput').value = '';
+          wrap.classList.add('hidden');
+          currentLat = item.lat; currentLon = item.lon; currentCity = item.name;
+          lastCityMeta = { name: item.name, country: item.country || '' };
+          loadWeather(item.name, true);
         };
+        wrap.appendChild(btn);
+      });
+      wrap.classList.remove('hidden');
+    }
 
-        const weatherDescriptions = {
-            0: 'Jasno', 1: 'Prevažne jasno', 2: 'Čiastočne oblačno', 3: 'Zamračené',
-            45: 'Hmla', 48: 'Hmla s námrazou', 51: 'Slabé mrholenie', 53: 'Mierné mrholenie',
-            55: 'Husté mrholenie', 61: 'Slabý dážď', 63: 'Mierny dážď', 65: 'Silný dážď',
-            71: 'Slabé sneženie', 73: 'Mierné sneženie', 75: 'Silné sneženie', 77: 'Snehové zrná',
-            80: 'Slabé prehánky', 81: 'Mierné prehánky', 82: 'Silné prehánky',
-            85: 'Slabé snehové prehánky', 86: 'Silné snehové prehánky',
-            95: 'Búrka', 96: 'Búrka s krupobitím', 99: 'Búrka so silným krupobitím'
-        };
-
-        function showError(message) {
-            const errorDiv = document.getElementById('errorMessage');
-            document.getElementById('errorText').textContent = message;
-            errorDiv.classList.remove('hidden');
-            setTimeout(() => {
-                errorDiv.classList.add('hidden');
-            }, 5000);
+    /***** LOAD & RENDER *****/
+    async function loadWeather(city = currentCity, skipGeocode=false){
+      $('loading').classList.remove('hidden');
+      try{
+        let lat=currentLat, lon=currentLon, cityName=city, country='';
+        if (!skipGeocode && city && city !== lastCityMeta.name){
+          const coords = await getCoordinates(city);
+          if (!coords) throw new Error('Mesto sa nenašlo. Skús iný názov.');
+          lat = coords.lat; lon = coords.lon; cityName = coords.name; country = coords.country;
+          currentLat = lat; currentLon = lon; currentCity = cityName;
+          lastCityMeta = { name: cityName, country };
         }
+        const data = await fetchWeatherData(lat, lon);
+        if(!data) throw new Error('Nepodarilo sa načítať údaje o počasí');
+        lastWeatherData = data;
+        updateCurrentWeather(data, lastCityMeta.name, lastCityMeta.country);
+        updateHourlyForecast(data);
+        updateForecast(data);
+        try { localStorage.setItem('lastCityMeta', JSON.stringify(lastCityMeta)); } catch(e){}
+      } catch(err){
+        showError(err.message || 'Chyba');
+      } finally {
+        $('loading').classList.add('hidden');
+      }
+    }
 
-        function updateLastUpdate() {
-            const now = new Date();
-            const timeString = now.toLocaleTimeString('sk-SK', { 
-                hour: '2-digit', 
-                minute: '2-digit' 
-            });
-            document.getElementById('lastUpdate').textContent = timeString;
+    /***** EVENTS *****/
+    // Buttons
+    $('searchBtn').addEventListener('click', ()=>{
+      const city = $('cityInput').value.trim();
+      if (city){ $('suggestions').classList.add('hidden'); loadWeather(city); $('cityInput').value=''; $('cityInput').blur(); }
+    });
+    $('locBtn').addEventListener('click', getCurrentLocation);
+    $('favToggleBtn').addEventListener('click', toggleFavorites);
+    $('favAddBtn').addEventListener('click', addToFavorites);
+    $('unitsToggle').addEventListener('click', ()=>{ isCelsius = !isCelsius; refreshUnits(); });
+
+    // Input
+    $('cityInput').addEventListener('input', onSearchInput);
+    $('cityInput').addEventListener('keypress', (e)=>{ if(e.key==='Enter'){ $('searchBtn').click(); } });
+
+    // Connectivity
+    window.addEventListener('online', ()=> loadWeather(currentCity, true));
+    window.addEventListener('offline', ()=> showError('Žiadne internetové pripojenie'));
+
+    // Auto refresh every 10 min
+    setInterval(()=> loadWeather(currentCity, true), 600_000);
+
+    // Restore last city if saved
+    (function init(){
+      try{
+        const saved = JSON.parse(localStorage.getItem('lastCityMeta'));
+        if (saved && saved.name){
+          lastCityMeta = saved;
+          currentCity = saved.name;
         }
+      }catch(e){}
+      // Initial load
+      loadWeather(currentCity);
+    })();
 
-        async function getCoordinates(city) {
-            try {
-                const response = await fetch(`https://geocoding-api.open-meteo.com/v1/search?name=${encodeURIComponent(city)}&count=1&language=sk&format=json`);
-                const data = await response.json();
-                
-                if (data.results && data.results.length > 0) {
-                    return {
-                        lat: data.results[0].latitude,
-                        lon: data.results[0].longitude,
-                        name: data.results[0].name,
-                        country: data.results[0].country
-                    };
-                }
-                return null;
-            } catch (error) {
-                console.error('Error getting coordinates:', error);
-                throw new Error('Nepodarilo sa nájsť mesto');
-            }
-        }
-
-        async function fetchWeatherData(lat, lon) {
-            try {
-                const response = await fetch(`https://api.open-meteo.com/v1/forecast?latitude=${lat}&longitude=${lon}&current=temperature_2m,relative_humidity_2m,apparent_temperature,weather_code,surface_pressure,wind_speed_10m,wind_gusts_10m,visibility,uv_index&hourly=temperature_2m,weather_code,precipitation_probability&daily=weather_code,temperature_2m_max,temperature_2m_min,sunrise,sunset,uv_index_max&timezone=auto`);
-                
-                if (!response.ok) {
-                    throw new Error('Chyba pri načítavaní údajov');
-                }
-                
-                const data = await response.json();
-                return data;
-            } catch (error) {
-                console.error('Error fetching weather data:', error);
-                throw new Error('Nepodarilo sa načítať údaje o počasí');
-            }
-        }
-
-        function updateCurrentWeather(data, cityName, country) {
-            const current = data.current;
-            const daily = data.daily;
-            
-            const displayName = country ? `${cityName}, ${country}` : cityName;
-            document.getElementById('cityName').textContent = displayName;
-            document.getElementById('temperature').textContent = `${Math.round(current.temperature_2m)}°C`;
-            document.getElementById('feelsLike').textContent = `${Math.round(current.apparent_temperature)}°C`;
-            document.getElementById('humidity').textContent = `${current.relative_humidity_2m}%`;
-            document.getElementById('windSpeed').textContent = `${Math.round(current.wind_speed_10m)} km/h`;
-            document.getElementById('pressure').textContent = `${Math.round(current.surface_pressure)} hPa`;
-            
-            // Additional weather details
-            document.getElementById('windGusts').textContent = `${Math.round(current.wind_gusts_10m || 0)} km/h`;
-            document.getElementById('visibility').textContent = `${Math.round((current.visibility || 10000) / 1000)} km`;
-            document.getElementById('uvIndex').textContent = Math.round(current.uv_index || 0);
-            
-            // Calculate dew point (approximation)
-            const temp = current.temperature_2m;
-            const humidity = current.relative_humidity_2m;
-            const dewPoint = temp - ((100 - humidity) / 5);
-            document.getElementById('dewPoint').textContent = `${Math.round(dewPoint)}°C`;
-            
-            // Sunrise and sunset
-            if (daily.sunrise && daily.sunset) {
-                const sunrise = new Date(daily.sunrise[0]);
-                const sunset = new Date(daily.sunset[0]);
-                document.getElementById('sunrise').textContent = sunrise.toLocaleTimeString('sk-SK', { hour: '2-digit', minute: '2-digit' });
-                document.getElementById('sunset').textContent = sunset.toLocaleTimeString('sk-SK', { hour: '2-digit', minute: '2-digit' });
-            }
-            
-            const weatherCode = current.weather_code;
-            document.getElementById('weatherIcon').textContent = weatherIcons[weatherCode] || '🌤️';
-            document.getElementById('description').textContent = weatherDescriptions[weatherCode] || 'Neznáme';
-            
-            updateLastUpdate();
-        }
-
-        function updateHourlyForecast(data) {
-            const hourly = data.hourly;
-            const hourlyContainer = document.getElementById('hourlyForecast');
-            hourlyContainer.innerHTML = '';
-
-            // Show next 24 hours
-            for (let i = 0; i < 24; i++) {
-                const time = new Date(hourly.time[i]);
-                const hour = time.getHours();
-                const isNow = i === 0;
-                
-                const hourlyCard = document.createElement('div');
-                hourlyCard.className = `hourly-card flex-shrink-0 text-center text-white rounded-xl p-3 ${isNow ? 'current-hour' : ''}`;
-                
-                hourlyCard.innerHTML = `
-                    <div class="text-xs font-medium mb-2 ${isNow ? 'text-white' : 'opacity-80'}">${isNow ? 'Teraz' : hour.toString().padStart(2, '0') + ':00'}</div>
-                    <div class="text-2xl mb-2 filter drop-shadow-sm">${weatherIcons[hourly.weather_code[i]] || '🌤️'}</div>
-                    <div class="text-sm font-bold mb-1">${Math.round(hourly.temperature_2m[i])}°</div>
-                    <div class="text-xs opacity-70 flex items-center justify-center">
-                        <span class="mr-1">💧</span>${Math.round(hourly.precipitation_probability[i] || 0)}%
-                    </div>
-                `;
-                
-                hourlyContainer.appendChild(hourlyCard);
-            }
-        }
-
-        function scrollHourly(direction) {
-            const container = document.getElementById('hourlyForecast');
-            const scrollAmount = 200;
-            
-            if (direction === 'left') {
-                container.scrollBy({ left: -scrollAmount, behavior: 'smooth' });
-            } else {
-                container.scrollBy({ left: scrollAmount, behavior: 'smooth' });
-            }
-        }
-
-        function updateForecast(data) {
-            const daily = data.daily;
-            const forecastContainer = document.getElementById('forecast');
-            forecastContainer.innerHTML = '';
-
-            const days = ['Ned', 'Pon', 'Uto', 'Str', 'Štv', 'Pia', 'Sob'];
-            
-            for (let i = 0; i < 7; i++) {
-                const date = new Date(daily.time[i]);
-                const dayName = i === 0 ? 'Dnes' : i === 1 ? 'Zajtra' : days[date.getDay()];
-                const isToday = i === 0;
-                
-                const forecastCard = document.createElement('div');
-                forecastCard.className = `forecast-card glass-card-dark rounded-xl p-3 sm:p-4 text-white text-center ${isToday ? 'ring-2 ring-white/40' : ''}`;
-                
-                forecastCard.innerHTML = `
-                    <div class="text-xs sm:text-sm font-bold mb-2 ${isToday ? 'text-white' : 'opacity-90'}">${dayName}</div>
-                    <div class="text-2xl sm:text-3xl mb-3 filter drop-shadow-sm">${weatherIcons[daily.weather_code[i]] || '🌤️'}</div>
-                    <div class="flex justify-between items-center mb-2">
-                        <div class="text-sm sm:text-lg font-bold">${Math.round(daily.temperature_2m_max[i])}°</div>
-                        <div class="text-xs sm:text-sm opacity-70">${Math.round(daily.temperature_2m_min[i])}°</div>
-                    </div>
-                    <div class="text-xs opacity-70 bg-white/10 rounded-full px-2 py-1">
-                        UV ${Math.round(daily.uv_index_max[i] || 0)}
-                    </div>
-                `;
-                
-                forecastContainer.appendChild(forecastCard);
-                
-                // Add animation delay for each card
-                setTimeout(() => {
-                    forecastCard.classList.add('slide-up');
-                }, i * 100);
-            }
-        }
-
-        async function loadWeather(city = currentCity) {
-            const loadingDiv = document.getElementById('loading');
-            loadingDiv.classList.remove('hidden');
-            
-            try {
-                let lat = currentLat;
-                let lon = currentLon;
-                let cityName = city;
-                let country = '';
-                
-                if (city !== currentCity) {
-                    const coords = await getCoordinates(city);
-                    if (coords) {
-                        lat = coords.lat;
-                        lon = coords.lon;
-                        cityName = coords.name;
-                        country = coords.country;
-                        currentLat = lat;
-                        currentLon = lon;
-                        currentCity = cityName;
-                    } else {
-                        throw new Error('Mesto sa nenašlo. Skús iný názov.');
-                    }
-                }
-                
-                const weatherData = await fetchWeatherData(lat, lon);
-                
-                if (weatherData) {
-                    updateCurrentWeather(weatherData, cityName, country);
-                    updateHourlyForecast(weatherData);
-                    updateForecast(weatherData);
-                } else {
-                    throw new Error('Nepodarilo sa načítať údaje o počasí');
-                }
-                
-            } catch (error) {
-                showError(error.message);
-            } finally {
-                loadingDiv.classList.add('hidden');
-            }
-        }
-
-        function searchWeather() {
-            const input = document.getElementById('cityInput');
-            const city = input.value.trim();
-            if (city) {
-                loadWeather(city);
-                input.value = '';
-                input.blur(); // Hide mobile keyboard
-            }
-        }
-
-        // Enhanced event listeners
-        document.getElementById('cityInput').addEventListener('keypress', function(e) {
-            if (e.key === 'Enter') {
-                searchWeather();
-            }
-        });
-
-        // Touch and accessibility improvements
-        document.addEventListener('DOMContentLoaded', function() {
-            // Add touch feedback for buttons
-            const buttons = document.querySelectorAll('button');
-            buttons.forEach(button => {
-                button.addEventListener('touchstart', function() {
-                    this.style.transform = 'scale(0.95)';
-                });
-                button.addEventListener('touchend', function() {
-                    this.style.transform = 'scale(1)';
-                });
-            });
-            
-            // Load initial weather data
-            loadWeather();
-        });
-
-        // New app functions
-        let isCelsius = true;
-        let favorites = JSON.parse(localStorage.getItem('weatherFavorites')) || [];
-
-        function getCurrentLocation() {
-            if (navigator.geolocation) {
-                document.getElementById('loading').classList.remove('hidden');
-                navigator.geolocation.getCurrentPosition(
-                    async (position) => {
-                        currentLat = position.coords.latitude;
-                        currentLon = position.coords.longitude;
-                        
-                        // Get city name from coordinates
-                        try {
-                            const response = await fetch(`https://geocoding-api.open-meteo.com/v1/search?latitude=${currentLat}&longitude=${currentLon}&count=1&language=sk&format=json`);
-                            const data = await response.json();
-                            if (data.results && data.results.length > 0) {
-                                currentCity = data.results[0].name;
-                            }
-                        } catch (error) {
-                            console.error('Error getting city name:', error);
-                        }
-                        
-                        loadWeather(currentCity);
-                    },
-                    (error) => {
-                        document.getElementById('loading').classList.add('hidden');
-                        showError('Nepodarilo sa získať polohu');
-                    }
-                );
-            } else {
-                showError('Geolokácia nie je podporovaná');
-            }
-        }
-
-        function toggleFavorites() {
-            const panel = document.getElementById('favoritesPanel');
-            panel.classList.toggle('hidden');
-            updateFavoritesList();
-        }
-
-        function addToFavorites() {
-            const cityData = {
-                name: currentCity,
-                lat: currentLat,
-                lon: currentLon
-            };
-            
-            if (!favorites.find(fav => fav.name === currentCity)) {
-                favorites.push(cityData);
-                localStorage.setItem('weatherFavorites', JSON.stringify(favorites));
-                updateFavoritesList();
-                showError(`${currentCity} pridané do oblúbených`);
-            } else {
-                showError(`${currentCity} už je v oblúbených`);
-            }
-        }
-
-        function updateFavoritesList() {
-            const container = document.getElementById('favoritesList');
-            container.innerHTML = '';
-            
-            if (favorites.length === 0) {
-                container.innerHTML = '<p class="text-white/70 text-sm">Žiadne oblúbené mestá</p>';
-                return;
-            }
-            
-            favorites.forEach((fav, index) => {
-                const favItem = document.createElement('div');
-                favItem.className = 'flex justify-between items-center glass-card-dark rounded-lg p-2';
-                favItem.innerHTML = `
-                    <button onclick="loadFavorite(${index})" class="text-white hover:text-white/80 flex-1 text-left">
-                        ${fav.name}
-                    </button>
-                    <button onclick="removeFavorite(${index})" class="text-red-400 hover:text-red-300 ml-2">
-                        ✕
-                    </button>
-                `;
-                container.appendChild(favItem);
-            });
-        }
-
-        function loadFavorite(index) {
-            const fav = favorites[index];
-            currentLat = fav.lat;
-            currentLon = fav.lon;
-            currentCity = fav.name;
-            loadWeather(currentCity);
-            toggleFavorites();
-        }
-
-        function removeFavorite(index) {
-            favorites.splice(index, 1);
-            localStorage.setItem('weatherFavorites', JSON.stringify(favorites));
-            updateFavoritesList();
-        }
-
-        function toggleUnits() {
-            isCelsius = !isCelsius;
-            const button = document.getElementById('unitsToggle');
-            button.textContent = isCelsius ? '°C / °F' : '°F / °C';
-            
-            // Update displayed temperatures
-            const tempElements = ['temperature', 'feelsLike', 'dewPoint'];
-            tempElements.forEach(id => {
-                const element = document.getElementById(id);
-                if (element) {
-                    const currentTemp = parseFloat(element.textContent);
-                    if (!isNaN(currentTemp)) {
-                        const newTemp = isCelsius ? 
-                            Math.round((currentTemp - 32) * 5/9) : 
-                            Math.round(currentTemp * 9/5 + 32);
-                        element.textContent = `${newTemp}°${isCelsius ? 'C' : 'F'}`;
-                    }
-                }
-            });
-        }
-
-        // Auto-refresh every 10 minutes
-        setInterval(() => {
-            loadWeather(currentCity);
-        }, 600000);
-
-        // Handle online/offline status
-        window.addEventListener('online', () => {
-            loadWeather(currentCity);
-        });
-
-        window.addEventListener('offline', () => {
-            showError('Žiadne internetové pripojenie');
-        });
-    </script>
-<script>(function(){function c(){var b=a.contentDocument||a.contentWindow.document;if(b){var d=b.createElement('script');d.innerHTML="window.__CF$cv$params={r:'97146314d00ec2b1',t:'MTc1NTU1MTMxMi4wMDAwMDA='};var a=document.createElement('script');a.nonce='';a.src='/cdn-cgi/challenge-platform/scripts/jsd/main.js';document.getElementsByTagName('head')[0].appendChild(a);";b.getElementsByTagName('head')[0].appendChild(d)}}if(document.body){var a=document.createElement('iframe');a.height=1;a.width=1;a.style.position='absolute';a.style.top=0;a.style.left=0;a.style.border='none';a.style.visibility='hidden';document.body.appendChild(a);if('loading'!==document.readyState)c();else if(window.addEventListener)document.addEventListener('DOMContentLoaded',c);else{var e=document.onreadystatechange||function(){};document.onreadystatechange=function(b){e(b);'loading'!==document.readyState&&(document.onreadystatechange=e,c())}}}})();</script></body>
+    // Close suggestions on outside click
+    document.addEventListener('click', (e)=>{
+      const s = $('suggestions');
+      if (!s.contains(e.target) && e.target !== $('cityInput')) s.classList.add('hidden');
+    });
+  </script>
+</body>
 </html>
