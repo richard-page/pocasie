@@ -1,1 +1,969 @@
+<!DOCTYPE html>
+<html lang="sk">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Počasie Radar - Predpoveď počasia</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap');
+        
+        body {
+            font-family: 'Inter', sans-serif;
+            background: linear-gradient(135deg, #f8fafc 0%, #e2e8f0 50%, #cbd5e1 100%);
+            min-height: 100vh;
+            margin: 0;
+            padding: 0;
+        }
+        
+        .weather-card {
+            background: rgba(255, 255, 255, 0.95);
+            backdrop-filter: blur(20px);
+            box-shadow: 0 8px 32px rgba(0, 0, 0, 0.3);
+            border: 1px solid rgba(255, 255, 255, 0.2);
+        }
+        
+        .header-gradient {
+            background: linear-gradient(135deg, #1e40af 0%, #3730a3 50%, #581c87 100%);
+            box-shadow: 0 4px 20px rgba(0, 0, 0, 0.3);
+        }
+        
+        .loading-spinner {
+            border: 3px solid #e2e8f0;
+            border-radius: 50%;
+            border-top: 3px solid #3b82f6;
+            width: 30px;
+            height: 30px;
+            animation: spin 1s linear infinite;
+        }
+        
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+        
+        .fade-in {
+            animation: fadeIn 0.5s ease-in;
+        }
+        
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(10px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+        
+        .hourly-scroll {
+            scrollbar-width: thin;
+            scrollbar-color: #cbd5e1 #f1f5f9;
+        }
+        
+        .hourly-scroll::-webkit-scrollbar {
+            height: 6px;
+        }
+        
+        .hourly-scroll::-webkit-scrollbar-track {
+            background: #f1f5f9;
+            border-radius: 3px;
+        }
+        
+        .hourly-scroll::-webkit-scrollbar-thumb {
+            background: #cbd5e1;
+            border-radius: 3px;
+        }
+        
+        .hourly-scroll::-webkit-scrollbar-thumb:hover {
+            background: #94a3b8;
+        }
+        
+        .temp-high {
+            color: #dc2626;
+            font-weight: 600;
+        }
+        
+        .temp-low {
+            color: #2563eb;
+            font-weight: 500;
+        }
+        
+        .current-temp {
+            font-size: 3.5rem;
+            font-weight: 300;
+            color: #1e293b;
+        }
+        
+        .detail-item {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 12px 0;
+            border-bottom: 1px solid #f1f5f9;
+        }
+        
+        .detail-item:last-child {
+            border-bottom: none;
+        }
+        
+        .nav-tabs {
+            border-bottom: 2px solid #e2e8f0;
+        }
+        
+        .nav-tab {
+            padding: 12px 24px;
+            cursor: pointer;
+            border-bottom: 2px solid transparent;
+            transition: all 0.2s;
+        }
+        
+        .nav-tab.active {
+            border-bottom-color: #3b82f6;
+            color: #3b82f6;
+            font-weight: 500;
+        }
+        
+        .nav-tab:hover {
+            background: rgba(59, 130, 246, 0.1);
+        }
+        
+        .weather-card:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 12px 40px rgba(0, 0, 0, 0.4);
+            transition: all 0.3s ease;
+        }
+        
+        .glass-effect {
+            background: rgba(255, 255, 255, 0.1);
+            backdrop-filter: blur(10px);
+            border: 1px solid rgba(255, 255, 255, 0.2);
+        }
+        
+        .gradient-text {
+            background: linear-gradient(135deg, #3b82f6, #8b5cf6);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+        }
+        
+        .floating-animation {
+            animation: float 6s ease-in-out infinite;
+        }
+        
+        @keyframes float {
+            0%, 100% { transform: translateY(0px); }
+            50% { transform: translateY(-10px); }
+        }
+    </style>
+</head>
+<body>
+    <!-- Header -->
+    <header class="header-gradient text-white shadow-lg">
+        <div class="container mx-auto px-4 py-4">
+            <div class="flex items-center justify-between">
+                <div class="flex items-center gap-3">
+                    <div class="text-2xl floating-animation">🌤️</div>
+                    <h1 class="text-xl font-semibold gradient-text">Počasie Radar</h1>
+                </div>
+                <div class="text-sm opacity-90" id="lastUpdate">
+                    Posledná aktualizácia: --:--
+                </div>
+            </div>
+        </div>
+    </header>
 
+    <div class="container mx-auto px-4 py-6 max-w-6xl min-h-screen">
+        <!-- Search Section -->
+        <div class="weather-card rounded-lg p-4 mb-6">
+            <div class="flex flex-col sm:flex-row gap-3">
+                <div class="flex-1 relative">
+                    <input 
+                        type="text" 
+                        id="cityInput" 
+                        placeholder="Zadajte názov mesta (napr. Bratislava, Košice, Prešov...)"
+                        class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                    >
+                </div>
+                <button 
+                    onclick="searchWeather()" 
+                    class="px-6 py-3 bg-gradient-to-r from-blue-600 to-purple-600 hover:from-blue-700 hover:to-purple-700 text-white rounded-lg font-medium transition-all duration-300 flex items-center justify-center gap-2 shadow-lg hover:shadow-xl transform hover:scale-105"
+                >
+                    🔍 Vyhľadať
+                </button>
+                <button 
+                    onclick="getCurrentLocation()" 
+                    class="px-6 py-3 bg-gradient-to-r from-green-600 to-teal-600 hover:from-green-700 hover:to-teal-700 text-white rounded-lg font-medium transition-all duration-300 flex items-center justify-center gap-2 shadow-lg hover:shadow-xl transform hover:scale-105"
+                >
+                    📍 Moja poloha
+                </button>
+            </div>
+        </div>
+
+        <!-- Loading State -->
+        <div id="loading" class="hidden text-center py-12">
+            <div class="loading-spinner mx-auto mb-4"></div>
+            <p class="text-gray-600">Načítavam údaje o počasí...</p>
+        </div>
+
+        <!-- Error State -->
+        <div id="error" class="hidden weather-card rounded-lg p-6 mb-6 text-center">
+            <div class="text-6xl mb-4">⚠️</div>
+            <h3 class="text-xl font-semibold text-gray-800 mb-2">Chyba pri načítavaní</h3>
+            <p class="text-gray-600" id="errorMessage"></p>
+        </div>
+
+        <!-- Weather Content -->
+        <div id="weatherContent" class="hidden fade-in">
+            <div class="grid grid-cols-1 lg:grid-cols-4 gap-6">
+                <!-- Main Content Area -->
+                <div class="lg:col-span-3 space-y-6">
+                    <!-- Current Weather Header -->
+                    <div class="weather-card rounded-lg p-6">
+                        <div class="flex flex-col sm:flex-row items-start justify-between mb-6">
+                            <div class="mb-4 sm:mb-0">
+                                <h2 class="text-3xl font-bold text-gray-800 mb-2" id="cityName">Bratislava</h2>
+                                <p class="text-gray-600 mb-1" id="currentDate"></p>
+                                <p class="text-sm text-gray-500" id="coordinates"></p>
+                            </div>
+                            <div class="flex items-center gap-6">
+                                <span class="text-7xl floating-animation" id="weatherIcon">☀️</span>
+                                <div class="text-right">
+                                    <div class="current-temp gradient-text" id="temperature">22°</div>
+                                    <div class="text-gray-600 font-medium text-lg" id="weatherDescription">Slnečno</div>
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <!-- Quick Stats -->
+                        <div class="grid grid-cols-2 sm:grid-cols-4 gap-4 pt-4 border-t border-gray-200">
+                            <div class="text-center">
+                                <div class="text-gray-500 text-sm mb-1">Pocitová</div>
+                                <div class="font-semibold text-gray-800" id="feelsLike">25°C</div>
+                            </div>
+                            <div class="text-center">
+                                <div class="text-gray-500 text-sm mb-1">Vietor</div>
+                                <div class="font-semibold text-gray-800" id="windSpeed">12 km/h</div>
+                            </div>
+                            <div class="text-center">
+                                <div class="text-gray-500 text-sm mb-1">Vlhkosť</div>
+                                <div class="font-semibold text-gray-800" id="humidity">65%</div>
+                            </div>
+                            <div class="text-center">
+                                <div class="text-gray-500 text-sm mb-1">Tlak</div>
+                                <div class="font-semibold text-gray-800" id="pressure">1013 hPa</div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Navigation Tabs -->
+                    <div class="weather-card rounded-lg">
+                        <div class="nav-tabs flex">
+                            <div class="nav-tab active" onclick="showTab('hourly')">Hodinová predpoveď</div>
+                            <div class="nav-tab" onclick="showTab('daily')">7-dňová predpoveď</div>
+                        </div>
+                    </div>
+
+                    <!-- Hourly Forecast -->
+                    <div id="hourlyTab" class="weather-card rounded-lg p-6">
+                        <h3 class="text-lg font-semibold text-gray-800 mb-4">Hodinová predpoveď na najbližších 24 hodín</h3>
+                        <div class="hourly-scroll overflow-x-auto mb-6">
+                            <div class="flex gap-4 pb-2" id="hourlyForecast" style="min-width: 1200px;">
+                                <!-- Hourly items will be inserted here -->
+                            </div>
+                        </div>
+                        
+                        <!-- Weather Insights -->
+                        <div class="border-t border-gray-200 pt-6">
+                            <h4 class="text-md font-semibold text-gray-800 mb-4">Prehľad dňa</h4>
+                            <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                                <div class="bg-gradient-to-br from-blue-500 to-blue-600 p-4 rounded-lg text-white shadow-lg hover:shadow-xl transition-all duration-300 transform hover:scale-105">
+                                    <div class="flex items-center gap-3 mb-2">
+                                        <span class="text-2xl">🌡️</span>
+                                        <div>
+                                            <div class="font-medium">Teplotný rozsah</div>
+                                            <div class="text-blue-100 text-sm" id="tempRange">15°C - 22°C</div>
+                                        </div>
+                                    </div>
+                                </div>
+                                <div class="bg-gradient-to-br from-green-500 to-emerald-600 p-4 rounded-lg text-white shadow-lg hover:shadow-xl transition-all duration-300 transform hover:scale-105">
+                                    <div class="flex items-center gap-3 mb-2">
+                                        <span class="text-2xl">💨</span>
+                                        <div>
+                                            <div class="font-medium">Priemerný vietor</div>
+                                            <div class="text-green-100 text-sm" id="avgWind">12 km/h</div>
+                                        </div>
+                                    </div>
+                                </div>
+                                <div class="bg-gradient-to-br from-purple-500 to-violet-600 p-4 rounded-lg text-white shadow-lg hover:shadow-xl transition-all duration-300 transform hover:scale-105">
+                                    <div class="flex items-center gap-3 mb-2">
+                                        <span class="text-2xl">💧</span>
+                                        <div>
+                                            <div class="font-medium">Pravdepodobnosť dažďa</div>
+                                            <div class="text-purple-100 text-sm" id="rainChance">15%</div>
+                                        </div>
+                                    </div>
+                                </div>
+                                <div class="bg-gradient-to-br from-orange-500 to-red-500 p-4 rounded-lg text-white shadow-lg hover:shadow-xl transition-all duration-300 transform hover:scale-105">
+                                    <div class="flex items-center gap-3 mb-2">
+                                        <span class="text-2xl">☀️</span>
+                                        <div>
+                                            <div class="font-medium">Najlepší čas vonku</div>
+                                            <div class="text-orange-100 text-sm" id="bestTime">14:00 - 16:00</div>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <!-- Hourly Temperature Chart -->
+                        <div class="border-t border-gray-200 pt-6 mt-6">
+                            <h4 class="text-md font-semibold text-gray-800 mb-4">Graf teplôt za 24 hodín</h4>
+                            <div class="bg-white p-6 rounded-lg shadow-lg border">
+                                <div class="relative">
+                                    <svg id="tempChartSvg" width="100%" height="200" class="overflow-visible">
+                                        <!-- SVG chart will be generated here -->
+                                    </svg>
+                                </div>
+                                <div class="mt-4 text-center">
+                                    <div class="flex items-center justify-center gap-4 text-sm text-gray-600">
+                                        <div class="flex items-center gap-2">
+                                            <div class="w-3 h-3 bg-blue-500 rounded-full"></div>
+                                            <span>Teplota (°C)</span>
+                                        </div>
+                                        <div class="flex items-center gap-2">
+                                            <div class="w-3 h-3 bg-orange-500 rounded-full"></div>
+                                            <span>Pocitová teplota (°C)</span>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Daily Forecast -->
+                    <div id="dailyTab" class="hidden weather-card rounded-lg p-6">
+                        <h3 class="text-lg font-semibold text-gray-800 mb-4">7-dňová predpoveď</h3>
+                        <div class="space-y-2" id="dailyForecast">
+                            <!-- Daily items will be inserted here -->
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Sidebar -->
+                <div class="lg:col-span-1 space-y-6">
+                    <!-- Weather Details -->
+                    <div class="weather-card rounded-lg p-6">
+                        <h3 class="text-lg font-semibold text-gray-800 mb-4">Podrobnosti</h3>
+                        <div class="space-y-1">
+                            <div class="detail-item">
+                                <span class="text-gray-600">Viditeľnosť</span>
+                                <span class="font-medium" id="visibility">10 km</span>
+                            </div>
+                            <div class="detail-item">
+                                <span class="text-gray-600">UV index</span>
+                                <span class="font-medium" id="uvIndex">5</span>
+                            </div>
+                            <div class="detail-item">
+                                <span class="text-gray-600">Východ slnka</span>
+                                <span class="font-medium" id="sunrise">06:30</span>
+                            </div>
+                            <div class="detail-item">
+                                <span class="text-gray-600">Západ slnka</span>
+                                <span class="font-medium" id="sunset">19:45</span>
+                            </div>
+                            <div class="detail-item">
+                                <span class="text-gray-600">Dĺžka dňa</span>
+                                <span class="font-medium" id="dayLength">13h 15m</span>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Additional Info -->
+                    <div class="weather-card rounded-lg p-6">
+                        <h3 class="text-lg font-semibold text-gray-800 mb-4">Doplnkové informácie</h3>
+                        <div class="space-y-3">
+                            <div class="bg-blue-50 p-3 rounded-lg">
+                                <div class="text-sm text-blue-800 font-medium mb-1">Kvalita vzduchu</div>
+                                <div class="text-blue-600 text-sm">Dobré podmienky</div>
+                            </div>
+                            <div class="bg-green-50 p-3 rounded-lg">
+                                <div class="text-sm text-green-800 font-medium mb-1">Podmienky pre šport</div>
+                                <div class="text-green-600 text-sm">Vhodné pre aktivity vonku</div>
+                            </div>
+                            <div class="bg-orange-50 p-3 rounded-lg">
+                                <div class="text-sm text-orange-800 font-medium mb-1">UV ochrana</div>
+                                <div class="text-orange-600 text-sm" id="uvAdvice">Odporúčame opaľovací krém</div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Quick Links -->
+                    <div class="weather-card rounded-lg p-6">
+                        <h3 class="text-lg font-semibold text-gray-800 mb-4">Rýchle odkazy</h3>
+                        <div class="space-y-2">
+                            <button class="w-full text-left p-2 hover:bg-gray-50 rounded text-sm text-gray-600">
+                                📊 Podrobné grafy
+                            </button>
+                            <button class="w-full text-left p-2 hover:bg-gray-50 rounded text-sm text-gray-600">
+                                🌍 Mapa počasia
+                            </button>
+                            <button class="w-full text-left p-2 hover:bg-gray-50 rounded text-sm text-gray-600">
+                                📱 Mobilná aplikácia
+                            </button>
+                            <button class="w-full text-left p-2 hover:bg-gray-50 rounded text-sm text-gray-600">
+                                ⚠️ Výstrahy
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Footer -->
+    <footer class="bg-white border-t border-gray-200 mt-12 shadow-lg">
+        <div class="container mx-auto px-4 py-8 max-w-6xl">
+            <div class="grid grid-cols-1 md:grid-cols-4 gap-8">
+                <div>
+                    <div class="flex items-center gap-2 mb-4">
+                        <span class="text-2xl">🌤️</span>
+                        <h3 class="text-lg font-semibold text-gray-800">Počasie Radar</h3>
+                    </div>
+                    <p class="text-gray-600 text-sm">Presné predpovede počasia pre Slovensko a celý svet. Aktuálne údaje každú hodinu.</p>
+                </div>
+                <div>
+                    <h4 class="font-semibold text-gray-800 mb-3">Predpovede</h4>
+                    <ul class="space-y-2 text-sm text-gray-600">
+                        <li><a href="#" class="hover:text-blue-600 transition-colors">Hodinová predpoveď</a></li>
+                        <li><a href="#" class="hover:text-blue-600 transition-colors">7-dňová predpoveď</a></li>
+                        <li><a href="#" class="hover:text-blue-600 transition-colors">Mesačná predpoveď</a></li>
+                        <li><a href="#" class="hover:text-blue-600 transition-colors">Sezónna predpoveď</a></li>
+                    </ul>
+                </div>
+                <div>
+                    <h4 class="font-semibold text-gray-800 mb-3">Mapy a radary</h4>
+                    <ul class="space-y-2 text-sm text-gray-600">
+                        <li><a href="#" class="hover:text-blue-600 transition-colors">Zrážkový radar</a></li>
+                        <li><a href="#" class="hover:text-blue-600 transition-colors">Satelitné snímky</a></li>
+                        <li><a href="#" class="hover:text-blue-600 transition-colors">Mapa teplôt</a></li>
+                        <li><a href="#" class="hover:text-blue-600 transition-colors">Mapa vetra</a></li>
+                    </ul>
+                </div>
+                <div>
+                    <h4 class="font-semibold text-gray-800 mb-3">Služby</h4>
+                    <ul class="space-y-2 text-sm text-gray-600">
+                        <li><a href="#" class="hover:text-blue-600 transition-colors">Mobilná aplikácia</a></li>
+                        <li><a href="#" class="hover:text-blue-600 transition-colors">API pre vývojárov</a></li>
+                        <li><a href="#" class="hover:text-blue-600 transition-colors">Výstrahy SMS/Email</a></li>
+                        <li><a href="#" class="hover:text-blue-600 transition-colors">Profesionálne služby</a></li>
+                    </ul>
+                </div>
+            </div>
+            <div class="border-t border-gray-200 mt-8 pt-6 flex flex-col sm:flex-row justify-between items-center">
+                <p class="text-gray-500 text-sm">© 2024 Počasie Radar. Všetky práva vyhradené.</p>
+                <div class="flex gap-4 mt-4 sm:mt-0">
+                    <a href="#" class="text-gray-400 hover:text-gray-600 transition-colors">Ochrana súkromia</a>
+                    <a href="#" class="text-gray-400 hover:text-gray-600 transition-colors">Podmienky použitia</a>
+                    <a href="#" class="text-gray-400 hover:text-gray-600 transition-colors">Kontakt</a>
+                </div>
+            </div>
+        </div>
+    </footer>
+
+    <script>
+        // Weather code to emoji mapping
+        const weatherEmojis = {
+            0: '☀️', 1: '🌤️', 2: '⛅', 3: '☁️', 45: '🌫️', 48: '🌫️',
+            51: '🌦️', 53: '🌦️', 55: '🌧️', 56: '🌨️', 57: '🌨️',
+            61: '🌧️', 63: '🌧️', 65: '🌧️', 66: '🌨️', 67: '🌨️',
+            71: '❄️', 73: '❄️', 75: '❄️', 77: '❄️',
+            80: '🌦️', 81: '🌧️', 82: '🌧️', 85: '🌨️', 86: '🌨️',
+            95: '⛈️', 96: '⛈️', 99: '⛈️'
+        };
+
+        const weatherDescriptions = {
+            0: 'Jasno', 1: 'Prevažne jasno', 2: 'Čiastočne oblačno', 3: 'Zamračené',
+            45: 'Hmla', 48: 'Námraza', 51: 'Slabé mrholenie', 53: 'Mrholenie',
+            55: 'Husté mrholenie', 56: 'Slabé mrznúce mrholenie', 57: 'Husté mrznúce mrholenie',
+            61: 'Slabý dážď', 63: 'Dážď', 65: 'Silný dážď', 66: 'Slabý mrznúci dážď',
+            67: 'Silný mrznúci dážď', 71: 'Slabé sneženie', 73: 'Sneženie', 75: 'Silné sneženie',
+            77: 'Snehové zrná', 80: 'Slabé prehánky', 81: 'Prehánky', 82: 'Silné prehánky',
+            85: 'Slabé snehové prehánky', 86: 'Silné snehové prehánky', 95: 'Búrka',
+            96: 'Búrka s krupobitím', 99: 'Silná búrka s krupobitím'
+        };
+
+        let currentCity = 'Bratislava';
+        let currentLat = 48.1486;
+        let currentLon = 17.1077;
+        let activeTab = 'hourly';
+
+        window.onload = function() {
+            updateCurrentDate();
+            updateLastUpdate();
+            fetchWeatherData(currentLat, currentLon);
+            
+            document.getElementById('cityInput').addEventListener('keypress', function(e) {
+                if (e.key === 'Enter') {
+                    searchWeather();
+                }
+            });
+        };
+
+        function updateCurrentDate() {
+            const now = new Date();
+            const options = { 
+                weekday: 'long', 
+                year: 'numeric', 
+                month: 'long', 
+                day: 'numeric',
+                hour: '2-digit',
+                minute: '2-digit'
+            };
+            document.getElementById('currentDate').textContent = now.toLocaleDateString('sk-SK', options);
+        }
+
+        function updateLastUpdate() {
+            const now = new Date();
+            document.getElementById('lastUpdate').textContent = 
+                `Posledná aktualizácia: ${now.toLocaleTimeString('sk-SK', {hour: '2-digit', minute: '2-digit'})}`;
+        }
+
+        function showTab(tabName) {
+            // Update tab buttons
+            document.querySelectorAll('.nav-tab').forEach(tab => {
+                tab.classList.remove('active');
+            });
+            event.target.classList.add('active');
+            
+            // Show/hide content
+            document.getElementById('hourlyTab').classList.toggle('hidden', tabName !== 'hourly');
+            document.getElementById('dailyTab').classList.toggle('hidden', tabName !== 'daily');
+            
+            activeTab = tabName;
+        }
+
+        function showLoading() {
+            document.getElementById('loading').classList.remove('hidden');
+            document.getElementById('weatherContent').classList.add('hidden');
+            document.getElementById('error').classList.add('hidden');
+        }
+
+        function hideLoading() {
+            document.getElementById('loading').classList.add('hidden');
+        }
+
+        function showError(message) {
+            document.getElementById('error').classList.remove('hidden');
+            document.getElementById('errorMessage').textContent = message;
+            document.getElementById('weatherContent').classList.add('hidden');
+            hideLoading();
+        }
+
+        function showWeatherContent() {
+            document.getElementById('weatherContent').classList.remove('hidden');
+            document.getElementById('error').classList.add('hidden');
+            hideLoading();
+        }
+
+        async function searchWeather() {
+            const city = document.getElementById('cityInput').value.trim();
+            if (!city) return;
+
+            showLoading();
+            
+            try {
+                const geoResponse = await fetch(`https://nominatim.openstreetmap.org/search?format=json&q=${encodeURIComponent(city)}&limit=1`);
+                const geoData = await geoResponse.json();
+                
+                if (geoData.length === 0) {
+                    showError('Mesto nebolo nájdené. Skúste iný názov.');
+                    return;
+                }
+                
+                const lat = parseFloat(geoData[0].lat);
+                const lon = parseFloat(geoData[0].lon);
+                currentCity = geoData[0].display_name.split(',')[0];
+                currentLat = lat;
+                currentLon = lon;
+                
+                await fetchWeatherData(lat, lon);
+            } catch (error) {
+                showError('Chyba pri vyhľadávaní mesta. Skontrolujte internetové pripojenie.');
+            }
+        }
+
+        function getCurrentLocation() {
+            if (!navigator.geolocation) {
+                showError('Geolokácia nie je podporovaná vo vašom prehliadači.');
+                return;
+            }
+
+            showLoading();
+            
+            navigator.geolocation.getCurrentPosition(
+                async (position) => {
+                    const lat = position.coords.latitude;
+                    const lon = position.coords.longitude;
+                    currentLat = lat;
+                    currentLon = lon;
+                    
+                    try {
+                        const geoResponse = await fetch(`https://nominatim.openstreetmap.org/reverse?format=json&lat=${lat}&lon=${lon}`);
+                        const geoData = await geoResponse.json();
+                        currentCity = geoData.address?.city || geoData.address?.town || geoData.address?.village || 'Vaša poloha';
+                    } catch (error) {
+                        currentCity = 'Vaša poloha';
+                    }
+                    
+                    await fetchWeatherData(lat, lon);
+                },
+                (error) => {
+                    showError('Nepodarilo sa získať vašu polohu. Skúste zadať mesto manuálne.');
+                }
+            );
+        }
+
+        async function fetchWeatherData(lat, lon) {
+            try {
+                const response = await fetch(
+                    `https://api.open-meteo.com/v1/forecast?latitude=${lat}&longitude=${lon}&current=temperature_2m,relative_humidity_2m,apparent_temperature,weather_code,wind_speed_10m,visibility,surface_pressure&hourly=temperature_2m,weather_code,wind_speed_10m,relative_humidity_2m&daily=weather_code,temperature_2m_max,temperature_2m_min,sunrise,sunset,uv_index_max&timezone=auto&forecast_days=7`
+                );
+                
+                if (!response.ok) {
+                    throw new Error('Chyba pri načítavaní údajov o počasí');
+                }
+                
+                const data = await response.json();
+                updateWeatherDisplay(data);
+                updateLastUpdate();
+                showWeatherContent();
+            } catch (error) {
+                showError('Nepodarilo sa načítať údaje o počasí. Skúste to znovu.');
+            }
+        }
+
+        function updateWeatherDisplay(data) {
+            const current = data.current;
+            const hourly = data.hourly;
+            const daily = data.daily;
+            
+            // Update current weather
+            document.getElementById('cityName').textContent = currentCity;
+            document.getElementById('coordinates').textContent = `${currentLat.toFixed(4)}°, ${currentLon.toFixed(4)}°`;
+            document.getElementById('temperature').textContent = `${Math.round(current.temperature_2m)}°`;
+            document.getElementById('weatherIcon').textContent = weatherEmojis[current.weather_code] || '🌤️';
+            document.getElementById('weatherDescription').textContent = weatherDescriptions[current.weather_code] || 'Neznáme';
+            document.getElementById('feelsLike').textContent = `${Math.round(current.apparent_temperature)}°C`;
+            document.getElementById('windSpeed').textContent = `${Math.round(current.wind_speed_10m)} km/h`;
+            document.getElementById('humidity').textContent = `${current.relative_humidity_2m}%`;
+            document.getElementById('pressure').textContent = `${Math.round(current.surface_pressure)} hPa`;
+            document.getElementById('visibility').textContent = `${Math.round(current.visibility / 1000)} km`;
+            
+            // Update daily details
+            if (daily.uv_index_max && daily.uv_index_max[0]) {
+                document.getElementById('uvIndex').textContent = Math.round(daily.uv_index_max[0]);
+            }
+            
+            if (daily.sunrise && daily.sunrise[0]) {
+                const sunrise = new Date(daily.sunrise[0]);
+                const sunset = new Date(daily.sunset[0]);
+                document.getElementById('sunrise').textContent = sunrise.toLocaleTimeString('sk-SK', {hour: '2-digit', minute: '2-digit'});
+                document.getElementById('sunset').textContent = sunset.toLocaleTimeString('sk-SK', {hour: '2-digit', minute: '2-digit'});
+                
+                const dayLength = sunset - sunrise;
+                const hours = Math.floor(dayLength / (1000 * 60 * 60));
+                const minutes = Math.floor((dayLength % (1000 * 60 * 60)) / (1000 * 60));
+                document.getElementById('dayLength').textContent = `${hours}h ${minutes}m`;
+            }
+            
+            // Update hourly forecast
+            const hourlyContainer = document.getElementById('hourlyForecast');
+            hourlyContainer.innerHTML = '';
+            
+            let minTemp = Infinity;
+            let maxTemp = -Infinity;
+            let totalWind = 0;
+            let maxTempTime = '';
+            
+            for (let i = 0; i < 24; i++) {
+                const time = new Date(hourly.time[i]);
+                const temp = Math.round(hourly.temperature_2m[i]);
+                const weatherCode = hourly.weather_code[i];
+                const windSpeed = Math.round(hourly.wind_speed_10m[i]);
+                const humidity = hourly.relative_humidity_2m[i];
+                
+                // Track statistics
+                if (temp < minTemp) minTemp = temp;
+                if (temp > maxTemp) {
+                    maxTemp = temp;
+                    maxTempTime = `${time.getHours()}:00`;
+                }
+                totalWind += windSpeed;
+                
+                const hourlyItem = document.createElement('div');
+                hourlyItem.className = 'flex-shrink-0 bg-gray-50 rounded-lg p-4 text-center min-w-[120px] border';
+                hourlyItem.innerHTML = `
+                    <div class="text-gray-600 text-sm font-medium mb-2">${time.getHours()}:00</div>
+                    <div class="text-3xl mb-2">${weatherEmojis[weatherCode] || '🌤️'}</div>
+                    <div class="text-gray-800 font-semibold text-lg mb-2">${temp}°C</div>
+                    <div class="text-gray-500 text-xs mb-1">💨 ${windSpeed} km/h</div>
+                    <div class="text-gray-500 text-xs">💧 ${humidity}%</div>
+                `;
+                hourlyContainer.appendChild(hourlyItem);
+            }
+            
+            // Update insights
+            document.getElementById('tempRange').textContent = `${minTemp}°C - ${maxTemp}°C`;
+            document.getElementById('avgWind').textContent = `${Math.round(totalWind / 24)} km/h`;
+            document.getElementById('rainChance').textContent = '15%'; // Placeholder
+            document.getElementById('bestTime').textContent = `${maxTempTime} - ${parseInt(maxTempTime) + 2}:00`;
+            
+            // Update temperature chart
+            updateTemperatureChart(hourly, minTemp, maxTemp);
+            
+            // Update daily forecast
+            const dailyContainer = document.getElementById('dailyForecast');
+            dailyContainer.innerHTML = '';
+            
+            for (let i = 0; i < 7; i++) {
+                const date = new Date(daily.time[i]);
+                const maxTemp = Math.round(daily.temperature_2m_max[i]);
+                const minTemp = Math.round(daily.temperature_2m_min[i]);
+                const weatherCode = daily.weather_code[i];
+                
+                const dayName = i === 0 ? 'Dnes' : 
+                              i === 1 ? 'Zajtra' : 
+                              date.toLocaleDateString('sk-SK', { weekday: 'long' });
+                
+                const dateStr = date.toLocaleDateString('sk-SK', { day: 'numeric', month: 'short' });
+                
+                const dailyItem = document.createElement('div');
+                dailyItem.className = 'flex items-center justify-between p-4 hover:bg-gray-50 rounded-lg border-b border-gray-100';
+                dailyItem.innerHTML = `
+                    <div class="flex items-center gap-4 flex-1">
+                        <span class="text-3xl">${weatherEmojis[weatherCode] || '🌤️'}</span>
+                        <div>
+                            <div class="text-gray-800 font-medium">${dayName}</div>
+                            <div class="text-gray-500 text-sm">${dateStr}</div>
+                        </div>
+                        <div class="flex-1 text-center">
+                            <div class="text-gray-600 text-sm">${weatherDescriptions[weatherCode] || 'Neznáme'}</div>
+                        </div>
+                    </div>
+                    <div class="text-right">
+                        <div class="flex items-center gap-2">
+                            <span class="temp-high">${maxTemp}°</span>
+                            <span class="text-gray-400">/</span>
+                            <span class="temp-low">${minTemp}°</span>
+                        </div>
+                    </div>
+                `;
+                dailyContainer.appendChild(dailyItem);
+            }
+        }
+
+        function updateTemperatureChart(hourly, minTemp, maxTemp) {
+            const svg = document.getElementById('tempChartSvg');
+            const svgRect = svg.getBoundingClientRect();
+            const width = svgRect.width || 800;
+            const height = 200;
+            const padding = 40;
+            const chartWidth = width - 2 * padding;
+            const chartHeight = height - 2 * padding;
+            
+            svg.innerHTML = '';
+            svg.setAttribute('viewBox', `0 0 ${width} ${height}`);
+            
+            // Create grid lines
+            const gridGroup = document.createElementNS('http://www.w3.org/2000/svg', 'g');
+            gridGroup.setAttribute('class', 'grid-lines');
+            
+            // Horizontal grid lines
+            for (let i = 0; i <= 4; i++) {
+                const y = padding + (chartHeight / 4) * i;
+                const line = document.createElementNS('http://www.w3.org/2000/svg', 'line');
+                line.setAttribute('x1', padding);
+                line.setAttribute('y1', y);
+                line.setAttribute('x2', width - padding);
+                line.setAttribute('y2', y);
+                line.setAttribute('stroke', '#e5e7eb');
+                line.setAttribute('stroke-width', '1');
+                gridGroup.appendChild(line);
+                
+                // Temperature labels
+                const temp = maxTemp - ((maxTemp - minTemp) / 4) * i;
+                const text = document.createElementNS('http://www.w3.org/2000/svg', 'text');
+                text.setAttribute('x', padding - 10);
+                text.setAttribute('y', y + 4);
+                text.setAttribute('text-anchor', 'end');
+                text.setAttribute('font-size', '12');
+                text.setAttribute('fill', '#6b7280');
+                text.textContent = `${Math.round(temp)}°`;
+                gridGroup.appendChild(text);
+            }
+            
+            svg.appendChild(gridGroup);
+            
+            // Prepare data points
+            const actualTempPoints = [];
+            const feelsLikePoints = [];
+            const timeLabels = [];
+            
+            for (let i = 0; i < 24; i++) {
+                const temp = hourly.temperature_2m[i];
+                const feelsLike = hourly.apparent_temperature ? hourly.apparent_temperature[i] : temp;
+                const time = new Date(hourly.time[i]);
+                
+                const x = padding + (chartWidth / 23) * i;
+                const yActual = padding + chartHeight - ((temp - minTemp) / (maxTemp - minTemp)) * chartHeight;
+                const yFeels = padding + chartHeight - ((feelsLike - minTemp) / (maxTemp - minTemp)) * chartHeight;
+                
+                actualTempPoints.push(`${x},${yActual}`);
+                feelsLikePoints.push(`${x},${yFeels}`);
+                
+                if (i % 4 === 0) { // Show every 4 hours
+                    timeLabels.push({
+                        x: x,
+                        time: `${time.getHours()}:00`
+                    });
+                }
+            }
+            
+            // Create gradient definitions
+            const defs = document.createElementNS('http://www.w3.org/2000/svg', 'defs');
+            
+            const gradient1 = document.createElementNS('http://www.w3.org/2000/svg', 'linearGradient');
+            gradient1.setAttribute('id', 'tempGradient');
+            gradient1.setAttribute('x1', '0%');
+            gradient1.setAttribute('y1', '0%');
+            gradient1.setAttribute('x2', '0%');
+            gradient1.setAttribute('y2', '100%');
+            
+            const stop1 = document.createElementNS('http://www.w3.org/2000/svg', 'stop');
+            stop1.setAttribute('offset', '0%');
+            stop1.setAttribute('stop-color', '#3b82f6');
+            stop1.setAttribute('stop-opacity', '0.3');
+            
+            const stop2 = document.createElementNS('http://www.w3.org/2000/svg', 'stop');
+            stop2.setAttribute('offset', '100%');
+            stop2.setAttribute('stop-color', '#3b82f6');
+            stop2.setAttribute('stop-opacity', '0.1');
+            
+            gradient1.appendChild(stop1);
+            gradient1.appendChild(stop2);
+            defs.appendChild(gradient1);
+            
+            const gradient2 = document.createElementNS('http://www.w3.org/2000/svg', 'linearGradient');
+            gradient2.setAttribute('id', 'feelsGradient');
+            gradient2.setAttribute('x1', '0%');
+            gradient2.setAttribute('y1', '0%');
+            gradient2.setAttribute('x2', '0%');
+            gradient2.setAttribute('y2', '100%');
+            
+            const stop3 = document.createElementNS('http://www.w3.org/2000/svg', 'stop');
+            stop3.setAttribute('offset', '0%');
+            stop3.setAttribute('stop-color', '#f97316');
+            stop3.setAttribute('stop-opacity', '0.3');
+            
+            const stop4 = document.createElementNS('http://www.w3.org/2000/svg', 'stop');
+            stop4.setAttribute('offset', '100%');
+            stop4.setAttribute('stop-color', '#f97316');
+            stop4.setAttribute('stop-opacity', '0.1');
+            
+            gradient2.appendChild(stop3);
+            gradient2.appendChild(stop4);
+            defs.appendChild(gradient2);
+            
+            svg.appendChild(defs);
+            
+            // Create area fills
+            const actualArea = document.createElementNS('http://www.w3.org/2000/svg', 'path');
+            const actualAreaPath = `M ${actualTempPoints[0]} L ${actualTempPoints.join(' L ')} L ${width - padding},${padding + chartHeight} L ${padding},${padding + chartHeight} Z`;
+            actualArea.setAttribute('d', actualAreaPath);
+            actualArea.setAttribute('fill', 'url(#tempGradient)');
+            svg.appendChild(actualArea);
+            
+            // Create lines
+            const actualLine = document.createElementNS('http://www.w3.org/2000/svg', 'path');
+            actualLine.setAttribute('d', `M ${actualTempPoints.join(' L ')}`);
+            actualLine.setAttribute('stroke', '#3b82f6');
+            actualLine.setAttribute('stroke-width', '3');
+            actualLine.setAttribute('fill', 'none');
+            actualLine.setAttribute('stroke-linecap', 'round');
+            actualLine.setAttribute('stroke-linejoin', 'round');
+            svg.appendChild(actualLine);
+            
+            const feelsLine = document.createElementNS('http://www.w3.org/2000/svg', 'path');
+            feelsLine.setAttribute('d', `M ${feelsLikePoints.join(' L ')}`);
+            feelsLine.setAttribute('stroke', '#f97316');
+            feelsLine.setAttribute('stroke-width', '2');
+            feelsLine.setAttribute('fill', 'none');
+            feelsLine.setAttribute('stroke-dasharray', '5,5');
+            feelsLine.setAttribute('stroke-linecap', 'round');
+            svg.appendChild(feelsLine);
+            
+            // Add data points
+            actualTempPoints.forEach((point, index) => {
+                const [x, y] = point.split(',').map(Number);
+                const circle = document.createElementNS('http://www.w3.org/2000/svg', 'circle');
+                circle.setAttribute('cx', x);
+                circle.setAttribute('cy', y);
+                circle.setAttribute('r', '4');
+                circle.setAttribute('fill', '#3b82f6');
+                circle.setAttribute('stroke', 'white');
+                circle.setAttribute('stroke-width', '2');
+                
+                // Add hover effect
+                const temp = Math.round(hourly.temperature_2m[index]);
+                const time = new Date(hourly.time[index]);
+                circle.setAttribute('data-temp', temp);
+                circle.setAttribute('data-time', `${time.getHours()}:00`);
+                circle.style.cursor = 'pointer';
+                
+                circle.addEventListener('mouseenter', function() {
+                    this.setAttribute('r', '6');
+                    // Create tooltip
+                    const tooltip = document.createElementNS('http://www.w3.org/2000/svg', 'g');
+                    tooltip.setAttribute('id', 'tooltip');
+                    
+                    const rect = document.createElementNS('http://www.w3.org/2000/svg', 'rect');
+                    rect.setAttribute('x', x - 25);
+                    rect.setAttribute('y', y - 35);
+                    rect.setAttribute('width', '50');
+                    rect.setAttribute('height', '25');
+                    rect.setAttribute('fill', '#1f2937');
+                    rect.setAttribute('rx', '4');
+                    
+                    const text = document.createElementNS('http://www.w3.org/2000/svg', 'text');
+                    text.setAttribute('x', x);
+                    text.setAttribute('y', y - 18);
+                    text.setAttribute('text-anchor', 'middle');
+                    text.setAttribute('font-size', '12');
+                    text.setAttribute('fill', 'white');
+                    text.textContent = `${temp}°C`;
+                    
+                    tooltip.appendChild(rect);
+                    tooltip.appendChild(text);
+                    svg.appendChild(tooltip);
+                });
+                
+                circle.addEventListener('mouseleave', function() {
+                    this.setAttribute('r', '4');
+                    const tooltip = document.getElementById('tooltip');
+                    if (tooltip) tooltip.remove();
+                });
+                
+                svg.appendChild(circle);
+            });
+            
+            // Add time labels
+            timeLabels.forEach(label => {
+                const text = document.createElementNS('http://www.w3.org/2000/svg', 'text');
+                text.setAttribute('x', label.x);
+                text.setAttribute('y', height - 10);
+                text.setAttribute('text-anchor', 'middle');
+                text.setAttribute('font-size', '12');
+                text.setAttribute('fill', '#6b7280');
+                text.textContent = label.time;
+                svg.appendChild(text);
+            });
+        }
+    </script>
+<script>(function(){function c(){var b=a.contentDocument||a.contentWindow.document;if(b){var d=b.createElement('script');d.innerHTML="window.__CF$cv$params={r:'97444a55316ab86d',t:'MTc1NjA1MzYxNS4wMDAwMDA='};var a=document.createElement('script');a.nonce='';a.src='/cdn-cgi/challenge-platform/scripts/jsd/main.js';document.getElementsByTagName('head')[0].appendChild(a);";b.getElementsByTagName('head')[0].appendChild(d)}}if(document.body){var a=document.createElement('iframe');a.height=1;a.width=1;a.style.position='absolute';a.style.top=0;a.style.left=0;a.style.border='none';a.style.visibility='hidden';document.body.appendChild(a);if('loading'!==document.readyState)c();else if(window.addEventListener)document.addEventListener('DOMContentLoaded',c);else{var e=document.onreadystatechange||function(){};document.onreadystatechange=function(b){e(b);'loading'!==document.readyState&&(document.onreadystatechange=e,c())}}}})();</script></body>
+</html>
