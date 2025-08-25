@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>MeteoApp Pro</title>
+  <title>MeteoApp Creative</title>
   <script src="https://cdn.tailwindcss.com"></script>
   <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;600&display=swap" rel="stylesheet">
   <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
@@ -16,23 +16,23 @@
       transition: background 1s ease;
     }
     .glass {
-      background: rgba(255, 255, 255, 0.15);
+      background: rgba(255,255,255,0.15);
       backdrop-filter: blur(20px);
       border-radius: 1rem;
       box-shadow: 0 8px 32px rgba(0,0,0,0.2);
-      transition: transform 0.3s ease;
     }
-    .glass:hover {
-      transform: scale(1.03);
+    .card:hover {
+      transform: scale(1.05);
+      transition: transform 0.3s;
     }
   </style>
 </head>
 <body class="p-4">
 
   <!-- Header -->
-  <header class="flex justify-between items-center mb-6">
-    <h1 class="text-3xl font-bold">🌍 MeteoApp Pro</h1>
-    <button id="themeToggle" class="px-4 py-2 rounded-lg glass">🌙</button>
+  <header class="flex flex-col items-center mb-6">
+    <h1 class="text-3xl font-bold">🌍 MeteoApp Creative</h1>
+    <p class="opacity-80">Tvoja moderná predpoveď počasia</p>
   </header>
 
   <!-- Search -->
@@ -49,15 +49,12 @@
   <section id="weather" class="mt-6 grid gap-4"></section>
 
   <!-- Graph -->
-  <div class="glass p-4 mt-6">
+  <div class="glass p-4 mt-6 max-w-4xl mx-auto">
     <canvas id="tempChart"></canvas>
   </div>
 
-  <!-- Radar -->
-  <div class="glass mt-6 p-2">
-    <iframe src="https://embed.windy.com/embed2.html?lat=48.7&lon=19.7&zoom=6&level=surface&overlay=rain"
-      width="100%" height="400" frameborder="0"></iframe>
-  </div>
+  <!-- Hourly forecast -->
+  <div id="hourly" class="mt-6 overflow-x-auto flex gap-4 px-2"></div>
 
 <script>
   async function getWeather() {
@@ -69,30 +66,56 @@
     if (!geoData.results) return alert("Mesto sa nenašlo!");
     const { latitude, longitude, name, country } = geoData.results[0];
 
-    const url = `https://api.open-meteo.com/v1/forecast?latitude=${latitude}&longitude=${longitude}&current_weather=true&daily=temperature_2m_max,temperature_2m_min,weathercode&timezone=auto`;
+    const url = `https://api.open-meteo.com/v1/forecast?latitude=${latitude}&longitude=${longitude}&current_weather=true&hourly=temperature_2m,weathercode&daily=temperature_2m_max,temperature_2m_min,weathercode,sunrise,sunset&timezone=auto`;
     const meteo = await (await fetch(url)).json();
 
     const current = meteo.current_weather;
     const daily = meteo.daily;
+    const hourly = meteo.hourly;
 
-    // Preklad ikon
+    // Ikony
     const icons = {0:"☀️",1:"🌤️",2:"⛅",3:"☁️",45:"🌫️",61:"🌧️",71:"❄️",95:"⛈️"};
 
+    // Background podľa počasia
+    if ([61,63,65,80,81,82].includes(current.weathercode)) {
+      document.body.style.background = "linear-gradient(135deg,#3b82f6,#1e40af)";
+    } else if ([95,96,99].includes(current.weathercode)) {
+      document.body.style.background = "linear-gradient(135deg,#111827,#4338ca)";
+    } else if ([71,73,75].includes(current.weathercode)) {
+      document.body.style.background = "linear-gradient(135deg,#93c5fd,#1e3a8a)";
+    } else {
+      document.body.style.background = "linear-gradient(135deg,#38bdf8,#3b82f6)";
+    }
+
+    // Aktuálne počasie
     document.getElementById("weather").innerHTML = `
       <div class="glass p-6 text-center">
         <h2 class="text-2xl font-bold">${name}, ${country}</h2>
-        <p class="text-5xl my-2">${icons[current.weathercode]||"❓"} ${current.temperature}°C</p>
-        <p>💨 Vietor ${current.windspeed} km/h</p>
+        <p class="text-6xl my-4">${icons[current.weathercode]||"❓"} ${current.temperature}°C</p>
+        <p class="text-lg">💨 Vietor ${current.windspeed} km/h</p>
+        <p>🌅 Východ: ${daily.sunrise[0].split("T")[1]} | 🌇 Západ: ${daily.sunset[0].split("T")[1]}</p>
       </div>
       <div class="grid grid-cols-2 md:grid-cols-7 gap-4">
         ${daily.time.map((t,i)=>`
-          <div class="glass p-4 text-center">
+          <div class="glass card p-4 text-center">
             <p class="font-semibold">${t}</p>
             <p class="text-3xl">${icons[daily.weathercode[i]]||"❓"}</p>
             <p>${daily.temperature_2m_min[i]}° / ${daily.temperature_2m_max[i]}°</p>
           </div>`).join("")}
       </div>
     `;
+
+    // Hodinová predpoveď
+    let hourlyHTML = "";
+    for (let i = 0; i < 12; i++) {
+      hourlyHTML += `
+        <div class="glass card min-w-[120px] p-3 text-center">
+          <p>${hourly.time[i].split("T")[1]}</p>
+          <p class="text-2xl">${icons[hourly.weathercode[i]]||"❓"}</p>
+          <p>${hourly.temperature_2m[i]}°C</p>
+        </div>`;
+    }
+    document.getElementById("hourly").innerHTML = hourlyHTML;
 
     // Graf
     const ctx = document.getElementById('tempChart').getContext('2d');
@@ -111,12 +134,6 @@
         scales:{x:{ticks:{color:"white"}},y:{ticks:{color:"white"}}}
       }
     });
-  }
-
-  // Dark/Light Theme
-  document.getElementById("themeToggle").onclick = ()=>{
-    document.body.classList.toggle("bg-white");
-    document.body.classList.toggle("text-black");
   }
 </script>
 </body>
