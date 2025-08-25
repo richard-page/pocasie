@@ -7,10 +7,11 @@
   <script src="https://cdn.tailwindcss.com"></script>
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;600&display=swap" rel="stylesheet">
+  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
   <style>
     body {
       font-family: 'Poppins', sans-serif;
-      background: linear-gradient(to top right, #60a5fa, #2563eb);
+      background: linear-gradient(135deg, #60a5fa, #2563eb);
       min-height: 100vh;
       color: white;
     }
@@ -28,16 +29,20 @@
   <h1 class="text-2xl font-bold mb-4">🌤 MeteoApp</h1>
 
   <!-- Vyhľadávanie mesta -->
-  <input id="cityInput" type="text" placeholder="Zadaj mesto..."
-         class="p-2 rounded-lg text-black w-full max-w-md">
-
-  <button onclick="getWeather()" 
-          class="bg-blue-600 hover:bg-blue-700 px-4 py-2 rounded-lg mt-2">
-    Hľadaj
-  </button>
+  <div class="flex gap-2 w-full max-w-md">
+    <input id="cityInput" type="text" placeholder="Zadaj mesto..."
+         class="p-2 rounded-lg text-black w-full">
+    <button onclick="getWeather()" 
+          class="bg-blue-600 hover:bg-blue-700 px-4 py-2 rounded-lg">
+      Hľadaj
+    </button>
+  </div>
 
   <!-- Výstup počasia -->
-  <div id="weather" class="w-full max-w-md mt-4"></div>
+  <div id="weather" class="w-full max-w-3xl mt-6"></div>
+
+  <!-- Graf -->
+  <canvas id="tempChart" class="w-full max-w-3xl mt-6"></canvas>
 
   <script>
     async function getWeather() {
@@ -47,49 +52,91 @@
         return;
       }
 
-      // 1. Geokódovanie mesta cez Open-Meteo
+      // Geokódovanie
       const geoUrl = `https://geocoding-api.open-meteo.com/v1/search?name=${encodeURIComponent(city)}&count=1&language=sk&format=json`;
       const geoRes = await fetch(geoUrl);
       const geoData = await geoRes.json();
-
       if (!geoData.results || geoData.results.length === 0) {
         alert("Mesto sa nenašlo.");
         return;
       }
-
       const { latitude, longitude, name, country } = geoData.results[0];
 
-      // 2. Počasie z Open-Meteo
-      const meteoUrl = `https://api.open-meteo.com/v1/forecast?latitude=${latitude}&longitude=${longitude}&current_weather=true&daily=temperature_2m_max,temperature_2m_min&timezone=auto`;
+      // Dáta počasia
+      const meteoUrl = `https://api.open-meteo.com/v1/forecast?latitude=${latitude}&longitude=${longitude}&current_weather=true&daily=temperature_2m_max,temperature_2m_min,weathercode&timezone=auto`;
       const meteoRes = await fetch(meteoUrl);
       const meteoData = await meteoRes.json();
 
       const current = meteoData.current_weather;
       const daily = meteoData.daily;
 
-      // 3. Vykreslenie
+      // Preklad weathercode na ikonku
+      function getIcon(code) {
+        if ([0].includes(code)) return "☀️";
+        if ([1,2,3].includes(code)) return "⛅";
+        if ([45,48].includes(code)) return "🌫️";
+        if ([51,53,55,61,63,65,80,81,82].includes(code)) return "🌧️";
+        if ([71,73,75,77,85,86].includes(code)) return "❄️";
+        if ([95,96,99].includes(code)) return "⛈️";
+        return "❓";
+      }
+
+      // HTML výstup
       let html = `
         <div class="card">
           <h2 class="text-xl font-semibold">${name}, ${country}</h2>
-          <p class="mt-1">🌡️ Aktuálna teplota: <b>${current.temperature}°C</b></p>
+          <p class="mt-1">🌡️ Teplota: <b>${current.temperature}°C</b></p>
           <p>💨 Vietor: ${current.windspeed} km/h</p>
-          <p>⏱ Posledná aktualizácia: ${current.time}</p>
+          <p>⏱ Aktualizované: ${current.time}</p>
         </div>
-        <div class="card">
-          <h3 class="text-lg font-semibold">📅 Predpoveď na 3 dni:</h3>
-          <ul>
+        <div class="grid grid-cols-2 md:grid-cols-4 gap-4 mt-4">
       `;
 
-      for (let i = 0; i < 3; i++) {
+      for (let i = 0; i < 7; i++) {
         html += `
-          <li class="mt-1">
-            ${daily.time[i]}: ${daily.temperature_2m_min[i]}°C – ${daily.temperature_2m_max[i]}°C
-          </li>`;
+          <div class="card text-center">
+            <p class="font-semibold">${daily.time[i]}</p>
+            <p class="text-3xl">${getIcon(daily.weathercode[i])}</p>
+            <p>${daily.temperature_2m_min[i]}°C – ${daily.temperature_2m_max[i]}°C</p>
+          </div>`;
       }
 
-      html += `</ul></div>`;
-
+      html += `</div>`;
       document.getElementById("weather").innerHTML = html;
+
+      // Graf
+      const ctx = document.getElementById('tempChart').getContext('2d');
+      if (window.tempChartInstance) {
+        window.tempChartInstance.destroy();
+      }
+      window.tempChartInstance = new Chart(ctx, {
+        type: 'line',
+        data: {
+          labels: daily.time,
+          datasets: [
+            {
+              label: 'Max °C',
+              data: daily.temperature_2m_max,
+              borderColor: 'red',
+              fill: false
+            },
+            {
+              label: 'Min °C',
+              data: daily.temperature_2m_min,
+              borderColor: 'blue',
+              fill: false
+            }
+          ]
+        },
+        options: {
+          responsive: true,
+          plugins: { legend: { labels: { color: 'white' } } },
+          scales: {
+            x: { ticks: { color: 'white' } },
+            y: { ticks: { color: 'white' } }
+          }
+        }
+      });
     }
   </script>
 
