@@ -3,142 +3,121 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>MeteoApp - Počasie</title>
+  <title>MeteoApp Pro</title>
   <script src="https://cdn.tailwindcss.com"></script>
-  <link rel="preconnect" href="https://fonts.googleapis.com">
   <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;600&display=swap" rel="stylesheet">
   <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
   <style>
     body {
       font-family: 'Poppins', sans-serif;
-      background: linear-gradient(135deg, #60a5fa, #2563eb);
+      background: linear-gradient(135deg, #1e3a8a, #2563eb, #60a5fa);
       min-height: 100vh;
       color: white;
+      transition: background 1s ease;
     }
-    .card {
-      background: rgba(255,255,255,0.15);
-      backdrop-filter: blur(12px);
+    .glass {
+      background: rgba(255, 255, 255, 0.15);
+      backdrop-filter: blur(20px);
       border-radius: 1rem;
-      padding: 1rem;
-      margin-top: 1rem;
+      box-shadow: 0 8px 32px rgba(0,0,0,0.2);
+      transition: transform 0.3s ease;
+    }
+    .glass:hover {
+      transform: scale(1.03);
     }
   </style>
 </head>
-<body class="flex flex-col items-center p-4">
+<body class="p-4">
 
-  <h1 class="text-2xl font-bold mb-4">🌤 MeteoApp</h1>
+  <!-- Header -->
+  <header class="flex justify-between items-center mb-6">
+    <h1 class="text-3xl font-bold">🌍 MeteoApp Pro</h1>
+    <button id="themeToggle" class="px-4 py-2 rounded-lg glass">🌙</button>
+  </header>
 
-  <!-- Vyhľadávanie mesta -->
-  <div class="flex gap-2 w-full max-w-md">
-    <input id="cityInput" type="text" placeholder="Zadaj mesto..."
-         class="p-2 rounded-lg text-black w-full">
+  <!-- Search -->
+  <div class="flex gap-2 max-w-lg mx-auto">
+    <input id="cityInput" type="text" placeholder="🔍 Zadaj mesto..."
+      class="p-3 rounded-lg text-black w-full">
     <button onclick="getWeather()" 
-          class="bg-blue-600 hover:bg-blue-700 px-4 py-2 rounded-lg">
+      class="px-4 py-2 rounded-lg glass font-semibold">
       Hľadaj
     </button>
   </div>
 
-  <!-- Výstup počasia -->
-  <div id="weather" class="w-full max-w-3xl mt-6"></div>
+  <!-- Current Weather -->
+  <section id="weather" class="mt-6 grid gap-4"></section>
 
-  <!-- Graf -->
-  <canvas id="tempChart" class="w-full max-w-3xl mt-6"></canvas>
+  <!-- Graph -->
+  <div class="glass p-4 mt-6">
+    <canvas id="tempChart"></canvas>
+  </div>
 
-  <script>
-    async function getWeather() {
-      const city = document.getElementById("cityInput").value;
-      if (!city) {
-        alert("Zadaj mesto!");
-        return;
+  <!-- Radar -->
+  <div class="glass mt-6 p-2">
+    <iframe src="https://embed.windy.com/embed2.html?lat=48.7&lon=19.7&zoom=6&level=surface&overlay=rain"
+      width="100%" height="400" frameborder="0"></iframe>
+  </div>
+
+<script>
+  async function getWeather() {
+    const city = document.getElementById("cityInput").value;
+    if (!city) return alert("Zadaj mesto!");
+
+    const geoUrl = `https://geocoding-api.open-meteo.com/v1/search?name=${encodeURIComponent(city)}&count=1&language=sk&format=json`;
+    const geoData = await (await fetch(geoUrl)).json();
+    if (!geoData.results) return alert("Mesto sa nenašlo!");
+    const { latitude, longitude, name, country } = geoData.results[0];
+
+    const url = `https://api.open-meteo.com/v1/forecast?latitude=${latitude}&longitude=${longitude}&current_weather=true&daily=temperature_2m_max,temperature_2m_min,weathercode&timezone=auto`;
+    const meteo = await (await fetch(url)).json();
+
+    const current = meteo.current_weather;
+    const daily = meteo.daily;
+
+    // Preklad ikon
+    const icons = {0:"☀️",1:"🌤️",2:"⛅",3:"☁️",45:"🌫️",61:"🌧️",71:"❄️",95:"⛈️"};
+
+    document.getElementById("weather").innerHTML = `
+      <div class="glass p-6 text-center">
+        <h2 class="text-2xl font-bold">${name}, ${country}</h2>
+        <p class="text-5xl my-2">${icons[current.weathercode]||"❓"} ${current.temperature}°C</p>
+        <p>💨 Vietor ${current.windspeed} km/h</p>
+      </div>
+      <div class="grid grid-cols-2 md:grid-cols-7 gap-4">
+        ${daily.time.map((t,i)=>`
+          <div class="glass p-4 text-center">
+            <p class="font-semibold">${t}</p>
+            <p class="text-3xl">${icons[daily.weathercode[i]]||"❓"}</p>
+            <p>${daily.temperature_2m_min[i]}° / ${daily.temperature_2m_max[i]}°</p>
+          </div>`).join("")}
+      </div>
+    `;
+
+    // Graf
+    const ctx = document.getElementById('tempChart').getContext('2d');
+    if (window.tempChart) window.tempChart.destroy();
+    window.tempChart = new Chart(ctx, {
+      type: 'line',
+      data: {
+        labels: daily.time,
+        datasets: [
+          { label:"Max °C", data: daily.temperature_2m_max, borderColor:"red", fill:false },
+          { label:"Min °C", data: daily.temperature_2m_min, borderColor:"blue", fill:false }
+        ]
+      },
+      options: {
+        plugins:{legend:{labels:{color:"white"}}},
+        scales:{x:{ticks:{color:"white"}},y:{ticks:{color:"white"}}}
       }
+    });
+  }
 
-      // Geokódovanie
-      const geoUrl = `https://geocoding-api.open-meteo.com/v1/search?name=${encodeURIComponent(city)}&count=1&language=sk&format=json`;
-      const geoRes = await fetch(geoUrl);
-      const geoData = await geoRes.json();
-      if (!geoData.results || geoData.results.length === 0) {
-        alert("Mesto sa nenašlo.");
-        return;
-      }
-      const { latitude, longitude, name, country } = geoData.results[0];
-
-      // Dáta počasia
-      const meteoUrl = `https://api.open-meteo.com/v1/forecast?latitude=${latitude}&longitude=${longitude}&current_weather=true&daily=temperature_2m_max,temperature_2m_min,weathercode&timezone=auto`;
-      const meteoRes = await fetch(meteoUrl);
-      const meteoData = await meteoRes.json();
-
-      const current = meteoData.current_weather;
-      const daily = meteoData.daily;
-
-      // Preklad weathercode na ikonku
-      function getIcon(code) {
-        if ([0].includes(code)) return "☀️";
-        if ([1,2,3].includes(code)) return "⛅";
-        if ([45,48].includes(code)) return "🌫️";
-        if ([51,53,55,61,63,65,80,81,82].includes(code)) return "🌧️";
-        if ([71,73,75,77,85,86].includes(code)) return "❄️";
-        if ([95,96,99].includes(code)) return "⛈️";
-        return "❓";
-      }
-
-      // HTML výstup
-      let html = `
-        <div class="card">
-          <h2 class="text-xl font-semibold">${name}, ${country}</h2>
-          <p class="mt-1">🌡️ Teplota: <b>${current.temperature}°C</b></p>
-          <p>💨 Vietor: ${current.windspeed} km/h</p>
-          <p>⏱ Aktualizované: ${current.time}</p>
-        </div>
-        <div class="grid grid-cols-2 md:grid-cols-4 gap-4 mt-4">
-      `;
-
-      for (let i = 0; i < 7; i++) {
-        html += `
-          <div class="card text-center">
-            <p class="font-semibold">${daily.time[i]}</p>
-            <p class="text-3xl">${getIcon(daily.weathercode[i])}</p>
-            <p>${daily.temperature_2m_min[i]}°C – ${daily.temperature_2m_max[i]}°C</p>
-          </div>`;
-      }
-
-      html += `</div>`;
-      document.getElementById("weather").innerHTML = html;
-
-      // Graf
-      const ctx = document.getElementById('tempChart').getContext('2d');
-      if (window.tempChartInstance) {
-        window.tempChartInstance.destroy();
-      }
-      window.tempChartInstance = new Chart(ctx, {
-        type: 'line',
-        data: {
-          labels: daily.time,
-          datasets: [
-            {
-              label: 'Max °C',
-              data: daily.temperature_2m_max,
-              borderColor: 'red',
-              fill: false
-            },
-            {
-              label: 'Min °C',
-              data: daily.temperature_2m_min,
-              borderColor: 'blue',
-              fill: false
-            }
-          ]
-        },
-        options: {
-          responsive: true,
-          plugins: { legend: { labels: { color: 'white' } } },
-          scales: {
-            x: { ticks: { color: 'white' } },
-            y: { ticks: { color: 'white' } }
-          }
-        }
-      });
-    }
-  </script>
-
+  // Dark/Light Theme
+  document.getElementById("themeToggle").onclick = ()=>{
+    document.body.classList.toggle("bg-white");
+    document.body.classList.toggle("text-black");
+  }
+</script>
 </body>
 </html>
