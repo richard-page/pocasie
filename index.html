@@ -1,1 +1,97 @@
+<!DOCTYPE html>
+<html lang="sk">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>MeteoApp - Počasie</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;600&display=swap" rel="stylesheet">
+  <style>
+    body {
+      font-family: 'Poppins', sans-serif;
+      background: linear-gradient(to top right, #60a5fa, #2563eb);
+      min-height: 100vh;
+      color: white;
+    }
+    .card {
+      background: rgba(255,255,255,0.15);
+      backdrop-filter: blur(12px);
+      border-radius: 1rem;
+      padding: 1rem;
+      margin-top: 1rem;
+    }
+  </style>
+</head>
+<body class="flex flex-col items-center p-4">
 
+  <h1 class="text-2xl font-bold mb-4">🌤 MeteoApp</h1>
+
+  <!-- Vyhľadávanie mesta -->
+  <input id="cityInput" type="text" placeholder="Zadaj mesto..."
+         class="p-2 rounded-lg text-black w-full max-w-md">
+
+  <button onclick="getWeather()" 
+          class="bg-blue-600 hover:bg-blue-700 px-4 py-2 rounded-lg mt-2">
+    Hľadaj
+  </button>
+
+  <!-- Výstup počasia -->
+  <div id="weather" class="w-full max-w-md mt-4"></div>
+
+  <script>
+    async function getWeather() {
+      const city = document.getElementById("cityInput").value;
+      if (!city) {
+        alert("Zadaj mesto!");
+        return;
+      }
+
+      // 1. Geokódovanie mesta cez Open-Meteo
+      const geoUrl = `https://geocoding-api.open-meteo.com/v1/search?name=${encodeURIComponent(city)}&count=1&language=sk&format=json`;
+      const geoRes = await fetch(geoUrl);
+      const geoData = await geoRes.json();
+
+      if (!geoData.results || geoData.results.length === 0) {
+        alert("Mesto sa nenašlo.");
+        return;
+      }
+
+      const { latitude, longitude, name, country } = geoData.results[0];
+
+      // 2. Počasie z Open-Meteo
+      const meteoUrl = `https://api.open-meteo.com/v1/forecast?latitude=${latitude}&longitude=${longitude}&current_weather=true&daily=temperature_2m_max,temperature_2m_min&timezone=auto`;
+      const meteoRes = await fetch(meteoUrl);
+      const meteoData = await meteoRes.json();
+
+      const current = meteoData.current_weather;
+      const daily = meteoData.daily;
+
+      // 3. Vykreslenie
+      let html = `
+        <div class="card">
+          <h2 class="text-xl font-semibold">${name}, ${country}</h2>
+          <p class="mt-1">🌡️ Aktuálna teplota: <b>${current.temperature}°C</b></p>
+          <p>💨 Vietor: ${current.windspeed} km/h</p>
+          <p>⏱ Posledná aktualizácia: ${current.time}</p>
+        </div>
+        <div class="card">
+          <h3 class="text-lg font-semibold">📅 Predpoveď na 3 dni:</h3>
+          <ul>
+      `;
+
+      for (let i = 0; i < 3; i++) {
+        html += `
+          <li class="mt-1">
+            ${daily.time[i]}: ${daily.temperature_2m_min[i]}°C – ${daily.temperature_2m_max[i]}°C
+          </li>`;
+      }
+
+      html += `</ul></div>`;
+
+      document.getElementById("weather").innerHTML = html;
+    }
+  </script>
+
+</body>
+</html>
