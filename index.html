@@ -234,13 +234,6 @@
             z-index: 1;
         }
 
-        .pressure-label {
-            font-family: 'Poppins', sans-serif;
-            font-weight: 700;
-            color: white;
-            text-shadow: 0 0 5px black, 0 0 5px black;
-        }
-
         @media (max-width: 480px) {
             .day-label { font-size: 0.65rem; line-height: 5; }
         }
@@ -338,12 +331,6 @@
         let currentOpacity = 0.8;
         let districtsGeoJSON = null;
 
-        let isobarState = {
-            abortController: null,
-            activeBuffer: 1,
-            isUpdating: false
-        };
-
         // --- localStorage helpers ---
         function loadActiveLayersFromStorage() {
           try {
@@ -375,7 +362,7 @@
 
         const mapLayers = {
             "Teplota": { type: 'tile', code: "temp", unit: "°C", api: "owm", url: `https://maps.openweathermap.org/maps/2.0/weather/TA2/{z}/{x}/{y}?date={date}&appid=${openWeatherApiKey}`, pointApiUrl: `https://api.open-meteo.com/v1/forecast?latitude={lat}&longitude={lon}&hourly=temperature_2m` },
-            "Tlak vzduchu a Izobary": { type: 'tile', code: "pressure", unit: "hPa", api: "owm", url: `https://maps.openweathermap.org/maps/2.0/weather/APM/{z}/{x}/{y}?date={date}&appid=${openWeatherApiKey}`, pointApiUrl: `https://api.open-meteo.com/v1/forecast?latitude={lat}&longitude={lon}&hourly=pressure_msl` },
+            "Tlak vzduchu": { type: 'tile', code: "pressure", unit: "hPa", api: "owm", url: `https://maps.openweathermap.org/maps/2.0/weather/APM/{z}/{x}/{y}?date={date}&appid=${openWeatherApiKey}`, pointApiUrl: `https://api.open-meteo.com/v1/forecast?latitude={lat}&longitude={lon}&hourly=pressure_msl` },
             "Vietor": { type: 'tile', code: "wind", unit: "m/s", api: "owm", url: `https://maps.openweathermap.org/maps/2.0/weather/WND/{z}/{x}/{y}?date={date}&appid=${openWeatherApiKey}`, pointApiUrl: `https://api.open-meteo.com/v1/forecast?latitude={lat}&longitude={lon}&hourly=wind_speed_10m,wind_direction_10m` },
             "Relatívna vlhkosť": { type: 'tile', code: "humidity", unit: "%", api: "owm", url: `https://maps.openweathermap.org/maps/2.0/weather/HRD0/{z}/{x}/{y}?date={date}&appid=${openWeatherApiKey}`, pointApiUrl: `https://api.open-meteo.com/v1/forecast?latitude={lat}&longitude={lon}&hourly=relative_humidity_2m` },
             "Oblačnosť": { type: 'tile', code: "clouds", unit: "%", api: "owm", url: `https://maps.openweathermap.org/maps/2.0/weather/CL/{z}/{x}/{y}?date={date}&appid=${openWeatherApiKey}`, pointApiUrl: `https://api.open-meteo.com/v1/forecast?latitude={lat}&longitude={lon}&hourly=cloud_cover` },
@@ -444,7 +431,6 @@
         }
 
         const debouncedUpdateAllDataLabels = debounce(() => updateAllDataLabels(), 500);
-        const debouncedUpdateIsobars = debounce(() => updateIsobars(), 750);
 
         function handleLayerChange(checkbox) {
             const layerName = checkbox.value;
@@ -452,18 +438,9 @@
             if (checkbox.checked) {
                 activeLayers[layerName] = layerInfo;
                 addWeatherLayer(layerInfo);
-
-                if (layerInfo.code === 'pressure') {
-                    addIsobarLayer();
-                    debouncedUpdateIsobars();
-                }
             } else {
                 delete activeLayers[layerName];
                 removeWeatherLayer(layerInfo.code);
-
-                if (layerInfo.code === 'pressure') {
-                    removeIsobarLayer();
-                }
             }
 
             // persistuj aktuálne zapnuté vrstvy
@@ -553,14 +530,6 @@
                     map.setPaintProperty(activeLayerId, 'raster-opacity', opacity);
                 }
             });
-            if (activeLayers["Tlak vzduchu a Izobary"]) {
-                const active = isobarState.activeBuffer;
-                const inactive = active === 1 ? 2 : 1;
-                if (map.getLayer(`isobars-layer-${active}`)) map.setPaintProperty(`isobars-layer-${active}`, 'line-opacity', opacity);
-                if (map.getLayer(`pressure-labels-layer-${active}`)) map.setPaintProperty(`pressure-labels-layer-${active}`, 'text-opacity', opacity);
-                if (map.getLayer(`isobars-layer-${inactive}`)) map.setPaintProperty(`isobars-layer-${inactive}`, 'line-opacity', 0);
-                if (map.getLayer(`pressure-labels-layer-${inactive}`)) map.setPaintProperty(`pressure-labels-layer-${inactive}`, 'text-opacity', 0);
-            }
         }
 
         function updateActiveLayersTime() {
@@ -594,167 +563,7 @@
                 state.active = (state.active === 1 ? 2 : 1);
             });
 
-            if (activeLayers["Tlak vzduchu a Izobary"]) {
-                debouncedUpdateIsobars();
-            }
             debouncedUpdateAllDataLabels();
-        }
-
-        // --- FUNKCIE PRE IZOBARY ---
-        function addIsobarLayer() {
-            for (let i = 1; i <= 2; i++) {
-                const emptyGeoJSON = { type: 'FeatureCollection', features: [] };
-
-                map.addSource(`isobars-source-${i}`, { type: 'geojson', data: emptyGeoJSON });
-                map.addSource(`pressure-labels-source-${i}`, { type: 'geojson', data: emptyGeoJSON });
-
-                map.addLayer({
-                    'id': `isobars-layer-${i}`,
-                    'type': 'line',
-                    'source': `isobars-source-${i}`,
-                    'paint': {
-                        'line-color': '#ffffff',
-                        'line-width': 1.5,
-                        'line-opacity': i === 1 ? currentOpacity : 0,
-                        'line-opacity-transition': { duration: 400 }
-                    }
-                }, findFirstSymbolLayerId());
-
-                map.addLayer({
-                    id: `pressure-labels-layer-${i}`,
-                    type: 'symbol',
-                    source: `pressure-labels-source-${i}`,
-                    layout: {
-                        'text-field': [
-                            'format',
-                            ['get', 'label'], { 'font-scale': 1.2, 'text-font': ['literal', ['Poppins Bold', 'Arial Unicode MS Bold']] },
-                            '\n', {},
-                            ['to-string', ['round', ['get', 'pressure']]], { 'font-scale': 0.8, 'text-font': ['literal', ['Poppins Regular', 'Arial Unicode MS Regular']] }
-                        ],
-                        'text-allow-overlap': true,
-                        'text-ignore-placement': true,
-                        'text-size': 14,
-                        'text-line-height': 1.1
-                    },
-                    paint: {
-                        'text-color': '#ffffff',
-                        'text-halo-color': '#000000',
-                        'text-halo-width': 2,
-                        'text-opacity': i === 1 ? currentOpacity : 0,
-                        'text-opacity-transition': { duration: 400 }
-                    }
-                });
-            }
-        }
-
-        function removeIsobarLayer() {
-            if (isobarState.abortController) isobarState.abortController.abort();
-            for (let i = 1; i <= 2; i++) {
-                if (map.getLayer(`isobars-layer-${i}`)) map.removeLayer(`isobars-layer-${i}`);
-                if (map.getLayer(`pressure-labels-layer-${i}`)) map.removeLayer(`pressure-labels-layer-${i}`);
-                if (map.getSource(`isobars-source-${i}`)) map.removeSource(`isobars-source-${i}`);
-                if (map.getSource(`pressure-labels-source-${i}`)) map.removeSource(`pressure-labels-source-${i}`);
-            }
-        }
-
-        async function updateIsobars() {
-            if (isobarState.isUpdating) return;
-            isobarState.isUpdating = true;
-
-            if (isobarState.abortController) isobarState.abortController.abort();
-            isobarState.abortController = new AbortController();
-            const signal = isobarState.abortController.signal;
-
-            try {
-                const bounds = map.getBounds();
-                const zoom = map.getZoom();
-                const gridDensity = zoom < 2 ? 8 : (zoom < 4 ? 10 : 12);
-
-                const points = [];
-                const latStep = (bounds.getNorth() - bounds.getSouth()) / gridDensity;
-                const lngStep = (bounds.getEast() - bounds.getWest()) / gridDensity;
-
-                for (let lat = bounds.getSouth(); lat <= bounds.getNorth(); lat += latStep) {
-                    for (let lon = bounds.getWest(); lon <= bounds.getEast(); lon += lngStep) {
-                        points.push({ lat, lon });
-                    }
-                }
-
-                const roundedDate = new Date(currentDate);
-                roundedDate.setMinutes(0,0,0,0);
-                const isoDate = roundedDate.toISOString().slice(0, 10);
-
-                const pressurePromises = points.map(p =>
-                    fetch(`https://api.open-meteo.com/v1/forecast?latitude=${p.lat.toFixed(2)}&longitude=${p.lon.toFixed(2)}&hourly=pressure_msl&start_date=${isoDate}&end_date=${isoDate}&timezone=auto`, { signal })
-                        .then(res => res.ok ? res.json() : Promise.reject('API call failed'))
-                        .then(data => {
-                            if (data?.hourly?.time) {
-                                const hourIndex = data.hourly.time.findIndex(t => new Date(t).getTime() === roundedDate.getTime());
-                                if (hourIndex !== -1) {
-                                    return { coords: [p.lon, p.lat], pressure: data.hourly.pressure_msl[hourIndex] };
-                                }
-                            }
-                            return null;
-                        }).catch(() => null)
-                );
-
-                const pressureData = (await Promise.all(pressurePromises)).filter(Boolean);
-                if (signal.aborted || pressureData.length < 10) {
-                    isobarState.isUpdating = false;
-                    return;
-                }
-
-                const pointsFc = turf.featureCollection(pressureData.map(p => turf.point(p.coords, { pressure: p.pressure })));
-                const breaks = Array.from({ length: 40 }, (_, i) => 940 + i * 4);
-                const isobars = turf.isolines(pointsFc, breaks, { zProperty: 'pressure' });
-
-                const pressureGrid = Array.from({ length: gridDensity + 1 }, () => Array(gridDensity + 1).fill(null));
-                pressureData.forEach(p => {
-                     const i = Math.min(gridDensity, Math.max(0, Math.round((p.coords[1] - bounds.getSouth()) / latStep)));
-                     const j = Math.min(gridDensity, Math.max(0, Math.round((p.coords[0] - bounds.getWest()) / lngStep)));
-                     if (pressureGrid[i]) pressureGrid[i][j] = {pressure: p.pressure, coords: p.coords};
-                });
-
-                const pressureLabels = [];
-                for (let i = 1; i < gridDensity; i++) {
-                    for (let j = 1; j < gridDensity; j++) {
-                        const current = pressureGrid[i][j];
-                        if (!current) continue;
-                        let isHigh = true, isLow = true;
-                        for (let di = -1; di <= 1; di++) {
-                            for (let dj = -1; dj <= 1; dj++) {
-                                if (di === 0 && dj === 0) continue;
-                                const neighbor = pressureGrid[i + di]?.[j + dj];
-                                if (!neighbor) continue;
-                                if (neighbor.pressure >= current.pressure) isHigh = false;
-                                if (neighbor.pressure <= current.pressure) isLow = false;
-                            }
-                        }
-                        if (isHigh) pressureLabels.push(turf.point(current.coords, { label: 'V', pressure: current.pressure }));
-                        if (isLow) pressureLabels.push(turf.point(current.coords, { label: 'N', pressure: current.pressure }));
-                    }
-                }
-                const labelsFc = turf.featureCollection(pressureLabels);
-
-                const inactive = isobarState.activeBuffer === 1 ? 2 : 1;
-                const active = isobarState.activeBuffer;
-
-                if(map.getSource(`isobars-source-${inactive}`)) map.getSource(`isobars-source-${inactive}`).setData(isobars);
-                if(map.getSource(`pressure-labels-source-${inactive}`)) map.getSource(`pressure-labels-source-${inactive}`).setData(labelsFc);
-
-                if(map.getLayer(`isobars-layer-${active}`)) map.setPaintProperty(`isobars-layer-${active}`, 'line-opacity', 0);
-                if(map.getLayer(`pressure-labels-layer-${active}`)) map.setPaintProperty(`pressure-labels-layer-${active}`, 'text-opacity', 0);
-
-                if(map.getLayer(`isobars-layer-${inactive}`)) map.setPaintProperty(`isobars-layer-${inactive}`, 'line-opacity', currentOpacity);
-                if(map.getLayer(`pressure-labels-layer-${inactive}`)) map.setPaintProperty(`pressure-labels-layer-${inactive}`, 'text-opacity', currentOpacity);
-
-                isobarState.activeBuffer = inactive;
-
-            } catch (error) {
-                if (error.name !== 'AbortError') console.error("Chyba pri generovaní izobarov:", error);
-            } finally {
-                isobarState.isUpdating = false;
-            }
         }
 
         // --- OBSLUHA EVENTOV ---
@@ -762,20 +571,14 @@
             layerState = {};
             Object.values(activeLayers).forEach(layerInfo => {
                 addWeatherLayer(layerInfo, true);
-                if (layerInfo.code === 'pressure') {
-                    addIsobarLayer();
-                    debouncedUpdateIsobars();
-                }
             });
         });
 
         map.on('moveend', () => {
             debouncedUpdateAllDataLabels();
-            if (activeLayers["Tlak vzduchu a Izobary"]) debouncedUpdateIsobars();
         });
         map.on('zoomend', () => {
             debouncedUpdateAllDataLabels();
-            if (activeLayers["Tlak vzduchu a Izobary"]) debouncedUpdateIsobars();
         });
 
         map.on('click', handleMapClick);
@@ -812,8 +615,6 @@
         function initializeUI() {
             const checkboxContainer = document.getElementById('layer-checkbox-container');
             const styleContainer = document.getElementById('map-style-container');
-
-            // referencie na checkboxy podľa názvu vrstvy
             const checkboxRefs = {};
 
             Object.keys(mapLayers).forEach(layerName => {
@@ -837,19 +638,19 @@
                 styleContainer.appendChild(button);
             });
 
-            // --- Načítaj uložené vrstvy; ak nič nie je, zapni "Tlak vzduchu a Izobary"
+            // Načítaj uložené vrstvy; ak nič nie je, zapni "Tlak vzduchu"
             const saved = loadActiveLayersFromStorage();
-            const toEnable = (saved && saved.length > 0) ? saved : ["Tlak vzduchu a Izobary"];
+            const toEnable = (saved && saved.length > 0) ? saved : ["Tlak vzduchu"];
 
             toEnable.forEach(name => {
               const cb = checkboxRefs[name];
               if (cb && !cb.checked) {
                 cb.checked = true;
-                handleLayerChange(cb); // zapne a pridá do activeLayers
+                handleLayerChange(cb);
               }
             });
 
-            // uložíme aktuálny stav (najmä ak to bol prvý štart bez uložených dát)
+            // ulož stav (aj pri prvom štarte)
             saveActiveLayersToStorage(Object.keys(activeLayers));
 
             initializeTimeline();
@@ -1259,36 +1060,6 @@
                 .addTo(map);
         }
 
-        function displayActiveAlertsSummary(geojson) {
-            const list = document.getElementById('active-alerts-list');
-            list.innerHTML = '';
-            const activeAlerts = new Map();
-
-            geojson.features.forEach(f => JSON.parse(f.properties.alerts || '[]').forEach(a => {
-                const eventName = translateAlertEvent(a.event);
-                const level = getAlertLevel([a]);
-                if (!activeAlerts.has(eventName) || level > activeAlerts.get(eventName).level) {
-                    activeAlerts.set(eventName, { iconClass: getAlertIcon(a.event), level, start: a.start, end: a.end });
-                }
-            }));
-
-            document.getElementById('active-alerts-container').classList.toggle('hidden', activeAlerts.size === 0);
-            if (activeAlerts.size > 0) {
-                const colorMap = { 1: '#facc15', 2: '#fb923c', 3: '#f87171' };
-                const formatTime = (start, end) => start && end ? `${new Date(start*1000).toLocaleString('sk-SK',{day:'numeric',month:'numeric',hour:'2-digit',minute:'2-digit'})} - ${new Date(end*1000).toLocaleString('sk-SK',{day:'numeric',month:'numeric',hour:'2-digit',minute:'2-digit'})}` : "Neznáma platnosť";
-                activeAlerts.forEach((data, eventName) => {
-                    const color = colorMap[data.level];
-                    list.innerHTML += `<div class="bg-white/10 p-3 rounded-lg" style="border-left: 4px solid ${color};">
-                                            <div class="flex items-center gap-3">
-                                                <div class="w-6 text-center text-lg" style="color: ${color};"><i class="${data.iconClass}"></i></div>
-                                                <span class="text-sm font-medium text-white">${eventName}</span>
-                                            </div>
-                                            <div class="text-xs text-gray-400 pl-9 pt-1">${formatTime(data.start, data.end)}</div>
-                                       </div>`;
-                });
-            }
-        }
-
         function updateLegend() {
             const legendContainer = document.getElementById('legend-container');
             const legendMap = {
@@ -1315,11 +1086,14 @@
 
             if (legendUrl) {
                 const fullUrl = legendUrl.startsWith('http') ? legendUrl : `${baseUrl}${legendUrl}`;
-                legendContainer.innerHTML = `<h3 class="text-xl font-bold text-white mb-4">Legenda</h3><img class="w-full h-auto rounded-lg" src="${fullUrl}" alt="Legenda"/>`;
+                // bez nadpisu „Legenda“
+                legendContainer.innerHTML = `<img class="w-full h-auto rounded-lg" src="${fullUrl}" alt="Legenda">`;
             } else {
                 legendContainer.innerHTML = '';
             }
         }
+
+        // --- koniec DOMContentLoaded ---
     });
     </script>
 </body>
