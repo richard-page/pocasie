@@ -1,1100 +1,609 @@
 <!DOCTYPE html>
 <html lang="sk">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>3D Globe™ - Predpoveď Počasia</title>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>3D Globe™ - Predpoveď Počasia</title>
 
-    <link rel="preconnect" href="https://fonts.googleapis.com">
-    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700&display=swap" rel="stylesheet">
 
-    <script src="https://kit.fontawesome.com/a4130fa7fd.js" crossorigin="anonymous"></script>
+  <script src="https://kit.fontawesome.com/a4130fa7fd.js" crossorigin="anonymous"></script>
 
-    <link href="https://api.mapbox.com/mapbox-gl-js/v3.6.0/mapbox-gl.css" rel="stylesheet">
-    <script src="https://api.mapbox.com/mapbox-gl-js/v3.6.0/mapbox-gl.js"></script>
+  <link href="https://api.mapbox.com/mapbox-gl-js/v3.6.0/mapbox-gl.css" rel="stylesheet">
+  <script src="https://api.mapbox.com/mapbox-gl-js/v3.6.0/mapbox-gl.js"></script>
 
-    <script src="https://cdn.tailwindcss.com"></script>
-    <script src='https://unpkg.com/@turf/turf@6/turf.min.js'></script>
-    <style>
-        :root {
-            --primary-dark: #002043;
-            --primary-light: #002848;
-            --accent-blue: #3b9af8;
-            --text-light: #D9EFFF;
-        }
-        body {
-            font-family: 'Poppins', sans-serif;
-            background-color: var(--primary-dark);
-            color: var(--text-light);
-            overflow: hidden;
-        }
-        #map {
-            position: absolute;
-            top: 0; left: 0; right: 0; bottom: 0;
-            z-index: 0;
-        }
-        .ripple {
-            position: absolute;
-            border-radius: 50%;
-            background: rgba(59, 154, 248, 0.5);
-            transform: scale(0);
-            animation: ripple-animation 1.2s ease-out;
-            pointer-events: none;
-            z-index: 5;
-        }
-        @keyframes ripple-animation {
-            to { transform: scale(4); opacity: 0; }
-        }
-        .cursor-dot {
-            width: 8px; height: 8px;
-            border: 2px solid var(--accent-blue);
-            box-shadow: 0 0 10px var(--accent-blue);
-            border-radius: 50%;
-            position: absolute;
-            pointer-events: none;
-            transform: translate(-50%, -50%);
-            z-index: 9999;
-            transition: transform 0.1s ease-out, opacity 0.1s ease-out;
-            opacity: 0;
-        }
-        body:hover .cursor-dot { opacity: 1; }
-        .layer-checkbox:checked {
-            background-color: var(--accent-blue);
-            border-color: var(--accent-blue);
-        }
-        .layer-checkbox:checked::before {
-            content: '✓';
-            color: var(--primary-dark);
-            font-weight: bold;
-            font-size: 12px;
-            position: absolute;
-            top: 50%; left: 50%;
-            transform: translate(-50%, -50%);
-        }
-        .slider-container {
-            background: rgba(0, 32, 67, 0.8);
-            backdrop-filter: blur(5px);
-        }
-        .play-button { background-color: var(--primary-light); }
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script src="https://unpkg.com/@turf/turf@6/turf.min.js"></script>
 
-        #layerControls::-webkit-scrollbar { display: none; }
-        #layerControls { -ms-overflow-style: none; scrollbar-width: none; }
-
-        #layerControls {
-            backdrop-filter: blur(15px);
-            background: #00000070;
-        }
-        .data-label-marker {
-            font-family: 'Poppins', sans-serif;
-            pointer-events: none;
-            text-align: center;
-            white-space: nowrap;
-            color: #fff;
-            background-color: rgba(0, 0, 0, 0.7);
-            padding: 3px 6px;
-            font-size: 14px;
-            font-weight: 600;
-            border-radius: 5px;
-            text-shadow: 1px 1px 3px black;
-            transition: opacity 0.3s ease-in-out;
-            display: flex; 
-            align-items: center; 
-            gap: 4px;
-        }
-        .mapboxgl-popup-content {
-            background: transparent !important;
-            box-shadow: none !important;
-            padding: 0 !important;
-        }
-        .mapboxgl-popup-anchor-top .mapboxgl-popup-tip,
-        .mapboxgl-popup-anchor-bottom .mapboxgl-popup-tip,
-        .mapboxgl-popup-anchor-left .mapboxgl-popup-tip,
-        .mapboxgl-popup-anchor-right .mapboxgl-popup-tip {
-            display: none;
-        }
-
-        .item-cape {
-           width: auto;
-           padding: 4px;
-           border-radius: 15px;
-        }
-
-        #opacitySlider::-webkit-slider-thumb {
-            -webkit-appearance: none;
-            appearance: none;
-            width: 20px;
-            height: 20px;
-            background: var(--accent-blue);
-            cursor: pointer;
-            border-radius: 50%;
-            border: 2px solid var(--primary-dark);
-            margin-top: -7px;
-        }
-        #opacitySlider::-moz-range-thumb {
-            width: 20px;
-            height: 20px;
-            background: var(--accent-blue);
-            cursor: pointer;
-            border-radius: 50%;
-            border: 2px solid var(--primary-dark);
-        }
-
-        .header {
-            font-size: clamp(1rem, 5vw, 1.1rem);
-            font-weight: 500;
-            text-align: center;
-            color: var(--text-light);
-            min-width: 150px;
-        }
-        .timeline-area {
-            position: relative;
-            overflow: hidden;
-            flex-grow: 1;
-            height: 100px;
-            display: flex;
-            align-items: center;
-        }
-        .timeline-content {
-            position: relative;
-            height: 100%;
-            cursor: grab;
-            user-select: none;
-            display: flex;
-            align-items: center;
-        }
-        .timeline-content.dragging { cursor: grabbing; }
-        .progress-indicator {
-            position: absolute;
-            width: 4px;
-            height: 30px;
-            background-color: #3b9af8;
-            border-radius: 2px;
-            left: 50%;
-            top: 50%;
-            transform: translate(-50%, -50%);
-            z-index: 3;
-            box-shadow: 0 0 8px rgba(59, 154, 248, 0.8);
-        }
-        .day-labels {
-            position: absolute;
-            width: 100%;
-            height: 15px;
-            bottom: 0;
-            user-select: none;
-            pointer-events: none;
-            z-index: 2;
-        }
-        .day-label {
-            position: absolute;
-            transform: translateX(-50%);
-            font-size: 0.7rem;
-            color: rgba(255, 255, 255, 0.8);
-            white-space: nowrap;
-        }
-        .timeline-container {
-            position: absolute;
-            height: 100%;
-            width: 100%;
-            display: flex;
-            align-items: center;
-        }
-        .timeline-bar {
-            width: 100%;
-            height: 3px;
-            background-color: rgba(255, 255, 255, 0.2);
-            border-radius: 2px;
-        }
-        .timeline-markers {
-            position: absolute;
-            width: 100%;
-            height: 100%;
-            display: flex;
-            align-items: center;
-        }
-        .marker-hour {
-            position: absolute;
-            transform: translateY(-50%);
-            width: 1px;
-            height: 1px;
-            background-color: rgba(255, 255, 255, 0.4);
-            top: 50%;
-            line-height: 5;
-            z-index: 1;
-        }
-        .marker-day-break {
-            position: absolute;
-            transform: translateY(-50%);
-            width: 2px;
-            height: 16px;
-            background-color: rgba(255, 255, 255, 0.9);
-            border-radius: 1px;
-            top: 50%;
-            line-height: 5;
-            z-index: 1;
-        }
-
-        @media (max-width: 480px) {
-            .day-label { font-size: 0.65rem; line-height: 5; }
-        }
-    </style>
+  <style>
+    :root { --primary-dark:#002043; --primary-light:#002848; --accent-blue:#3b9af8; --text-light:#D9EFFF; }
+    body{font-family:'Poppins',sans-serif;background:var(--primary-dark);color:var(--text-light);overflow:hidden}
+    #map{position:absolute;inset:0;z-index:0}
+    .ripple{position:absolute;border-radius:50%;background:rgba(59,154,248,.5);transform:scale(0);animation:ripple 1.2s ease-out;pointer-events:none;z-index:5}
+    @keyframes ripple{to{transform:scale(4);opacity:0}}
+    .cursor-dot{width:8px;height:8px;border:2px solid var(--accent-blue);box-shadow:0 0 10px var(--accent-blue);border-radius:50%;position:absolute;pointer-events:none;transform:translate(-50%,-50%);z-index:9999;transition:transform .1s,opacity .1s;opacity:0}
+    body:hover .cursor-dot{opacity:1}
+    .layer-checkbox:checked{background-color:var(--accent-blue);border-color:var(--accent-blue)}
+    .layer-checkbox:checked::before{content:'✓';color:var(--primary-dark);font-weight:700;font-size:12px;position:absolute;top:50%;left:50%;transform:translate(-50%,-50%)}
+    .slider-container{background:rgba(0,32,67,.8);backdrop-filter:blur(5px)}
+    .play-button{background:var(--primary-light)}
+    #layerControls::-webkit-scrollbar{display:none}
+    #layerControls{-ms-overflow-style:none;scrollbar-width:none;backdrop-filter:blur(15px);background:#00000070}
+    .data-label-marker{font-family:'Poppins',sans-serif;pointer-events:none;text-align:center;white-space:nowrap;color:#fff;background:rgba(0,0,0,.7);padding:3px 6px;font-size:14px;font-weight:600;border-radius:5px;text-shadow:1px 1px 3px #000;transition:opacity .3s;display:flex;align-items:center;gap:4px}
+    .mapboxgl-popup-content{background:transparent!important;box-shadow:none!important;padding:0!important}
+    .mapboxgl-popup-anchor-top .mapboxgl-popup-tip,
+    .mapboxgl-popup-anchor-bottom .mapboxgl-popup-tip,
+    .mapboxgl-popup-anchor-left .mapboxgl-popup-tip,
+    .mapboxgl-popup-anchor-right .mapboxgl-popup-tip{display:none}
+    .item-cape{width:auto;padding:4px;border-radius:15px}
+    #opacitySlider::-webkit-slider-thumb{-webkit-appearance:none;appearance:none;width:20px;height:20px;background:var(--accent-blue);cursor:pointer;border-radius:50%;border:2px solid var(--primary-dark);margin-top:-7px}
+    #opacitySlider::-moz-range-thumb{width:20px;height:20px;background:var(--accent-blue);cursor:pointer;border-radius:50%;border:2px solid var(--primary-dark)}
+    .header{font-size:clamp(1rem,5vw,1.1rem);font-weight:500;text-align:center;color:var(--text-light);min-width:150px}
+    .timeline-area{position:relative;overflow:hidden;flex-grow:1;height:100px;display:flex;align-items:center}
+    .timeline-content{position:relative;height:100%;cursor:grab;user-select:none;display:flex;align-items:center}
+    .timeline-content.dragging{cursor:grabbing}
+    .progress-indicator{position:absolute;width:4px;height:30px;background:#3b9af8;border-radius:2px;left:50%;top:50%;transform:translate(-50%,-50%);z-index:3;box-shadow:0 0 8px rgba(59,154,248,.8)}
+    .day-labels{position:absolute;width:100%;height:15px;bottom:0;user-select:none;pointer-events:none;z-index:2}
+    .day-label{position:absolute;transform:translateX(-50%);font-size:.7rem;color:rgba(255,255,255,.8);white-space:nowrap}
+    .timeline-container{position:absolute;height:100%;width:100%;display:flex;align-items:center}
+    .timeline-bar{width:100%;height:3px;background:rgba(255,255,255,.2);border-radius:2px}
+    .timeline-markers{position:absolute;width:100%;height:100%;display:flex;align-items:center}
+    .marker-hour{position:absolute;transform:translateY(-50%);width:1px;height:1px;background:rgba(255,255,255,.4);top:50%}
+    .marker-day-break{position:absolute;transform:translateY(-50%);width:2px;height:16px;background:rgba(255,255,255,.9);border-radius:1px;top:50%}
+    @media (max-width:480px){.day-label{font-size:.65rem}}
+  </style>
 </head>
 <body class="bg-gray-900">
+  <div id="map"></div>
+  <div class="cursor-dot"></div>
 
-    <div id="map"></div>
-    <div class="cursor-dot"></div>
-
-    <div class="absolute inset-0 p-2 sm:p-4 flex flex-col pointer-events-none">
-        <div class="absolute top-4 right-4 flex items-center gap-2 pointer-events-auto">
-            <button id="fullscreenButton" title="Celá obrazovka" class="w-12 h-12 bg-[var(--primary-light)] hover:bg-[var(--accent-blue)] text-white rounded-full flex items-center justify-center shadow-lg transition-colors">
-                <i class="fas fa-expand text-xl"></i>
-            </button>
-            <button id="toggleLayersButton" title="Zobraziť vrstvy" class="w-12 h-12 bg-[var(--primary-light)] hover:bg-[var(--accent-blue)] text-white rounded-full flex items-center justify-center shadow-lg transition-colors">
-                <i class="fas fa-layer-group text-xl"></i>
-            </button>
-        </div>
-
-        <div id="layerControls" class="fixed top-0 right-0 h-full w-80 sm:w-96 bg-[var(--primary-dark)]/80 bg-[#00000087] shadow-2xl p-6 z-40 overflow-y-auto transition-transform translate-x-full pointer-events-auto">
-            <div class="flex justify-between items-center mb-6">
-                <h2 class="text-2xl font-bold text-white">Vrstvy Počasia</h2>
-                <button id="closeLayersButton" class="text-gray-400 hover:text-white">
-                    <i class="fas fa-times text-2xl"></i>
-                </button>
-            </div>
-
-            <div id="active-alerts-container" class="mb-8 hidden">
-                <h3 class="text-xl font-bold text-white mb-4">Aktuálne výstrahy na Slovensku</h3>
-                <div id="active-alerts-list" class="space-y-3"></div>
-            </div>
-
-            <div id="layer-checkbox-container" class="space-y-3"></div>
-
-            <div class="mt-8">
-                <h3 class="text-xl font-bold text-white mb-4">Priehľadnosť vrstvy</h3>
-                <div id="opacity-slider-container" class="flex items-center gap-4">
-                    <input type="range" id="opacitySlider" min="0" max="100" value="80" class="w-full h-[6px] bg-white/20 rounded-lg appearance-none cursor-pointer">
-                    <span id="opacityValue" class="text-white font-semibold w-12 text-center">80%</span>
-                </div>
-            </div>
-
-            <div class="mt-8">
-                <h3 class="text-xl font-bold text-white mb-4">Štýl Mapy</h3>
-                <div id="map-style-container" class="grid grid-cols-2 gap-4"></div>
-            </div>
-            <div id="legend-container" class="mt-8"></div>
-        </div>
-
-        <div class="slider-container absolute bottom-4 left-4 right-4 p-4 rounded-2xl shadow-lg border border-gray-700/50 flex flex-col sm:flex-row items-center gap-4 pointer-events-auto">
-            <div class="control-group flex items-center gap-2">
-                <button id="prevButton" class="play-button w-10 h-10 rounded-full flex items-center justify-center text-lg"><i class="fas fa-backward"></i></button>
-                <button id="playButton" class="play-button w-12 h-12 rounded-full flex items-center justify-center text-xl"><i class="fas fa-play"></i></button>
-                <button id="nextButton" class="play-button w-10 h-10 rounded-full flex items-center justify-center text-lg"><i class="fas fa-forward"></i></button>
-            </div>
-
-            <div id="header-text" class="header px-4 py-2"></div>
-
-            <div id="timeline-area" class="timeline-area relative w-full flex-grow flex items-center touch-none">
-                <div class="progress-indicator"></div>
-                <div class="timeline-content" id="timeline-content">
-                    <div class="timeline-container" id="timeline-container">
-                        <div class="timeline-bar"></div>
-                        <div class="timeline-markers" id="timeline-markers"></div>
-                        <div class="day-labels" id="day-labels"></div>
-                    </div>
-                </div>
-            </div>
-        </div>
+  <div class="absolute inset-0 p-2 sm:p-4 flex flex-col pointer-events-none">
+    <div class="absolute top-4 right-4 flex items-center gap-2 pointer-events-auto">
+      <button id="fullscreenButton" title="Celá obrazovka" class="w-12 h-12 bg-[var(--primary-light)] hover:bg-[var(--accent-blue)] text-white rounded-full flex items-center justify-center shadow-lg transition-colors"><i class="fas fa-expand text-xl"></i></button>
+      <button id="toggleLayersButton" title="Zobraziť vrstvy" class="w-12 h-12 bg-[var(--primary-light)] hover:bg-[var(--accent-blue)] text-white rounded-full flex items-center justify-center shadow-lg transition-colors"><i class="fas fa-layer-group text-xl"></i></button>
     </div>
 
-    <div id="weather-popup-container"></div>
+    <div id="layerControls" class="fixed top-0 right-0 h-full w-80 sm:w-96 bg-[var(--primary-dark)]/80 bg-[#00000087] shadow-2xl p-6 z-40 overflow-y-auto transition-transform translate-x-full pointer-events-auto">
+      <div class="flex justify-between items-center mb-6">
+        <h2 class="text-2xl font-bold text-white">Vrstvy Počasia</h2>
+        <button id="closeLayersButton" class="text-gray-400 hover:text-white"><i class="fas fa-times text-2xl"></i></button>
+      </div>
 
-    <script>
-    document.addEventListener('DOMContentLoaded', function() {
-        // --- KONFIGURÁCIA A STAVOVÉ PREMENNÉ ---
-        mapboxgl.accessToken = 'pk.eyJ1IjoibmNpa2FsYSIsImEiOiJja3NhbGNqaTkxMWh1MnVsdWNjaWppOTkxIn0.VRSFufdvlbGJ6PwnucFc1Q';
-        const meteosourceApi = '65p9w931qxyh75vqpmpwdrh2bhw1ldeo9uz6sd03';
-        const openWeatherApiKey = 'b1b15e88fa797225412429c1c50c122a1';
-        const translationApiUrl = 'https://dry-cell-de24.meteopocasie-sk.workers.dev/';
+      <div id="active-alerts-container" class="mb-8 hidden">
+        <h3 class="text-xl font-bold text-white mb-4">Aktuálne výstrahy na Slovensku</h3>
+        <div id="active-alerts-list" class="space-y-3"></div>
+      </div>
 
-        // localStorage kľúče
-        const STORAGE_KEYS = { LAYERS: 'mp_active_layers' };
+      <div id="layer-checkbox-container" class="space-y-3"></div>
 
-        let currentDate = new Date();
-        let activeLayers = {};
-        let layerState = {};
-        let isPlaying = false;
-        let animationInterval;
-        const maxFutureDays = 15;
-        let startDate = new Date();
-        let dataLabelMarkers = [];
-        let dataLabelsAbortController = new AbortController();
-        let currentOpacity = 0.8;
-        let districtsGeoJSON = null;
+      <div class="mt-8">
+        <h3 class="text-xl font-bold text-white mb-4">Priehľadnosť vrstvy</h3>
+        <div id="opacity-slider-container" class="flex items-center gap-4">
+          <input type="range" id="opacitySlider" min="0" max="100" value="80" class="w-full h-[6px] bg-white/20 rounded-lg appearance-none cursor-pointer">
+          <span id="opacityValue" class="text-white font-semibold w-12 text-center">80%</span>
+        </div>
+      </div>
 
-        // --- localStorage helpers ---
-        function loadActiveLayersFromStorage() {
-          try {
-            const raw = localStorage.getItem(STORAGE_KEYS.LAYERS);
-            const arr = raw ? JSON.parse(raw) : null;
-            return Array.isArray(arr) ? arr : null;
-          } catch { return null; }
+      <div class="mt-8">
+        <h3 class="text-xl font-bold text-white mb-4">Štýl Mapy</h3>
+        <div id="map-style-container" class="grid grid-cols-2 gap-4"></div>
+      </div>
+      <div id="legend-container" class="mt-8"></div>
+    </div>
+
+    <div class="slider-container absolute bottom-4 left-4 right-4 p-4 rounded-2xl shadow-lg border border-gray-700/50 flex flex-col sm:flex-row items-center gap-4 pointer-events-auto">
+      <div class="control-group flex items-center gap-2">
+        <button id="prevButton" class="play-button w-10 h-10 rounded-full flex items-center justify-center text-lg"><i class="fas fa-backward"></i></button>
+        <button id="playButton" class="play-button w-12 h-12 rounded-full flex items-center justify-center text-xl"><i class="fas fa-play"></i></button>
+        <button id="nextButton" class="play-button w-10 h-10 rounded-full flex items-center justify-center text-lg"><i class="fas fa-forward"></i></button>
+      </div>
+
+      <div id="header-text" class="header px-4 py-2"></div>
+
+      <div id="timeline-area" class="timeline-area relative w-full flex-grow flex items-center touch-none">
+        <div class="progress-indicator"></div>
+        <div class="timeline-content" id="timeline-content">
+          <div class="timeline-container" id="timeline-container">
+            <div class="timeline-bar"></div>
+            <div class="timeline-markers" id="timeline-markers"></div>
+            <div class="day-labels" id="day-labels"></div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div id="weather-popup-container"></div>
+
+  <script>
+    document.addEventListener('DOMContentLoaded', () => {
+      mapboxgl.accessToken = 'pk.eyJ1IjoibmNpa2FsYSIsImEiOiJja3NhbGNqaTkxMWh1MnVsdWNjaWppOTkxIn0.VRSFufdvlbGJ6PwnucFc1Q';
+      const meteosourceApi = '65p9w931qxyh75vqpmpwdrh2bhw1ldeo9uz6sd03';
+      const openWeatherApiKey = 'b1b15e88fa797225412429c1c50c122a1';
+      const translationApiUrl = 'https://dry-cell-de24.meteopocasie-sk.workers.dev/';
+
+      const STORAGE_KEYS = { LAYERS: 'mp_active_layers' };
+
+      let currentDate = new Date();
+      let activeLayers = {};
+      let layerState = {};
+      let isPlaying = false, animationInterval;
+      const maxFutureDays = 15;
+      let startDate = new Date();
+      let dataLabelMarkers = [];
+      let dataLabelsAbortController = new AbortController();
+      let currentOpacity = 0.8;
+      let districtsGeoJSON = null;
+
+      function loadActiveLayersFromStorage(){
+        try{const raw=localStorage.getItem(STORAGE_KEYS.LAYERS);const arr=raw?JSON.parse(raw):null;return Array.isArray(arr)?arr:null;}catch{return null;}
+      }
+      function saveActiveLayersToStorage(names){
+        try{localStorage.setItem(STORAGE_KEYS.LAYERS, JSON.stringify(names));}catch{}
+      }
+
+      async function translateText(txt){
+        if(!txt||!txt.trim()) return "";
+        try{
+          const r=await fetch(translationApiUrl,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({text:txt,target_lang:'SK'})});
+          if(!r.ok) return txt; const d=await r.json(); return d.translatedText||txt;
+        }catch{ return txt; }
+      }
+
+      const mapLayers = {
+        "Teplota": { type:'tile', code:"temp", unit:"°C", api:"owm", url:`https://maps.openweathermap.org/maps/2.0/weather/TA2/{z}/{x}/{y}?date={date}&appid=${openWeatherApiKey}`, pointApiUrl:`https://api.open-meteo.com/v1/forecast?latitude={lat}&longitude={lon}&hourly=temperature_2m` },
+        "Tlakové útvary": { type:'tile', code:"pressure", unit:"hPa", api:"owm", url:`https://maps.openweathermap.org/maps/2.0/weather/APM/{z}/{x}/{y}?date={date}&appid=${openWeatherApiKey}`, pointApiUrl:`https://api.open-meteo.com/v1/forecast?latitude={lat}&longitude={lon}&hourly=pressure_msl` },
+        "Vietor": { type:'tile', code:"wind", unit:"m/s", api:"owm", url:`https://maps.openweathermap.org/maps/2.0/weather/WND/{z}/{x}/{y}?date={date}&appid=${openWeatherApiKey}`, pointApiUrl:`https://api.open-meteo.com/v1/forecast?latitude={lat}&longitude={lon}&hourly=wind_speed_10m,wind_direction_10m` },
+        "Relatívna vlhkosť": { type:'tile', code:"humidity", unit:"%", api:"owm", url:`https://maps.openweathermap.org/maps/2.0/weather/HRD0/{z}/{x}/{y}?date={date}&appid=${openWeatherApiKey}`, pointApiUrl:`https://api.open-meteo.com/v1/forecast?latitude={lat}&longitude={lon}&hourly=relative_humidity_2m` },
+        "Oblačnosť": { type:'tile', code:"clouds", unit:"%", api:"owm", url:`https://maps.openweathermap.org/maps/2.0/weather/CL/{z}/{x}/{y}?date={date}&appid=${openWeatherApiKey}`, pointApiUrl:`https://api.open-meteo.com/v1/forecast?latitude={lat}&longitude={lon}&hourly=cloud_cover` },
+        "Dážď": { type:'tile', code:"rain", unit:"mm", api:"owm", url:`https://maps.openweathermap.org/maps/2.0/weather/PAR0/{z}/{x}/{y}?date={date}&appid=${openWeatherApiKey}`, pointApiUrl:null },
+        "Sneh": { type:'tile', code:"snow", unit:"cm", api:"owm", url:`https://maps.openweathermap.org/maps/2.0/weather/PAS0/{z}/{x}/{y}?date={date}&appid=${openWeatherApiKey}`, pointApiUrl:null },
+        "Hĺbka snehu": { type:'tile', code:"snow_depth", unit:"m", api:"owm", url:`https://maps.openweathermap.org/maps/2.0/weather/SD0/{z}/{x}/{y}?date={date}&appid=${openWeatherApiKey}`, pointApiUrl:`https://api.open-meteo.com/v1/forecast?latitude={lat}&longitude={lon}&hourly=snow_depth` },
+        "Rosný bod": { type:'tile', code:"dew_point", unit:"°C", api:"owm", url:`https://maps.openweathermap.org/maps/2.0/weather/TD2/{z}/{x}/{y}?date={date}&appid=${openWeatherApiKey}`, pointApiUrl:`https://api.open-meteo.com/v1/forecast?latitude={lat}&longitude={lon}&hourly=dew_point_2m` },
+        "Konvektívne zrážky": { type:'tile', code:"convective_precip", unit:"mm", api:"owm", url:`https://maps.openweathermap.org/maps/2.0/weather/PAC0/{z}/{x}/{y}?date={date}&appid=${openWeatherApiKey}`, pointApiUrl:null },
+        "CAPE": { type:'tile', code:"cape", unit:" J/kg", api:"meteosource", url:`https://www.meteosource.com/api/v1/flexi/map?tile_x={x}&tile_y={y}&tile_zoom={z}&datetime={datetime}&variable=cape`, pointApiUrl:`https://www.meteosource.com/api/v1/flexi/point?lat={lat}&lon={lon}&sections=hourly` },
+        "Nárazy vetra": { type:'tile', code:"wind_gust", unit:" m/s", api:"meteosource", url:`https://www.meteosource.com/api/v1/flexi/map?tile_x={x}&tile_y={y}&tile_zoom={z}&datetime={datetime}&variable=wind_gust`, pointApiUrl:`https://www.meteosource.com/api/v1/flexi/point?lat={lat}&lon={lon}&sections=hourly` },
+        "Výstrahy": { type:'vector', code:"alerts", url:null }
+      };
+
+      const mapStyles = {
+        'Tmavá':'mapbox://styles/ncikala/cm1t58iop010401qv5xwi3yb3',
+        'Svetlá':'mapbox://styles/mapbox/light-v11',
+        'Satelitná':'mapbox://styles/mapbox/satellite-v9',
+        'Reliéfna':'mapbox://styles/mapbox/outdoors-v12'
+      };
+
+      const alertEventTranslations = {
+        "thunderstorm":"Búrky","heavy rain":"Výdatný dážď","light rain":"Mierny dážď",
+        "rain":"Dážď","snow":"Sneh","sleet":"Dážď so snehom","wind":"Vietor","fog":"Hmla",
+        "low temperature":"Nízke teploty","high temperature":"Vysoké teploty","ice":"Poľadovica",
+        "frost":"Mráz","flood":"Povodne","wildfire":"Požiare","avalanches":"Lavíny",
+        "volcanic ash":"Sopečný popol","small hail":"Krúpy","gusts":"Nárazy vetra","coastal event":"Pobrežné javy"
+      };
+      const translateAlertEvent = ev => {
+        const lower=ev.toLowerCase();
+        const keys=Object.keys(alertEventTranslations).sort((a,b)=>b.length-a.length);
+        for(const k of keys){ if(lower.includes(k)) return alertEventTranslations[k]; }
+        return ev;
+      };
+
+      const map = new mapboxgl.Map({
+        container:'map', style:mapStyles['Tmavá'], center:[-10,45], zoom:1.5, pitch:45, antialias:true, projection:'globe'
+      });
+
+      map.on('load', () => {
+        map.setFog({});
+        map.flyTo({center:[19.1451,48.6690],zoom:5,speed:0.5,pitch:0,essential:true});
+        initializeUI();
+      });
+
+      const debounce=(fn,t=300)=>{let h;return(...a)=>{clearTimeout(h);h=setTimeout(()=>fn.apply(this,a),t)}};
+      const debouncedUpdateAllDataLabels = debounce(()=>updateAllDataLabels(),500);
+      const firstSymbolId = ()=> map.getStyle().layers.find(l=>l.type==='symbol')?.id;
+
+      function handleLayerChange(checkbox){
+        const name = checkbox.value;
+        const info = mapLayers[name];
+        if(checkbox.checked){
+          activeLayers[name]=info;
+          addWeatherLayer(info);
+        }else{
+          delete activeLayers[name];
+          removeWeatherLayer(info.code);
         }
-        function saveActiveLayersToStorage(layerNames) {
-          try { localStorage.setItem(STORAGE_KEYS.LAYERS, JSON.stringify(layerNames)); } catch {}
+        saveActiveLayersToStorage(Object.keys(activeLayers));
+        updateLegend();
+        updateAllDataLabels();
+      }
+
+      function addWeatherLayer(info, force=false){
+        if(!info||!info.code) return;
+        if(info.type==='vector' && info.code==='alerts'){ fetchWeatherAlerts(); return; }
+        if(info.type==='tile'){
+          const code=info.code;
+          if(layerState[code] && !force) return;
+          if(layerState[code] && force) removeWeatherLayer(code);
+
+          const id1=`${code}_1`, src1=`${code}_source_1`;
+          const id2=`${code}_2`, src2=`${code}_source_2`;
+
+          let url;
+          if(info.api==='meteosource'){
+            const now=new Date();
+            const dh=Math.round((currentDate.getTime()-now.getTime())/3600000);
+            url = `${info.url}&key=${meteosourceApi}`.replace('{datetime}', (dh>=0?'+':'')+dh+'hours');
+          }else{
+            const unix=Math.floor(currentDate.getTime()/1000);
+            url = info.url.replace('{date}', unix);
+          }
+
+          const paint={ 'raster-opacity-transition':{duration:400}, 'raster-saturation':0.3, 'raster-contrast':0.2, 'raster-fade-duration':0 };
+
+          map.addSource(src1,{type:'raster',tiles:[url],tileSize:256,attribution:'Meteosource, OpenWeatherMap'});
+          map.addLayer({id:id1,type:'raster',source:src1,paint:{...paint,'raster-opacity':currentOpacity}}, firstSymbolId());
+
+          map.addSource(src2,{type:'raster',tiles:[url],tileSize:256});
+          map.addLayer({id:id2,type:'raster',source:src2,paint:{...paint,'raster-opacity':0}}, firstSymbolId());
+
+          layerState[code]={active:1};
         }
+      }
 
-        async function translateText(textToTranslate) {
-            if (!textToTranslate || textToTranslate.trim() === '') return "";
-            try {
-                const response = await fetch(translationApiUrl, {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ text: textToTranslate, target_lang: 'SK' })
-                });
-                if (!response.ok) return textToTranslate;
-                const data = await response.json();
-                return data.translatedText || textToTranslate;
-            } catch (error) {
-                console.error("Translation API error:", error);
-                return textToTranslate;
-            }
+      function removeWeatherLayer(code){
+        if(code==='alerts'){
+          if(map.getLayer('districts-fill')) map.removeLayer('districts-fill');
+          if(map.getLayer('districts-boundaries')) map.removeLayer('districts-boundaries');
+          if(map.getSource('slovakia-districts')) map.removeSource('slovakia-districts');
+          districtsGeoJSON=null;
+          document.getElementById('active-alerts-container').classList.add('hidden');
+          return;
         }
+        const info=Object.values(mapLayers).find(l=>l.code===code);
+        if(!info||info.type!=='tile') return;
+        for(let i=1;i<=2;i++){
+          const id=`${code}_${i}`, src=`${code}_source_${i}`;
+          if(map.getLayer(id)) map.removeLayer(id);
+          if(map.getSource(src)) map.removeSource(src);
+        }
+        delete layerState[code];
+      }
 
-        const mapLayers = {
-            "Teplota": { type: 'tile', code: "temp", unit: "°C", api: "owm", url: `https://maps.openweathermap.org/maps/2.0/weather/TA2/{z}/{x}/{y}?date={date}&appid=${openWeatherApiKey}`, pointApiUrl: `https://api.open-meteo.com/v1/forecast?latitude={lat}&longitude={lon}&hourly=temperature_2m` },
-            "Tlak vzduchu": { type: 'tile', code: "pressure", unit: "hPa", api: "owm", url: `https://maps.openweathermap.org/maps/2.0/weather/APM/{z}/{x}/{y}?date={date}&appid=${openWeatherApiKey}`, pointApiUrl: `https://api.open-meteo.com/v1/forecast?latitude={lat}&longitude={lon}&hourly=pressure_msl` },
-            "Vietor": { type: 'tile', code: "wind", unit: "m/s", api: "owm", url: `https://maps.openweathermap.org/maps/2.0/weather/WND/{z}/{x}/{y}?date={date}&appid=${openWeatherApiKey}`, pointApiUrl: `https://api.open-meteo.com/v1/forecast?latitude={lat}&longitude={lon}&hourly=wind_speed_10m,wind_direction_10m` },
-            "Relatívna vlhkosť": { type: 'tile', code: "humidity", unit: "%", api: "owm", url: `https://maps.openweathermap.org/maps/2.0/weather/HRD0/{z}/{x}/{y}?date={date}&appid=${openWeatherApiKey}`, pointApiUrl: `https://api.open-meteo.com/v1/forecast?latitude={lat}&longitude={lon}&hourly=relative_humidity_2m` },
-            "Oblačnosť": { type: 'tile', code: "clouds", unit: "%", api: "owm", url: `https://maps.openweathermap.org/maps/2.0/weather/CL/{z}/{x}/{y}?date={date}&appid=${openWeatherApiKey}`, pointApiUrl: `https://api.open-meteo.com/v1/forecast?latitude={lat}&longitude={lon}&hourly=cloud_cover` },
-            "Dážď": { type: 'tile', code: "rain", unit: "mm", api: "owm", url: `https://maps.openweathermap.org/maps/2.0/weather/PAR0/{z}/{x}/{y}?date={date}&appid=${openWeatherApiKey}`, pointApiUrl: null },
-            "Sneh": { type: 'tile', code: "snow", unit: "cm", api: "owm", url: `https://maps.openweathermap.org/maps/2.0/weather/PAS0/{z}/{x}/{y}?date={date}&appid=${openWeatherApiKey}`, pointApiUrl: null },
-            "Hĺbka snehu": { type: 'tile', code: "snow_depth", unit: "m", api: "owm", url: `https://maps.openweathermap.org/maps/2.0/weather/SD0/{z}/{x}/{y}?date={date}&appid=${openWeatherApiKey}`, pointApiUrl: `https://api.open-meteo.com/v1/forecast?latitude={lat}&longitude={lon}&hourly=snow_depth` },
-            "Rosný bod": { type: 'tile', code: "dew_point", unit: "°C", api: "owm", url: `https://maps.openweathermap.org/maps/2.0/weather/TD2/{z}/{x}/{y}?date={date}&appid=${openWeatherApiKey}`, pointApiUrl: `https://api.open-meteo.com/v1/forecast?latitude={lat}&longitude={lon}&hourly=dew_point_2m` },
-            "Konvektívne zrážky": { type: 'tile', code: "convective_precip", unit: "mm", api: "owm", url: `https://maps.openweathermap.org/maps/2.0/weather/PAC0/{z}/{x}/{y}?date={date}&appid=${openWeatherApiKey}`, pointApiUrl: null },
-            "CAPE": { type: 'tile', code: "cape", unit: " J/kg", api: "meteosource", url: `https://www.meteosource.com/api/v1/flexi/map?tile_x={x}&tile_y={y}&tile_zoom={z}&datetime={datetime}&variable=cape`, pointApiUrl: `https://www.meteosource.com/api/v1/flexi/point?lat={lat}&lon={lon}&sections=hourly` },
-            "Nárazy vetra": { type: 'tile', code: "wind_gust", unit: " m/s", api: "meteosource", url: `https://www.meteosource.com/api/v1/flexi/map?tile_x={x}&tile_y={y}&tile_zoom={z}&datetime={datetime}&variable=wind_gust`, pointApiUrl: `https://www.meteosource.com/api/v1/flexi/point?lat={lat}&lon={lon}&sections=hourly` },
-            "Výstrahy": { type: 'vector', code: "alerts", url: null }
-        };
+      function setAllLayersOpacity(op){ currentOpacity=op; Object.keys(layerState).forEach(code=>{ const id=`${code}_${layerState[code].active}`; if(map.getLayer(id)) map.setPaintProperty(id,'raster-opacity',op); }); }
 
-        const mapStyles = {
-            'Tmavá': 'mapbox://styles/ncikala/cm1t58iop010401qv5xwi3yb3',
-            'Svetlá': 'mapbox://styles/mapbox/light-v11',
-            'Satelitná': 'mapbox://styles/mapbox/satellite-v9',
-            'Reliéfna': 'mapbox://styles/mapbox/outdoors-v12'
-        };
+      function updateActiveLayersTime(){
+        Object.keys(layerState).forEach(code=>{
+          const info=Object.values(mapLayers).find(l=>l.code===code); if(!info) return;
+          const st=layerState[code];
+          const activeId=`${code}_${st.active}`;
+          const inactiveId=`${code}_${st.active===1?2:1}`;
+          const inactiveSrc=`${code}_source_${st.active===1?2:1}`;
 
-        const alertEventTranslations = {
-            "thunderstorm": "Búrky", "heavy rain": "Výdatný dážď", "light rain": "Mierny dážď",
-            "rain": "Dážď", "snow": "Sneh", "sleet": "Dážď so snehom", "wind": "Vietor", "fog": "Hmla",
-            "low temperature": "Nízke teploty", "high temperature": "Vysoké teploty", "ice": "Poľadovica",
-            "frost": "Mráz", "flood": "Povodne", "wildfire": "Požiare", "avalanches": "Lavíny",
-            "volcanic ash": "Sopečný popol", "small hail": "Krúpy", "gusts": "Nárazy vetra",
-            "coastal event": "Pobrežné javy"
-        };
+          let url;
+          if(info.api==='meteosource'){
+            const now=new Date();
+            const dh=Math.round((currentDate.getTime()-now.getTime())/3600000);
+            url = `${info.url}&key=${meteosourceApi}`.replace('{datetime}', (dh>=0?'+':'')+dh+'hours');
+          }else{
+            const unix=Math.floor(currentDate.getTime()/1000);
+            url = info.url.replace('{date}', unix);
+          }
 
-        const translateAlertEvent = (eventName) => {
-            const lowerEvent = eventName.toLowerCase();
-            const sortedKeys = Object.keys(alertEventTranslations).sort((a, b) => b.length - a.length);
-            for (const key of sortedKeys) {
-                if (lowerEvent.includes(key)) return alertEventTranslations[key];
-            }
-            return eventName;
-        };
+          if(map.getSource(inactiveSrc)) map.getSource(inactiveSrc).setTiles([url]);
+          map.setPaintProperty(activeId,'raster-opacity',0);
+          map.setPaintProperty(inactiveId,'raster-opacity',currentOpacity);
+          st.active = (st.active===1?2:1);
+        });
+        debouncedUpdateAllDataLabels();
+      }
 
-        const map = new mapboxgl.Map({
-            container: 'map',
-            style: mapStyles['Tmavá'],
-            center: [-10, 45],
-            zoom: 1.5,
-            pitch: 45,
-            antialias: true,
-            projection: 'globe'
+      map.on('style.load', () => {
+        layerState={};
+        Object.values(activeLayers).forEach(info=>addWeatherLayer(info,true));
+      });
+      map.on('moveend', ()=>debouncedUpdateAllDataLabels());
+      map.on('zoomend', ()=>debouncedUpdateAllDataLabels());
+
+      map.on('click', handleMapClick);
+
+      document.getElementById('toggleLayersButton').addEventListener('click',()=>document.getElementById('layerControls').classList.remove('translate-x-full'));
+      document.getElementById('closeLayersButton').addEventListener('click',()=>document.getElementById('layerControls').classList.add('translate-x-full'));
+      document.getElementById('fullscreenButton').addEventListener('click',()=>!document.fullscreenElement?document.documentElement.requestFullscreen():document.exitFullscreen());
+      document.getElementById('playButton').addEventListener('click',togglePlay);
+      document.getElementById('prevButton').addEventListener('click',()=>stepSlider(-1));
+      document.getElementById('nextButton').addEventListener('click',()=>stepSlider(1));
+      document.addEventListener('mousemove',e=>{const d=document.querySelector('.cursor-dot'); d.style.left=`${e.clientX}px`; d.style.top=`${e.clientY}px`;});
+      document.getElementById('opacitySlider').addEventListener('input',e=>{const v=parseInt(e.target.value,10); document.getElementById('opacityValue').textContent=`${v}%`; setAllLayersOpacity(v/100);});
+
+      function initializeUI(){
+        const checkboxContainer=document.getElementById('layer-checkbox-container');
+        const styleContainer=document.getElementById('map-style-container');
+        const refs={};
+
+        Object.keys(mapLayers).forEach(name=>{
+          const info=mapLayers[name]; const id=`checkbox-${info.code}-${name.replace(/\s/g,'')}`;
+          const label=document.createElement('label');
+          label.htmlFor=id;
+          label.className="flex items-center space-x-3 cursor-pointer p-2 rounded-lg hover:bg-white/10 transition-colors";
+          label.innerHTML=`<input type="checkbox" id="${id}" value="${name}" class="layer-checkbox appearance-none w-5 h-5 rounded-md bg-white/20 border-2 border-transparent relative transition"> <span class="text-white">${name}</span>`;
+          checkboxContainer.appendChild(label);
+          const input=label.querySelector('input'); refs[name]=input;
+          input.addEventListener('change',e=>handleLayerChange(e.target));
         });
 
-        map.on('load', () => {
-            map.setFog({});
-            map.flyTo({ center: [19.1451, 48.6690], zoom: 5, speed: 0.5, pitch: 0, essential: true });
-            initializeUI();
+        Object.entries(mapStyles).forEach(([n,url])=>{
+          const b=document.createElement('button'); b.textContent=n;
+          b.className="p-3 bg-white/10 rounded-lg text-white font-semibold hover:bg-[var(--accent-blue)] transition-colors";
+          b.addEventListener('click',()=>map.setStyle(url)); styleContainer.appendChild(b);
         });
 
-        function debounce(func, timeout = 300) {
-            let timer;
-            return (...args) => {
-                clearTimeout(timer);
-                timer = setTimeout(() => { func.apply(this, args); }, timeout);
-            };
+        const saved = loadActiveLayersFromStorage();
+        const toEnable = (saved && saved.length) ? saved : ["Tlakové útvary"];
+        toEnable.forEach(n=>{const cb=refs[n]; if(cb && !cb.checked){ cb.checked=true; handleLayerChange(cb); }});
+        saveActiveLayersToStorage(Object.keys(activeLayers));
+
+        initializeTimeline();
+      }
+
+      let timelineArea,timelineContent,headerText,timelineMarkersContainer;
+      let isDragging=false,startX,startTranslate=0,currentTranslate=0,hourOffset=0;
+      const totalDays=maxFutureDays;
+      const daysOfWeek=['Nedeľa','Pondelok','Utorok','Streda','Štvrtok','Piatok','Sobota'];
+      const shortDayNames=['NE','PO','UT','ST','ŠT','PI','SO'];
+      const dragSpeedFactor=1.5;
+      const formatTime=d=>`${String(d.getHours()).padStart(2,'0')}:00`;
+      const formatDate=d=>`${String(d.getDate())}.${String(d.getMonth()+1)}.`;
+
+      function syncUIFromHourOffset(anim=false){
+        if(!timelineContent||!timelineArea||!headerText) return;
+        currentDate=new Date(startDate.getTime()); currentDate.setHours(startDate.getHours()+hourOffset);
+        const totalHours=totalDays*24, totalW=timelineContent.scrollWidth, vp=timelineArea.offsetWidth;
+        if(totalHours>0 && totalW>0){ const p=hourOffset/totalHours; currentTranslate=(vp/2)-(totalW*p); }
+        if(anim) timelineContent.style.transition='transform 300ms ease-out';
+        timelineContent.style.transform=`translateX(${currentTranslate}px)`;
+        if(anim) setTimeout(()=>{timelineContent.style.transition='';},300);
+        headerText.innerHTML=`${daysOfWeek[currentDate.getDay()]} <span class="text-gray-400">${formatDate(currentDate)}</span> ${formatTime(currentDate)}`;
+        updateActiveLayersTime();
+      }
+
+      const initializeTimeline=()=>{
+        timelineArea=document.getElementById('timeline-area');
+        timelineContent=document.getElementById('timeline-content');
+        headerText=document.getElementById('header-text');
+        const dayLabelsContainer=document.getElementById('day-labels');
+        timelineMarkersContainer=document.getElementById('timeline-markers');
+
+        dayLabelsContainer.innerHTML=''; timelineMarkersContainer.innerHTML='';
+        startDate=new Date(); startDate.setMinutes(0,0,0);
+        const totalHours=totalDays*24, hourWidth=40; timelineContent.style.width=`${hourWidth*totalHours}px`;
+        const tmp=new Date(startDate.getTime());
+        for(let h=0;h<totalHours;h++){
+          const pos=(h/totalHours)*100; const m=document.createElement('div'); m.style.left=`${pos}%`;
+          if(tmp.getHours()===0){
+            m.className='marker-day-break';
+            const lbl=document.createElement('span'); lbl.className='day-label';
+            lbl.innerHTML = `${shortDayNames[tmp.getDay()]}<br><span style="font-size:.8em;color:#aaa;">00:00</span>`;
+            lbl.style.left=`${pos}%`; dayLabelsContainer.appendChild(lbl);
+          }else m.className='marker-hour';
+          timelineMarkersContainer.appendChild(m); tmp.setHours(tmp.getHours()+1);
         }
+        hourOffset=0; requestAnimationFrame(()=>syncUIFromHourOffset(false));
 
-        function findFirstSymbolLayerId() {
-            const layers = map.getStyle().layers;
-            return layers.find(layer => layer.type === 'symbol')?.id;
+        const startDrag=e=>{isDragging=true;timelineContent.classList.add('dragging');startX=e.pageX||e.touches[0].pageX;startTranslate=currentTranslate;document.addEventListener('mousemove',handleMove);document.addEventListener('touchmove',handleMove,{passive:false});document.addEventListener('mouseup',endDrag,{once:true});document.addEventListener('touchend',endDrag,{once:true});};
+        const endDrag=()=>{isDragging=false;timelineContent.classList.remove('dragging');document.removeEventListener('mousemove',handleMove);document.removeEventListener('touchmove',handleMove);syncUIFromHourOffset(false);};
+        timelineContent.addEventListener('mousedown',startDrag);
+        timelineContent.addEventListener('touchstart',startDrag,{passive:true});
+      };
+
+      const handleMove = (e)=>{
+        if(!isDragging) return; if(e.touches) e.preventDefault();
+        const x=e.pageX||e.touches[0].pageX; const walk=(x-startX)*dragSpeedFactor; currentTranslate=startTranslate+walk;
+        const vp=timelineArea.offsetWidth, totalW=timelineContent.scrollWidth, maxT=vp/2, minT=-(totalW - vp/2);
+        currentTranslate=Math.max(minT,Math.min(maxT,currentTranslate));
+        timelineContent.style.transform=`translateX(${currentTranslate}px)`;
+        const pos=(vp/2)-currentTranslate; const p=totalW>0?pos/totalW:0; const newOff=Math.round(p*(totalDays*24));
+        if(newOff!==hourOffset){ hourOffset=newOff; currentDate=new Date(startDate.getTime()); currentDate.setHours(startDate.getHours()+hourOffset); headerText.innerHTML=`${daysOfWeek[currentDate.getDay()]} <span class="text-white-900">${formatDate(currentDate)}</span> ${formatTime(currentDate)}`; }
+      };
+
+      function stepSlider(dir){ hourOffset=Math.max(0,Math.min(hourOffset+dir,totalDays*24-1)); syncUIFromHourOffset(true); }
+      function togglePlay(){
+        isPlaying=!isPlaying;
+        document.getElementById('playButton').innerHTML=isPlaying?'<i class="fas fa-pause"></i>':'<i class="fas fa-play"></i>';
+        if(isPlaying){
+          if(hourOffset>=totalDays*24-1){ hourOffset=0; syncUIFromHourOffset(false); }
+          animationInterval=setInterval(()=>{ if(hourOffset>=totalDays*24-1){ clearInterval(animationInterval); isPlaying=false; document.getElementById('playButton').innerHTML='<i class="fas fa-play"></i>'; return;} stepSlider(1); },1000);
+        }else clearInterval(animationInterval);
+      }
+
+      async function handleMapClick(e){
+        const r=document.createElement('div'); r.className='ripple'; document.body.appendChild(r);
+        const size=map.getCanvas().clientWidth*0.1; r.style.cssText=`width:${size}px;height:${size}px;left:${e.point.x-size/2}px;top:${e.point.y-size/2}px;`; r.addEventListener('animationend',()=>r.remove());
+        const alertF=map.queryRenderedFeatures(e.point,{layers:['districts-fill']});
+        if(alertF.length>0){
+          const p=alertF[0].properties; const name=p.TXT||p.NUTS4_NAME||'Neznámy okres';
+          await showAlertPopup(e.lngLat, name, JSON.parse(p.alerts||'[]'));
+        }else{ fetchWeatherDataForPopup(e.lngLat); }
+      }
+
+      async function fetchWeatherDataForPopup(lngLat){
+        if(!lngLat||typeof lngLat.lat!=='number'||typeof lngLat.lng!=='number') return;
+        const {lat,lng}=lngLat;
+        const url=`https://api.open-meteo.com/v1/forecast?latitude=${lat.toFixed(4)}&longitude=${lng.toFixed(4)}&hourly=temperature_2m,relative_humidity_2m,dew_point_2m,apparent_temperature,pressure_msl,cloud_cover,wind_speed_10m,wind_direction_10m,wind_gusts_10m,precipitation,snowfall,weather_code&daily=weather_code,temperature_2m_max,temperature_2m_min&timezone=auto`;
+        try{
+          let [r1,r2]=await Promise.all([
+            fetch(url),
+            activeLayers['CAPE'] ? fetch(`${mapLayers['CAPE'].pointApiUrl.replace('{lat}',lat.toFixed(4)).replace('{lon}',lng.toFixed(4))}&key=${meteosourceApi}`) : Promise.resolve(null)
+          ]);
+          if(!r1.ok) throw new Error('Open-Meteo API error');
+          const d1=await r1.json(); const d2=r2&&r2.ok?await r2.json():null;
+          displayWeatherPopup(d1,d2,lat,lng);
+        }catch(e){ console.error("Popup data fetch error:",e); }
+      }
+
+      function displayWeatherPopup(data,capeData,lat,lon){
+        const windDir=deg=>['S','SV','V','JV','J','JZ','Z','SZ'][Math.round(deg/45)%8];
+        const owmFromWmo=(w,isDay=true)=>({0:'01',1:'02',2:'03',3:'04',45:'50',48:'50',51:'09',53:'09',55:'09',56:'09',57:'09',61:'10',63:'10',65:'10',66:'10',67:'10',71:'13',73:'13',75:'13',77:'13',80:'09',81:'09',82:'09',85:'13',86:'13',95:'11',96:'11',99:'11'}[w]||'01')+(isDay?'d':'n');
+        const iconUrl=(c,isDay)=>`https://www.meteopocasie.sk/3d_iconset_day/${owmFromWmo(c,isDay)}.png`;
+        const capeColor=c=>c<100?'#a8e1ff':c<250?'#3d82de':c<500?'#42b45a':c<1000?'#f5d742':c<2000?'#f5a742':c<3500?'#f56e42':'#ff00ff';
+        const now=new Date(); const idx=data.hourly.time.findIndex(t=>new Date(t)>=now); if(idx===-1) return;
+
+        let html=`<div class="fixed inset-0 bg-black/60 z-30 flex items-center justify-center p-4" onclick="this.remove()"><div class="bg-[var(--primary-dark)]/80 backdrop-blur-md max-w-4xl w-full max-h-[80vh] overflow-y-auto rounded-2xl p-6 shadow-2xl relative border border-gray-700" onclick="event.stopPropagation()"><button onclick="this.parentElement.parentElement.remove()" class="absolute top-4 right-4 text-gray-400 hover:text-white text-2xl z-10">&times;</button><h2 class="text-3xl font-bold mb-2 text-center text-white">Predpoveď Počasia</h2><p class="text-center text-gray-400 mb-6">(${lat.toFixed(2)}, ${lon.toFixed(2)})</p><div class="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-4">`;
+        for(let i=idx;i<idx+24&&i<data.hourly.time.length;i++){
+          const t=new Date(data.hourly.time[i]); const isDay=t.getHours()>6&&t.getHours()<20;
+          let cape=''; if(capeData?.hourly?.data){ const h=capeData.hourly.data.find(d=>d.date.startsWith(t.toISOString().slice(0,13))); if(h?.cape!=null){ const v=Math.round(h.cape); cape=`<p class="text-xs text-white">CAPE: ${v} J/kg</p><div class="item-cape" style="background:${capeColor(v)};margin-top:5%"></div>`; } }
+          html+=`<div class="bg-white/10 p-4 rounded-xl text-center flex flex-col items-center justify-between"><div><p class="font-semibold text-sm">${t.toLocaleDateString('sk-SK',{weekday:'short'})}</p><p class="font-bold text-lg">${t.toLocaleTimeString('sk-SK',{hour:'2-digit',minute:'2-digit'})}</p><img src="${iconUrl(data.hourly.weather_code[i],isDay)}" alt="" class="w-16 h-16 -my-2"><p class="text-2xl font-bold">${Math.round(data.hourly.temperature_2m[i])}°C</p></div><div class="mt-2 w-full"><p class="text-xs text-gray-400"><i class="fas fa-wind"></i> ${data.hourly.wind_speed_10m[i].toFixed(1)} m/s ${windDir(data.hourly.wind_direction_10m[i])}</p>${cape}</div></div>`;
         }
+        html+=`</div><div class="mt-6 text-center"><a href="https://www.meteopocasie.sk/predpoved-pocasia/svet/${lat.toFixed(4)},${lon.toFixed(4)}" target="_blank" class="bg-[var(--accent-blue)] text-white font-bold py-2 px-6 rounded-lg hover:bg-blue-500 transition-colors">Detailná predpoveď</a></div></div></div>`;
+        document.getElementById('weather-popup-container').innerHTML=html;
+      }
 
-        const debouncedUpdateAllDataLabels = debounce(() => updateAllDataLabels(), 500);
-
-        function handleLayerChange(checkbox) {
-            const layerName = checkbox.value;
-            const layerInfo = mapLayers[layerName];
-            if (checkbox.checked) {
-                activeLayers[layerName] = layerInfo;
-                addWeatherLayer(layerInfo);
-            } else {
-                delete activeLayers[layerName];
-                removeWeatherLayer(layerInfo.code);
-            }
-
-            // persistuj aktuálne zapnuté vrstvy
-            saveActiveLayersToStorage(Object.keys(activeLayers));
-
-            updateLegend();
-            updateAllDataLabels();
+      function updateAllDataLabels(){
+        dataLabelsAbortController.abort(); dataLabelsAbortController=new AbortController();
+        dataLabelMarkers.forEach(m=>m.remove()); dataLabelMarkers=[];
+        const tiles=Object.values(activeLayers).filter(l=>l.type==='tile'); if(tiles.length===0) return;
+        const layerForLabels=tiles[tiles.length-1]; if(!layerForLabels.pointApiUrl||layerForLabels.code==='pressure') return;
+        const b=map.getBounds(), z=map.getZoom();
+        const grid=(z<3)?3:(z<5)?5:8;
+        const latStep=(b.getNorth()-b.getSouth())/grid;
+        const lonStep=(b.getEast()-b.getWest())/grid;
+        for(let lat=b.getSouth()+latStep/2; lat<b.getNorth(); lat+=latStep){
+          for(let lon=b.getWest()+lonStep/2; lon<b.getEast(); lon+=lonStep){
+            fetchAndDisplayPointData(lat, (lon+540)%360-180, layerForLabels, dataLabelsAbortController.signal, currentDate);
+          }
         }
+      }
 
-        function addWeatherLayer(layerInfo, forceReadd = false) {
-            if (!layerInfo || !layerInfo.code) return;
-
-            if (layerInfo.type === 'vector' && layerInfo.code === 'alerts') {
-                fetchWeatherAlerts();
-                return;
-            }
-
-            if (layerInfo.type === 'tile') {
-                const { code } = layerInfo;
-                if (layerState[code] && !forceReadd) return;
-                if (layerState[code] && forceReadd) removeWeatherLayer(code);
-
-                const layerId1 = `${code}_1`, sourceId1 = `${code}_source_1`;
-                const layerId2 = `${code}_2`, sourceId2 = `${code}_source_2`;
-
-                let finalUrl;
-                if (layerInfo.api === 'meteosource') {
-                    const now = new Date();
-                    const diffHours = Math.round((currentDate.getTime() - now.getTime()) / 3600000);
-                    const relativeTime = (diffHours >= 0 ? '+' : '') + diffHours + 'hours';
-                    finalUrl = `${layerInfo.url}&key=${meteosourceApi}`.replace('{datetime}', relativeTime);
-                } else {
-                    const unixTime = Math.floor(currentDate.getTime() / 1000);
-                    finalUrl = layerInfo.url.replace('{date}', unixTime);
-                }
-
-                const paintProps = {
-                    'raster-opacity-transition': { duration: 400 },
-                    'raster-saturation': 0.3,
-                    'raster-contrast': 0.2,
-                    'raster-fade-duration': 0
-                };
-
-                map.addSource(sourceId1, { type: 'raster', tiles: [finalUrl], tileSize: 256, attribution: 'Meteosource, OpenWeatherMap' });
-                map.addLayer({
-                    id: layerId1, type: 'raster', source: sourceId1,
-                    paint: { ...paintProps, 'raster-opacity': currentOpacity }
-                }, findFirstSymbolLayerId());
-
-                map.addSource(sourceId2, { type: 'raster', tiles: [finalUrl], tileSize: 256 });
-                map.addLayer({
-                    id: layerId2, type: 'raster', source: sourceId2,
-                    paint: { ...paintProps, 'raster-opacity': 0 }
-                }, findFirstSymbolLayerId());
-
-                layerState[code] = { active: 1 };
-            }
-        }
-
-        function removeWeatherLayer(layerCode) {
-            if (layerCode === 'alerts') {
-                if (map.getLayer('districts-fill')) map.removeLayer('districts-fill');
-                if (map.getLayer('districts-boundaries')) map.removeLayer('districts-boundaries');
-                if (map.getSource('slovakia-districts')) map.removeSource('slovakia-districts');
-                districtsGeoJSON = null;
-                document.getElementById('active-alerts-container').classList.add('hidden');
-                return;
-            }
-
-            const layerInfo = Object.values(mapLayers).find(l => l.code === layerCode);
-            if (!layerInfo || layerInfo.type !== 'tile') return;
-
-            for (let i = 1; i <= 2; i++) {
-                const layerId = `${layerCode}_${i}`, sourceId = `${layerCode}_source_${i}`;
-                if (map.getLayer(layerId)) map.removeLayer(layerId);
-                if (map.getSource(sourceId)) map.removeSource(sourceId);
-            }
-            delete layerState[layerCode];
-        }
-
-        function setAllLayersOpacity(opacity) {
-            currentOpacity = opacity;
-            Object.keys(layerState).forEach(code => {
-                const state = layerState[code];
-                const activeLayerId = `${code}_${state.active}`;
-                if (map.getLayer(activeLayerId)) {
-                    map.setPaintProperty(activeLayerId, 'raster-opacity', opacity);
-                }
-            });
-        }
-
-        function updateActiveLayersTime() {
-            Object.keys(layerState).forEach(code => {
-                const layerInfo = Object.values(mapLayers).find(l => l.code === code);
-                if (!layerInfo) return;
-
-                const state = layerState[code];
-                const activeLayerId = `${code}_${state.active}`;
-                const inactiveLayerId = `${code}_${state.active === 1 ? 2 : 1}`;
-                const inactiveSourceId = `${code}_source_${state.active === 1 ? 2 : 1}`;
-
-                let finalUrl;
-                if (layerInfo.api === 'meteosource') {
-                    const now = new Date();
-                    const diffHours = Math.round((currentDate.getTime() - now.getTime()) / 3600000);
-                    const relativeTime = (diffHours >= 0 ? '+' : '') + diffHours + 'hours';
-                    finalUrl = `${layerInfo.url}&key=${meteosourceApi}`.replace('{datetime}', relativeTime);
-                } else {
-                    const unixTime = Math.floor(currentDate.getTime() / 1000);
-                    finalUrl = layerInfo.url.replace('{date}', unixTime);
-                }
-
-                if (map.getSource(inactiveSourceId)) {
-                    map.getSource(inactiveSourceId).setTiles([finalUrl]);
-                }
-
-                map.setPaintProperty(activeLayerId, 'raster-opacity', 0);
-                map.setPaintProperty(inactiveLayerId, 'raster-opacity', currentOpacity);
-
-                state.active = (state.active === 1 ? 2 : 1);
-            });
-
-            debouncedUpdateAllDataLabels();
-        }
-
-        // --- OBSLUHA EVENTOV ---
-        map.on('style.load', () => {
-            layerState = {};
-            Object.values(activeLayers).forEach(layerInfo => {
-                addWeatherLayer(layerInfo, true);
-            });
-        });
-
-        map.on('moveend', () => {
-            debouncedUpdateAllDataLabels();
-        });
-        map.on('zoomend', () => {
-            debouncedUpdateAllDataLabels();
-        });
-
-        map.on('click', handleMapClick);
-
-        document.getElementById('toggleLayersButton').addEventListener('click', () => {
-            document.getElementById('layerControls').classList.remove('translate-x-full');
-        });
-
-        document.getElementById('closeLayersButton').addEventListener('click', () => {
-            document.getElementById('layerControls').classList.add('translate-x-full');
-        });
-
-        document.getElementById('fullscreenButton').addEventListener('click', () =>
-            !document.fullscreenElement ? document.documentElement.requestFullscreen() : document.exitFullscreen()
-        );
-
-        document.getElementById('playButton').addEventListener('click', togglePlay);
-        document.getElementById('prevButton').addEventListener('click', () => stepSlider(-1));
-        document.getElementById('nextButton').addEventListener('click', () => stepSlider(1));
-
-        document.addEventListener('mousemove', e => {
-            const dot = document.querySelector('.cursor-dot');
-            dot.style.left = `${e.clientX}px`;
-            dot.style.top = `${e.clientY}px`;
-        });
-
-        document.getElementById('opacitySlider').addEventListener('input', (e) => {
-            const newOpacityValue = parseInt(e.target.value, 10);
-            document.getElementById('opacityValue').textContent = `${newOpacityValue}%`;
-            setAllLayersOpacity(newOpacityValue / 100);
-        });
-
-        // --- INICIALIZÁCIA UI ---
-        function initializeUI() {
-            const checkboxContainer = document.getElementById('layer-checkbox-container');
-            const styleContainer = document.getElementById('map-style-container');
-            const checkboxRefs = {};
-
-            Object.keys(mapLayers).forEach(layerName => {
-                const layerInfo = mapLayers[layerName];
-                const layerId = `checkbox-${layerInfo.code}-${layerName.replace(/\s/g, '')}`;
-                const label = document.createElement('label');
-                label.htmlFor = layerId;
-                label.className = "flex items-center space-x-3 cursor-pointer p-2 rounded-lg hover:bg-white/10 transition-colors";
-                label.innerHTML = `<input type="checkbox" id="${layerId}" value="${layerName}" class="layer-checkbox appearance-none w-5 h-5 rounded-md bg-white/20 border-2 border-transparent relative transition"> <span class="text-white">${layerName}</span>`;
-                checkboxContainer.appendChild(label);
-                const input = label.querySelector('input');
-                checkboxRefs[layerName] = input;
-                input.addEventListener('change', (e) => handleLayerChange(e.target));
-            });
-
-            Object.entries(mapStyles).forEach(([name, styleUrl]) => {
-                const button = document.createElement('button');
-                button.textContent = name;
-                button.className = "p-3 bg-white/10 rounded-lg text-white font-semibold hover:bg-[var(--accent-blue)] transition-colors";
-                button.addEventListener('click', () => map.setStyle(styleUrl));
-                styleContainer.appendChild(button);
-            });
-
-            // Načítaj uložené vrstvy; ak nič nie je, zapni "Tlak vzduchu"
-            const saved = loadActiveLayersFromStorage();
-            const toEnable = (saved && saved.length > 0) ? saved : ["Tlak vzduchu"];
-
-            toEnable.forEach(name => {
-              const cb = checkboxRefs[name];
-              if (cb && !cb.checked) {
-                cb.checked = true;
-                handleLayerChange(cb);
+      async function fetchAndDisplayPointData(lat,lon,info,signal,date){
+        if(!info?.pointApiUrl) return;
+        const rd=new Date(date); rd.setMinutes(0,0,0,0); const iso=rd.toISOString().slice(0,10);
+        const base=info.pointApiUrl.replace('{lat}',lat.toFixed(4)).replace('{lon}',lon.toFixed(4));
+        const url=info.api==='meteosource'?`${base}&key=${meteosourceApi}`:`${base}&start_date=${iso}&end_date=${iso}&timezone=auto`;
+        try{
+          const r=await fetch(url,{signal}); if(!r.ok) return; const data=await r.json();
+          let value,dir;
+          if(data.hourly?.time){
+            const idx=data.hourly.time.findIndex(t=>new Date(t).getTime()===rd.getTime());
+            if(idx!==-1){
+              if(info.code==='wind'){ value=data.hourly.wind_speed_10m?.[idx]; dir=data.hourly.wind_direction_10m?.[idx]; }
+              else{
+                const map={temp:'temperature_2m',clouds:'cloud_cover',humidity:'relative_humidity_2m',snow_depth:'snow_depth',dew_point:'dew_point_2m'};
+                value=data.hourly[map[info.code]]?.[idx];
               }
-            });
+            }
+          }else if(data.hourly?.data){
+            const h=data.hourly.data.find(d=>new Date(d.date).getTime()===rd.getTime()); if(h) value=h[info.code];
+          }
+          if(value!=null){
+            const el=document.createElement('div'); el.className='data-label-marker';
+            el.innerHTML=(info.code==='wind' && dir!=null)?`<i class="fas fa-location-arrow" style="transform:rotate(${dir}deg)"></i> <span>${Math.round(value)}${info.unit}</span>`:`${Math.round(value)}${info.unit}`;
+            dataLabelMarkers.push(new mapboxgl.Marker({element:el,anchor:'center'}).setLngLat([lon,lat]).addTo(map));
+          }
+        }catch(e){ if(e.name!=='AbortError') console.error("Data label fetch error",e); }
+      }
 
-            // ulož stav (aj pri prvom štarte)
-            saveActiveLayersToStorage(Object.keys(activeLayers));
+      function getAlertIcon(name){ const s=name.toLowerCase();
+        if(s.includes("thunderstorm"))return"fas fa-bolt";
+        if(s.includes("rain")||s.includes("flood"))return"fas fa-cloud-showers-heavy";
+        if(s.includes("fog"))return"fas fa-smog";
+        if(s.includes("ice")||s.includes("sleet")||s.includes("frost"))return"fas fa-icicles";
+        if(s.includes("snow")||s.includes("avalanches"))return"fas fa-snowflake";
+        if(s.includes("low temperature"))return"fas fa-temperature-low";
+        if(s.includes("high temperature"))return"fas fa-temperature-high";
+        if(s.includes("wind"))return"fas fa-wind";
+        if(s.includes("fire"))return"fas fa-fire";
+        return"fas fa-triangle-exclamation";
+      }
+      function getAlertLevel(alerts){
+        if(!alerts||!alerts.length) return 0;
+        return alerts.reduce((m,a)=>{const t=`${a.event||""} ${a.description||""}`.toLowerCase();
+          if(t.includes('3. stupeň')||t.includes('extrémne')||t.includes('extreme')) return Math.max(m,3);
+          if(t.includes('2. stupeň')||t.includes('vysoké')||t.includes('severe')||t.includes('značné')) return Math.max(m,2);
+          return Math.max(m,1);
+        },0);
+      }
 
-            initializeTimeline();
+      async function fetchWeatherAlerts(){
+        if(districtsGeoJSON) return updateDistrictColors(districtsGeoJSON);
+        try{
+          const geo=await fetch('sk-map.json'); if(!geo.ok) throw new Error('sk-map.json');
+          const gj=await geo.json();
+          gj.features.forEach(f=>{ if(!f.properties.center){ try{f.properties.center=turf.centerOfMass(f).geometry.coordinates;}catch{}}});
+          await Promise.all(gj.features.map(async f=>{
+            if(!f.properties.center) return; const [lon,lat]=f.properties.center;
+            try{ const r=await fetch(`https://api.openweathermap.org/data/3.0/onecall?lat=${lat}&lon=${lon}&exclude=minutely,hourly,daily,current&appid=${openWeatherApiKey}&lang=sk`);
+              const d=await r.json(); f.properties.alerts=JSON.stringify(d.alerts||[]); f.properties.alertLevel=getAlertLevel(d.alerts||[]);
+            }catch{ f.properties.alerts='[]'; f.properties.alertLevel=0; }
+          }));
+          districtsGeoJSON=gj; updateDistrictColors(gj); displayActiveAlertsSummary(gj);
+        }catch(e){ console.error("Výstrahy: zlyhalo načítanie sk-map.json",e); }
+      }
+      function updateDistrictColors(gj){
+        if(!map.getSource('slovakia-districts')) map.addSource('slovakia-districts',{type:'geojson',data:gj});
+        else map.getSource('slovakia-districts').setData(gj);
+        if(!map.getLayer('districts-fill')){
+          const colors={1:'rgba(255,235,59,.6)',2:'rgba(255,165,0,.6)',3:'rgba(244,67,54,.6)'};
+          map.addLayer({id:'districts-fill',type:'fill',source:'slovakia-districts',paint:{'fill-color':['match',['get','alertLevel'],1,colors[1],2,colors[2],3,colors[3],'transparent'],'fill-outline-color':'#ffffff'}}, firstSymbolId());
+          map.addLayer({id:'districts-boundaries',type:'line',source:'slovakia-districts',paint:{'line-color':'#ffffff','line-width':0.5}});
         }
-
-        let timelineArea, timelineContent, headerText, timelineMarkersContainer;
-        let isDragging = false, startX, startTranslate = 0, currentTranslate = 0;
-        let hourOffset = 0;
-
-        const totalDays = maxFutureDays;
-        const daysOfWeek = ['Nedeľa', 'Pondelok', 'Utorok', 'Streda', 'Štvrtok', 'Piatok', 'Sobota'];
-        const shortDayNames = ['NE', 'PO', 'UT', 'ST', 'ŠT', 'PI', 'SO'];
-        const dragSpeedFactor = 1.5;
-
-        const formatTime = (date) => `${String(date.getHours()).padStart(2, '0')}:00`;
-        const formatDate = (date) => `${String(date.getDate())}.${String(date.getMonth() + 1)}.`;
-
-        function syncUIFromHourOffset(withAnimation = false) {
-            if (!timelineContent || !timelineArea || !headerText) return;
-
-            currentDate = new Date(startDate.getTime());
-            currentDate.setHours(startDate.getHours() + hourOffset);
-
-            const totalHours = totalDays * 24;
-            const totalContentWidth = timelineContent.scrollWidth;
-            const viewPortWidth = timelineArea.offsetWidth;
-
-            if (totalHours > 0 && totalContentWidth > 0) {
-                const percentage = hourOffset / totalHours;
-                currentTranslate = (viewPortWidth / 2) - (totalContentWidth * percentage);
-            }
-
-            if (withAnimation) {
-                timelineContent.style.transition = 'transform 300ms ease-out';
-            }
-            timelineContent.style.transform = `translateX(${currentTranslate}px)`;
-            if (withAnimation) {
-                setTimeout(() => { timelineContent.style.transition = ''; }, 300);
-            }
-
-            headerText.innerHTML = `${daysOfWeek[currentDate.getDay()]} <span class="text-gray-400">${formatDate(currentDate)}</span> ${formatTime(currentDate)}`;
-
-            updateActiveLayersTime();
+      }
+      async function showAlertPopup(lngLat,districtName,alerts){
+        const fmt=(s,e)=>s&&e?`Platnosť: ${new Date(s*1000).toLocaleString('sk-SK',{day:'numeric',month:'numeric',hour:'2-digit',minute:'2-digit'})} - ${new Date(e*1000).toLocaleString('sk-SK',{day:'numeric',month:'numeric',hour:'2-digit',minute:'2-digit'})}`:"Neznáma platnosť";
+        const level=getAlertLevel(alerts);
+        const color={0:'#4ade80',1:'#facc15',2:'#fb923c',3:'#f87171'};
+        const descriptions=await Promise.all(alerts.map(async a=>{
+          const tr=await translateText(a.description);
+          return `<div class="mt-3"><div class="flex items-center gap-2"><div class="w-6 text-center text-xl" style="color:${color[getAlertLevel([a])]}"><i class="${getAlertIcon(a.event)}"></i></div><h4 class="font-bold text-white">${translateAlertEvent(a.event)}</h4></div><div class="text-xs text-gray-400 pl-8 mt-1">${fmt(a.start,a.end)}</div><p class="text-xs text-gray-300 pl-8 mt-1">${tr}</p></div>`;
+        }));
+        const html = alerts.length?descriptions.join(''):'<p class="mt-2 text-sm">Pre tento okres nie sú aktuálne žiadne výstrahy.</p>';
+        new mapboxgl.Popup({closeButton:false,className:'mapboxgl-popup-content-wrapper'})
+          .setLngLat(lngLat)
+          .setHTML(`<div class="bg-[var(--primary-light)] p-4 rounded-lg shadow-xl max-w-xs" style="border-left:5px solid ${color[level]}"><h3 class="font-bold text-lg" style="color:${color[level]}">${districtName}</h3>${html}</div>`)
+          .addTo(map);
+      }
+      function displayActiveAlertsSummary(gj){
+        const list=document.getElementById('active-alerts-list'); list.innerHTML='';
+        const acc=new Map();
+        gj.features.forEach(f=>JSON.parse(f.properties.alerts||'[]').forEach(a=>{
+          const name=translateAlertEvent(a.event); const lev=getAlertLevel([a]);
+          if(!acc.has(name)||lev>acc.get(name).level) acc.set(name,{iconClass:getAlertIcon(a.event),level:lev,start:a.start,end:a.end});
+        }));
+        document.getElementById('active-alerts-container').classList.toggle('hidden', acc.size===0);
+        if(acc.size>0){
+          const color={1:'#facc15',2:'#fb923c',3:'#f87171'};
+          const fmt=(s,e)=>s&&e?`${new Date(s*1000).toLocaleString('sk-SK',{day:'numeric',month:'numeric',hour:'2-digit',minute:'2-digit'})} - ${new Date(e*1000).toLocaleString('sk-SK',{day:'numeric',month:'numeric',hour:'2-digit',minute:'2-digit'})}`:"Neznáma platnosť";
+          acc.forEach((d,name)=>{const c=color[d.level]; list.innerHTML+=`<div class="bg-white/10 p-3 rounded-lg" style="border-left:4px solid ${c};"><div class="flex items-center gap-3"><div class="w-6 text-center text-lg" style="color:${c};"><i class="${d.iconClass}"></i></div><span class="text-sm font-medium text-white">${name}</span></div><div class="text-xs text-gray-400 pl-9 pt-1">${fmt(d.start,d.end)}</div></div>`;});
         }
+      }
 
-        const initializeTimeline = () => {
-            timelineArea = document.getElementById('timeline-area');
-            timelineContent = document.getElementById('timeline-content');
-            headerText = document.getElementById('header-text');
-            const dayLabelsContainer = document.getElementById('day-labels');
-            timelineMarkersContainer = document.getElementById('timeline-markers');
-
-            dayLabelsContainer.innerHTML = '';
-            timelineMarkersContainer.innerHTML = '';
-
-            startDate = new Date();
-            startDate.setMinutes(0, 0, 0);
-
-            const totalHours = totalDays * 24;
-            const hourWidth = 40;
-            timelineContent.style.width = `${hourWidth * totalHours}px`;
-
-            const tempDate = new Date(startDate.getTime());
-
-            for (let h = 0; h < totalHours; h++) {
-                const posPercent = (h / totalHours) * 100;
-
-                const marker = document.createElement('div');
-                marker.style.left = `${posPercent}%`;
-
-                if (tempDate.getHours() === 0) {
-                    marker.className = 'marker-day-break';
-
-                    const label = document.createElement('span');
-                    label.className = 'day-label';
-                    label.innerHTML = `${shortDayNames[tempDate.getDay()]}<br><span style="font-size: 0.8em; color: #aaa;">00:00</span>`;
-                    label.style.left = `${posPercent}%`;
-                    dayLabelsContainer.appendChild(label);
-
-                } else {
-                    marker.className = 'marker-hour';
-                }
-                timelineMarkersContainer.appendChild(marker);
-
-                tempDate.setHours(tempDate.getHours() + 1);
-            }
-
-            hourOffset = 0;
-            requestAnimationFrame(() => {
-                syncUIFromHourOffset(false);
-            });
-
-            const startDrag = (e) => {
-                isDragging = true;
-                timelineContent.classList.add('dragging');
-                startX = e.pageX || e.touches[0].pageX;
-                startTranslate = currentTranslate;
-                document.addEventListener('mousemove', handleMove);
-                document.addEventListener('touchmove', handleMove, { passive: false });
-                document.addEventListener('mouseup', endDrag, { once: true });
-                document.addEventListener('touchend', endDrag, { once: true });
-            };
-
-            const endDrag = () => {
-                isDragging = false;
-                timelineContent.classList.remove('dragging');
-                document.removeEventListener('mousemove', handleMove);
-                document.removeEventListener('touchmove', handleMove);
-                syncUIFromHourOffset(false);
-            };
-
-            timelineContent.addEventListener('mousedown', startDrag);
-            timelineContent.addEventListener('touchstart', startDrag, { passive: true });
+      function updateLegend(){
+        const container=document.getElementById('legend-container');
+        const legends={
+          temp:'t2m.png', pressure:'hPa.png', wind:'wind.png', clouds:'cloud.png',
+          rain:'rain.png', snow:'snow.png', snow_depth:'snow.png', humidity:'humidity.png',
+          dew_point:'dewPoint.png', convective_precip:'convective.png',
+          cape:'https://www.meteosource.com/static/img/documentation/cape.png',
+          wind_gust:'https://www.meteosource.com/static/img/documentation/wind_gust_metric.png',
+          alerts:'alerts.png'
         };
-
-        const handleMove = (event) => {
-            if (!isDragging) return;
-            if (event.touches) event.preventDefault();
-
-            let clientX = event.pageX || event.touches[0].pageX;
-
-            const walk = (clientX - startX) * dragSpeedFactor;
-            currentTranslate = startTranslate + walk;
-
-            const viewPortWidth = timelineArea.offsetWidth;
-            const totalContentWidth = timelineContent.scrollWidth;
-            const maxTranslate = viewPortWidth / 2;
-            const minTranslate = -(totalContentWidth - viewPortWidth / 2);
-            currentTranslate = Math.max(minTranslate, Math.min(maxTranslate, currentTranslate));
-
-            timelineContent.style.transform = `translateX(${currentTranslate}px)`;
-
-            const pixelPosUnderIndicator = (viewPortWidth / 2) - currentTranslate;
-            const percentage = totalContentWidth > 0 ? pixelPosUnderIndicator / totalContentWidth : 0;
-            const newHourOffset = Math.round(percentage * (totalDays * 24));
-
-            if(newHourOffset !== hourOffset) {
-                 hourOffset = newHourOffset;
-                 currentDate = new Date(startDate.getTime());
-                 currentDate.setHours(startDate.getHours() + hourOffset);
-                 headerText.innerHTML = `${daysOfWeek[currentDate.getDay()]} <span class="text-white-900">${formatDate(currentDate)}</span> ${formatTime(currentDate)}`;
-            }
-        };
-
-        function stepSlider(direction) {
-            hourOffset = Math.max(0, Math.min(hourOffset + direction, totalDays * 24 - 1));
-            syncUIFromHourOffset(true);
+        let code=null;
+        if(activeLayers['Výstrahy']) code='alerts';
+        else{
+          const tiles=Object.values(activeLayers).filter(l=>l.type==='tile');
+          if(tiles.length>0) code=tiles[tiles.length-1].code;
         }
+        const base='https://www.meteopocasie.sk/legendy/';
+        const url=legends[code];
+        if(url){
+          const full=url.startsWith('http')?url:`${base}${url}`;
+          // žiadny text, žiadny alt
+          container.innerHTML=`<img class="w-full h-auto rounded-lg" src="${full}" alt="" aria-hidden="true">`;
+        }else container.innerHTML='';
+      }
 
-        function togglePlay() {
-            isPlaying = !isPlaying;
-            document.getElementById('playButton').innerHTML = isPlaying ? '<i class="fas fa-pause"></i>' : '<i class="fas fa-play"></i>';
+      // map click helpers & timeline implemented above (already included)
 
-            if (isPlaying) {
-                if (hourOffset >= totalDays * 24 - 1) {
-                    hourOffset = 0;
-                    syncUIFromHourOffset(false);
-                }
-
-                animationInterval = setInterval(() => {
-                    if (hourOffset >= totalDays * 24 - 1) {
-                        clearInterval(animationInterval);
-                        isPlaying = false;
-                        document.getElementById('playButton').innerHTML = '<i class="fas fa-play"></i>';
-                        return;
-                    }
-                    stepSlider(1);
-                }, 1000);
-            } else {
-                clearInterval(animationInterval);
-            }
-        }
-
-        async function handleMapClick(e) {
-            const ripple = document.createElement('div');
-            ripple.className = 'ripple';
-            document.body.appendChild(ripple);
-            const size = map.getCanvas().clientWidth * 0.1;
-            ripple.style.cssText = `width:${size}px; height:${size}px; left:${e.point.x - size/2}px; top:${e.point.y - size/2}px;`;
-            ripple.addEventListener('animationend', () => ripple.remove());
-
-            const alertFeatures = map.queryRenderedFeatures(e.point, { layers: ['districts-fill'] });
-            if (alertFeatures.length > 0) {
-                const props = alertFeatures[0].properties;
-                const districtName = props.TXT || props.NUTS4_NAME || 'Neznámy okres';
-                await showAlertPopup(e.lngLat, districtName, JSON.parse(props.alerts || '[]'));
-            } else {
-                fetchWeatherDataForPopup(e.lngLat);
-            }
-        }
-
-        async function fetchWeatherDataForPopup(lngLat) {
-            if (!lngLat || typeof lngLat.lat !== 'number' || typeof lngLat.lng !== 'number') return;
-            const { lat, lng } = lngLat;
-
-            const openMeteoUrl = `https://api.open-meteo.com/v1/forecast?latitude=${lat.toFixed(4)}&longitude=${lng.toFixed(4)}&hourly=temperature_2m,relative_humidity_2m,dew_point_2m,apparent_temperature,pressure_msl,cloud_cover,wind_speed_10m,wind_direction_10m,wind_gusts_10m,precipitation,snowfall,weather_code&daily=weather_code,temperature_2m_max,temperature_2m_min&timezone=auto`;
-
-            try {
-                let [openMeteoResponse, meteosourceResponse] = await Promise.all([
-                    fetch(openMeteoUrl),
-                    activeLayers['CAPE'] ? fetch(`${mapLayers['CAPE'].pointApiUrl.replace('{lat}', lat.toFixed(4)).replace('{lon}', lng.toFixed(4))}&key=${meteosourceApi}`) : Promise.resolve(null)
-                ]);
-
-                if (!openMeteoResponse.ok) throw new Error(`Open-Meteo API error`);
-                const openMeteoData = await openMeteoResponse.json();
-                const meteosourceData = meteosourceResponse && meteosourceResponse.ok ? await meteosourceResponse.json() : null;
-
-                displayWeatherPopup(openMeteoData, meteosourceData, lat, lng);
-            } catch (error) { console.error("Popup data fetch error:", error); }
-        }
-
-        function displayWeatherPopup(data, capeData, lat, lon) {
-            const getWindDirection = (deg) => ['S', 'SV', 'V', 'JV', 'J', 'JZ', 'Z', 'SZ'][Math.round(deg / 45) % 8];
-            const getOwmIconFromWmo = (wmoCode, isDay = true) => ({ 0: '01', 1: '02', 2: '03', 3: '04', 45: '50', 48: '50', 51: '09', 53: '09', 55: '09', 56: '09', 57: '09', 61: '10', 63: '10', 65: '10', 66: '10', 67: '10', 71: '13', 73: '13', 75: '13', 77: '13', 80: '09', 81: '09', 82: '09', 85: '13', 86: '13', 95: '11', 96: '11', 99: '11' }[wmoCode] || '01') + (isDay ? 'd' : 'n');
-            const getWeatherIconUrl = (code, isDay) => `https://www.meteopocasie.sk/3d_iconset_day/${getOwmIconFromWmo(code, isDay)}.png`;
-            const getCapeColor = (cape) => { if (cape < 100) return '#a8e1ff'; if (cape < 250) return '#3d82de'; if (cape < 500) return '#42b45a'; if (cape < 1000) return '#f5d742'; if (cape < 2000) return '#f5a742'; if (cape < 3500) return '#f56e42'; return '#ff00ff'; };
-            const now = new Date();
-            const currentHourIndex = data.hourly.time.findIndex(t => new Date(t) >= now);
-            if (currentHourIndex === -1) return;
-
-            let content = `<div class="fixed inset-0 bg-black/60 z-30 flex items-center justify-center p-4" onclick="this.remove()"><div class="bg-[var(--primary-dark)]/80 backdrop-blur-md max-w-4xl w-full max-h-[80vh] overflow-y-auto rounded-2xl p-6 shadow-2xl relative border border-gray-700" onclick="event.stopPropagation()"><button onclick="this.parentElement.parentElement.remove()" class="absolute top-4 right-4 text-gray-400 hover:text-white text-2xl z-10">&times;</button><h2 class="text-3xl font-bold mb-2 text-center text-white">Predpoveď Počasia</h2><p class="text-center text-gray-400 mb-6">(${lat.toFixed(2)}, ${lon.toFixed(2)})</p><div class="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-4">`;
-            for (let i = currentHourIndex; i < currentHourIndex + 24 && i < data.hourly.time.length; i++) {
-                const time = new Date(data.hourly.time[i]);
-                const isDay = time.getHours() > 6 && time.getHours() < 20;
-                let capeHtml = '';
-                if (capeData?.hourly?.data) {
-                    const capeHourData = capeData.hourly.data.find(d => d.date.startsWith(time.toISOString().slice(0, 13)));
-                    if (capeHourData?.cape !== null) {
-                        const capeValue = Math.round(capeHourData.cape);
-                        capeHtml = `<p class="text-xs font-poppins text-white font-normal">CAPE: ${capeValue} J/kg</p><div class="item-cape" style="background: ${getCapeColor(capeValue)}; margin-top: 5%;"></div>`;
-                    }
-                }
-                content += `<div class="bg-white/10 p-4 rounded-xl text-center flex flex-col items-center justify-between"><div><p class="font-semibold text-sm">${time.toLocaleDateString('sk-SK', {weekday: 'short'})}</p><p class="font-bold text-lg">${time.toLocaleTimeString('sk-SK', {hour: '2-digit', minute: '2-digit'})}</p><img src="${getWeatherIconUrl(data.hourly.weather_code[i], isDay)}" alt="Weather" class="w-16 h-16 -my-2"><p class="text-2xl font-bold">${Math.round(data.hourly.temperature_2m[i])}°C</p></div><div class="mt-2 w-full"><p class="text-xs text-gray-400"><i class="fas fa-wind"></i> ${data.hourly.wind_speed_10m[i].toFixed(1)} m/s ${getWindDirection(data.hourly.wind_direction_10m[i])}</p>${capeHtml}</div></div>`;
-            }
-            content += `</div><div class="mt-6 text-center"><a href="https://www.meteopocasie.sk/predpoved-pocasia/svet/${lat.toFixed(4)},${lon.toFixed(4)}" target="_blank" class="bg-[var(--accent-blue)] text-white font-bold py-2 px-6 rounded-lg hover:bg-blue-500 transition-colors">Detailná predpoveď</a></div></div></div>`;
-            document.getElementById('weather-popup-container').innerHTML = content;
-        }
-
-        function updateAllDataLabels() {
-            dataLabelsAbortController.abort();
-            dataLabelsAbortController = new AbortController();
-            dataLabelMarkers.forEach(marker => marker.remove());
-            dataLabelMarkers = [];
-
-            const activeTileLayers = Object.values(activeLayers).filter(l => l.type === 'tile');
-            if (activeTileLayers.length === 0) return;
-
-            const layerForLabels = activeTileLayers[activeTileLayers.length - 1];
-            if (!layerForLabels.pointApiUrl || layerForLabels.code === 'pressure') return;
-
-            const bounds = map.getBounds();
-            const zoom = map.getZoom();
-            const gridDensity = (zoom < 3) ? 3 : (zoom < 5) ? 5 : 8;
-            const latStep = (bounds.getNorth() - bounds.getSouth()) / gridDensity;
-            const lngStep = (bounds.getEast() - bounds.getWest()) / gridDensity;
-
-            for (let lat = bounds.getSouth() + latStep/2; lat < bounds.getNorth(); lat += latStep) {
-                for (let lon = bounds.getWest() + lngStep/2; lon < bounds.getEast(); lon += lngStep) {
-                    fetchAndDisplayPointData(lat, (lon + 540) % 360 - 180, layerForLabels, dataLabelsAbortController.signal, currentDate);
-                }
-            }
-        }
-
-        async function fetchAndDisplayPointData(lat, lon, layerInfo, signal, date) {
-            if (!layerInfo?.pointApiUrl) return;
-            const roundedDate = new Date(date);
-            roundedDate.setMinutes(0, 0, 0, 0);
-            const isoDate = roundedDate.toISOString().slice(0, 10);
-            const baseUrl = layerInfo.pointApiUrl.replace('{lat}', lat.toFixed(4)).replace('{lon}', lon.toFixed(4));
-            const finalUrl = layerInfo.api === 'meteosource' ? `${baseUrl}&key=${meteosourceApi}` : `${baseUrl}&start_date=${isoDate}&end_date=${isoDate}&timezone=auto`;
-
-            try {
-                const response = await fetch(finalUrl, { signal });
-                if (!response.ok) return;
-                const data = await response.json();
-
-                let value, windDirection;
-                if (data.hourly?.time) {
-                    const hourIndex = data.hourly.time.findIndex(t => new Date(t).getTime() === roundedDate.getTime());
-                    if (hourIndex !== -1) {
-                        if (layerInfo.code === 'wind') {
-                            value = data.hourly.wind_speed_10m?.[hourIndex];
-                            windDirection = data.hourly.wind_direction_10m?.[hourIndex];
-                        } else {
-                            const paramMap = { 'temp': 'temperature_2m', 'clouds': 'cloud_cover', 'humidity': 'relative_humidity_2m', 'snow_depth': 'snow_depth', 'dew_point': 'dew_point_2m' };
-                            value = data.hourly[paramMap[layerInfo.code]]?.[hourIndex];
-                        }
-                    }
-                } else if (data.hourly?.data) {
-                    const hourData = data.hourly.data.find(d => new Date(d.date).getTime() === roundedDate.getTime());
-                    if (hourData) value = hourData[layerInfo.code];
-                }
-                if (value != null) {
-                    const el = document.createElement('div');
-                    el.className = 'data-label-marker';
-                    el.innerHTML = (layerInfo.code === 'wind' && windDirection != null)
-                        ? `<i class="fas fa-location-arrow" style="transform: rotate(${windDirection}deg);"></i> <span>${Math.round(value)}${layerInfo.unit}</span>`
-                        : `${Math.round(value)}${layerInfo.unit}`;
-                    dataLabelMarkers.push(new mapboxgl.Marker({element: el, anchor: 'center'}).setLngLat([lon, lat]).addTo(map));
-                }
-            } catch (error) { if (error.name !== 'AbortError') console.error("Data label fetch error", error); }
-        }
-
-        // --- VÝSTRAHY ---
-        function getAlertIcon(eventName) {
-            const lowerEvent = eventName.toLowerCase();
-            if (lowerEvent.includes("thunderstorm")) return "fas fa-bolt";
-            if (lowerEvent.includes("rain") || lowerEvent.includes("flood")) return "fas fa-cloud-showers-heavy";
-            if (lowerEvent.includes("fog")) return "fas fa-smog";
-            if (lowerEvent.includes("ice") || lowerEvent.includes("sleet") || lowerEvent.includes("frost")) return "fas fa-icicles";
-            if (lowerEvent.includes("snow") || lowerEvent.includes("avalanches")) return "fas fa-snowflake";
-            if (lowerEvent.includes("low temperature")) return "fas fa-temperature-low";
-            if (lowerEvent.includes("high temperature")) return "fas fa-temperature-high";
-            if (lowerEvent.includes("wind")) return "fas fa-wind";
-            if (lowerEvent.includes("fire")) return "fas fa-fire";
-            return "fas fa-triangle-exclamation";
-        }
-
-        function getAlertLevel(alerts) {
-            if (!alerts || alerts.length === 0) return 0;
-            return alerts.reduce((max, alert) => {
-                const text = `${(alert.event || "")} ${(alert.description || "")}`.toLowerCase();
-                if (text.includes('3. stupeň') || text.includes('extrémne') || text.includes('extreme')) return Math.max(max, 3);
-                if (text.includes('2. stupeň') || text.includes('vysoké') || text.includes('severe') || text.includes('značné')) return Math.max(max, 2);
-                return Math.max(max, 1);
-            }, 0);
-        }
-
-        async function fetchWeatherAlerts() {
-            if (districtsGeoJSON) return updateDistrictColors(districtsGeoJSON);
-            try {
-                const geoResponse = await fetch('sk-map.json');
-                if (!geoResponse.ok) throw new Error(`Súbor sk-map.json sa nepodarilo načítať: ${geoResponse.status}`);
-                const geojson = await geoResponse.json();
-
-                geojson.features.forEach(feature => {
-                    if (!feature.properties.center) {
-                        try {
-                           const centerPoint = turf.centerOfMass(feature);
-                           feature.properties.center = centerPoint.geometry.coordinates;
-                        } catch(e) {
-                             console.warn("Nepodarilo sa vypočítať centroid pre okres:", feature.properties.TXT);
-                        }
-                    }
-                });
-
-                await Promise.all(geojson.features.map(async (feature) => {
-                    if (!feature.properties.center) return;
-                    const [lon, lat] = feature.properties.center;
-                    try {
-                        const alertResponse = await fetch(`https://api.openweathermap.org/data/3.0/onecall?lat=${lat}&lon=${lon}&exclude=minutely,hourly,daily,current&appid=${openWeatherApiKey}&lang=sk`);
-                        const alertData = await alertResponse.json();
-                        feature.properties.alerts = JSON.stringify(alertData.alerts || []);
-                        feature.properties.alertLevel = getAlertLevel(alertData.alerts || []);
-                    } catch {
-                        feature.properties.alerts = '[]';
-                        feature.properties.alertLevel = 0;
-                    }
-                }));
-
-                districtsGeoJSON = geojson;
-                updateDistrictColors(districtsGeoJSON);
-                displayActiveAlertsSummary(districtsGeoJSON);
-            } catch (error) {
-                console.error("Nepodarilo sa načítať dáta o okresoch (sk-map.json). Skontrolujte, či je súbor v správnej zložke. Výstrahy nebudú fungovať.", error);
-            }
-        }
-
-        function updateDistrictColors(geojson) {
-            if (!map.getSource('slovakia-districts')) {
-                map.addSource('slovakia-districts', { type: 'geojson', data: geojson });
-            } else {
-                map.getSource('slovakia-districts').setData(geojson);
-            }
-            if (!map.getLayer('districts-fill')) {
-                const alertColors = { 1: 'rgba(255, 235, 59, 0.6)', 2: 'rgba(255, 165, 0, 0.6)', 3: 'rgba(244, 67, 54, 0.6)' };
-                map.addLayer({ id: 'districts-fill', type: 'fill', source: 'slovakia-districts', paint: { 'fill-color': ['match', ['get', 'alertLevel'], 1, alertColors[1], 2, alertColors[2], 3, alertColors[3], 'transparent'], 'fill-outline-color': '#ffffff' }}, findFirstSymbolLayerId());
-                map.addLayer({ id: 'districts-boundaries', type: 'line', source: 'slovakia-districts', paint: { 'line-color': '#ffffff', 'line-width': 0.5 } });
-            }
-        }
-
-        async function showAlertPopup(lngLat, districtName, alerts) {
-            const formatAlertTime = (start, end) => start && end ? `Platnosť: ${new Date(start*1000).toLocaleString('sk-SK', {day:'numeric',month:'numeric',hour:'2-digit',minute:'2-digit'})} - ${new Date(end*1000).toLocaleString('sk-SK', {day:'numeric',month:'numeric',hour:'2-digit',minute:'2-digit'})}` : "Neznáma platnosť";
-            const level = getAlertLevel(alerts);
-            const levelMap = { 0: 'Žiadne výstrahy', 1: '1. stupeň (žltá)', 2: '2. stupeň (oranžová)', 3: '3. stupeň (červená)' };
-            const colorMap = { 0: '#4ade80', 1: '#facc15', 2: '#fb923c', 3: '#f87171' };
-
-            const descriptions = await Promise.all(alerts.map(async a => {
-                const translatedDesc = await translateText(a.description);
-                return `<div class="mt-3">
-                            <div class="flex items-center gap-2">
-                                <div class="w-6 text-center text-xl" style="color: ${colorMap[getAlertLevel([a])]}"><i class="${getAlertIcon(a.event)}"></i></div>
-                                <h4 class="font-bold text-white">${translateAlertEvent(a.event)}</h4>
-                            </div>
-                            <div class="text-xs text-gray-400 pl-8 mt-1">${formatAlertTime(a.start, a.end)}</div>
-                            <p class="text-xs text-gray-300 pl-8 mt-1">${translatedDesc}</p>
-                        </div>`;
-            }));
-            const descriptionHTML = alerts.length > 0 ? descriptions.join('') : '<p class="mt-2 text-sm">Pre tento okres nie sú aktuálne žiadne výstrahy.</p>';
-
-            new mapboxgl.Popup({ closeButton: false, className: 'mapboxgl-popup-content-wrapper' })
-                .setLngLat(lngLat)
-                .setHTML(`<div class="bg-[var(--primary-light)] p-4 rounded-lg shadow-xl max-w-xs" style="border-left: 5px solid ${colorMap[level]}">
-                                <h3 class="font-bold text-lg" style="color: ${colorMap[level]}">${districtName} - ${levelMap[level]}</h3>
-                                ${descriptionHTML}
-                          </div>`)
-                .addTo(map);
-        }
-
-        function updateLegend() {
-            const legendContainer = document.getElementById('legend-container');
-            const legendMap = {
-                'temp': 't2m.png', 'pressure': 'hPa.png', 'wind': 'wind.png', 'clouds': 'cloud.png',
-                'rain': 'rain.png', 'snow': 'snow.png', 'snow_depth': 'snow.png', 'humidity': 'humidity.png',
-                'dew_point': 'dewPoint.png', 'convective_precip': 'convective.png',
-                'cape': 'https://www.meteosource.com/static/img/documentation/cape.png',
-                'wind_gust': 'https://www.meteosource.com/static/img/documentation/wind_gust_metric.png',
-                'alerts': 'alerts.png'
-            };
-
-            let legendCode = null;
-            if (activeLayers['Výstrahy']) {
-                legendCode = 'alerts';
-            } else {
-                const activeTileLayers = Object.values(activeLayers).filter(l => l.type === 'tile');
-                if (activeTileLayers.length > 0) {
-                    legendCode = activeTileLayers[activeTileLayers.length - 1].code;
-                }
-            }
-
-            const baseUrl = 'https://www.meteopocasie.sk/legendy/';
-            const legendUrl = legendMap[legendCode];
-
-            if (legendUrl) {
-                const fullUrl = legendUrl.startsWith('http') ? legendUrl : `${baseUrl}${legendUrl}`;
-                // bez nadpisu „Legenda“
-                legendContainer.innerHTML = `<img class="w-full h-auto rounded-lg" src="${fullUrl}" alt="Legenda">`;
-            } else {
-                legendContainer.innerHTML = '';
-            }
-        }
-
-        // --- koniec DOMContentLoaded ---
     });
-    </script>
+  </script>
 </body>
 </html>
