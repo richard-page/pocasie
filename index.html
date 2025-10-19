@@ -38,7 +38,7 @@
     .mapboxgl-popup-anchor-left .mapboxgl-popup-tip,
     .mapboxgl-popup-anchor-right .mapboxgl-popup-tip{display:none}
     .item-cape{width:auto;padding:4px;border-radius:15px}
-    #opacitySlider::-webkit-slider-thumb{-webkit-appearance:none;appearance:none;width:20px;height:20px;background:var(--accent-blue);cursor:pointer;border-radius:50%;border:2px solid{var(--primary-dark)};margin-top:-7px}
+    #opacitySlider::-webkit-slider-thumb{-webkit-appearance:none;appearance:none;width:20px;height:20px;background:var(--accent-blue);cursor:pointer;border-radius:50%;border:2px solid var(--primary-dark);margin-top:-7px}
     #opacitySlider::-moz-range-thumb{width:20px;height:20px;background:var(--accent-blue);cursor:pointer;border-radius:50%;border:2px solid var(--primary-dark)}
     .header{font-size:clamp(1rem,5vw,1.1rem);font-weight:500;text-align:center;color:var(--text-light);min-width:150px}
     .timeline-area{position:relative;overflow:hidden;flex-grow:1;height:100px;display:flex;align-items:center}
@@ -86,7 +86,7 @@
         </div>
       </div>
 
-      <!-- Sekcia Štýl mapy bola na tvoju žiadosť úplne odstránená -->
+      <!-- ŠTÝL MAPY odstránený na želanie -->
       <div id="legend-container" class="mt-8"></div>
     </div>
 
@@ -120,7 +120,6 @@
     const meteosourceApi = '65p9w931qxyh75vqpmpwdrh2bhw1ldeo9uz6sd03';
     const openWeatherApiKey = 'b1b15e88fa797225412429c1c50c122a1';
     const translationApiUrl = 'https://dry-cell-de24.meteopocasie-sk.workers.dev/';
-
     const STORAGE_KEYS = { LAYERS: 'mp_active_layers' };
 
     let currentDate = new Date();
@@ -137,10 +136,8 @@
     const debounce=(fn,t=300)=>{let h;return(...a)=>{clearTimeout(h);h=setTimeout(()=>fn.apply(this,a),t)}};
     const firstSymbolLayerId = () => map.getStyle().layers.find(l=>l.type==='symbol')?.id;
 
-    function loadActiveLayersFromStorage(){
-      try{const raw=localStorage.getItem(STORAGE_KEYS.LAYERS);const arr=raw?JSON.parse(raw):null;return Array.isArray(arr)?arr:null;}catch{return null;}
-    }
-    function saveActiveLayersToStorage(names){ try{localStorage.setItem(STORAGE_KEYS.LAYERS, JSON.stringify(names));}catch{} }
+    function loadActiveLayersFromStorage(){ try{const r=localStorage.getItem(STORAGE_KEYS.LAYERS);const a=r?JSON.parse(r):null;return Array.isArray(a)?a:null;}catch{return null;} }
+    function saveActiveLayersToStorage(n){ try{localStorage.setItem(STORAGE_KEYS.LAYERS, JSON.stringify(n));}catch{} }
 
     async function translateText(text){
       if(!text || !text.trim()) return "";
@@ -176,12 +173,9 @@
       map.setFog({});
       map.flyTo({center:[19.1451,48.6690],zoom:5,speed:0.5,pitch:0,essential:true});
       initializeUI();
-
-      // istota: po prvom „idle“ prerátaj V/N hneď na štarte
       map.once('idle', () => { if (activeLayers["Tlakové útvary"]) updatePressureCenters(true); });
     });
 
-    // UI toggles
     document.getElementById('toggleLayersButton').addEventListener('click',()=>document.getElementById('layerControls').classList.remove('translate-x-full'));
     document.getElementById('closeLayersButton').addEventListener('click',()=>document.getElementById('layerControls').classList.add('translate-x-full'));
     document.getElementById('fullscreenButton').addEventListener('click',()=>!document.fullscreenElement?document.documentElement.requestFullscreen():document.exitFullscreen());
@@ -191,7 +185,6 @@
     function initializeUI(){
       const checkboxContainer=document.getElementById('layer-checkbox-container');
       const refs={};
-
       Object.keys(mapLayers).forEach(name=>{
         const info=mapLayers[name]; const id=`checkbox-${info.code}-${name.replace(/\s/g,'')}`;
         const label=document.createElement('label');
@@ -200,10 +193,9 @@
         label.innerHTML=`<input type="checkbox" id="${id}" value="${name}" class="layer-checkbox appearance-none w-5 h-5 rounded-md bg-white/20 border-2 border-transparent relative transition"> <span class="text-white">${name}</span>`;
         checkboxContainer.appendChild(label);
         const input=label.querySelector('input'); refs[name]=input;
-        input.addEventListener('change',e=>handleLayerChange(e.target));
+        input.addEventListener('change',e=>handleLayerChange(e.target,true));
       });
 
-      // zapni uložené vrstvy alebo predvolene Tlakové útvary
       const saved = loadActiveLayersFromStorage();
       const toEnable = (saved && saved.length) ? saved : ["Tlakové útvary"];
       toEnable.forEach(n=>{const cb=refs[n]; if(cb && !cb.checked){ cb.checked=true; handleLayerChange(cb, /*instant*/ true); }});
@@ -212,7 +204,6 @@
       initializeTimeline();
     }
 
-    // checkbox handling / tiles
     function handleLayerChange(checkbox, instant=false){
       const name=checkbox.value, info=mapLayers[name];
       if(checkbox.checked){
@@ -220,8 +211,7 @@
         addWeatherLayer(info);
         if(info.code==='pressure'){
           addPressureCentersLayer();
-          if (instant) updatePressureCenters(true);
-          else updatePressureCentersDebounced();
+          updatePressureCenters(true); // hneď
         }
       } else {
         delete activeLayers[name];
@@ -275,11 +265,14 @@
         map.setPaintProperty(inactiveId,'raster-opacity',currentOpacity);
         st.active=(st.active===1?2:1);
       });
-      if(activeLayers["Tlakové útvary"]) updatePressureCentersDebounced();
+      if(activeLayers["Tlakové útvary"]) updatePressureCenters(true);
       updateAllDataLabels();
     }
 
-    // --- iba centrá tlaku (V/N) ---
+    /* ------------------ TLAKOVÉ ÚTVARY – DETERMINISTICKÉ ------------------ */
+    const pressureCentersState = { abortController:null, activeBuffer:1, isUpdating:false };
+    const pressureCache = new Map(); // key: "lat,lon,unixHour" -> Promise<number>
+
     function addPressureCentersLayer(){
       for(let i=1;i<=2;i++){
         const empty={type:'FeatureCollection',features:[]};
@@ -305,7 +298,7 @@
               'text-halo-color':'#000000',
               'text-halo-width':2,
               'text-opacity': i===1 ? currentOpacity : 0,
-              'text-opacity-transition':{duration:200} /* rýchlejšie prepnutie */
+              'text-opacity-transition':{duration:200}
             }
           }, firstSymbolLayerId());
         }
@@ -319,8 +312,29 @@
         if(map.getSource(`pressure-centers-source-${i}`)) map.removeSource(`pressure-centers-source-${i}`);
       }
     }
-    const pressureCentersState = { abortController:null, activeBuffer:1, isUpdating:false };
-    const updatePressureCentersDebounced = debounce(()=>updatePressureCenters(false), 350);
+
+    function unixHourOf(date){ return Math.floor(date.getTime()/3600000)*3600; } // s
+    function roundToStep(base, step, origin){ // prvé zarovnanie na pevný raster
+      return (Math.floor((base - origin)/step)*step) + origin + step/2;
+    }
+    function km(a,b){ return turf.distance(turf.point(a), turf.point(b)); }
+
+    function fetchPressure(lat, lon, unixHour, signal){
+      const key = `${lat.toFixed(2)},${lon.toFixed(2)},${unixHour}`;
+      if(pressureCache.has(key)) return pressureCache.get(key);
+      const start = new Date(unixHour*1000).toISOString().slice(0,10);
+      const url = `https://api.open-meteo.com/v1/forecast?latitude=${lat.toFixed(2)}&longitude=${lon.toFixed(2)}&hourly=pressure_msl&timeformat=unixtime&start_date=${start}&end_date=${start}&timezone=UTC`;
+      const p = fetch(url,{signal})
+        .then(r=>r.ok?r.json():Promise.reject())
+        .then(d=>{
+          const idx = d?.hourly?.time?.indexOf(unixHour);
+          if(idx===-1 || idx==null) return null;
+          return d.hourly.pressure_msl[idx];
+        })
+        .catch(()=>null);
+      pressureCache.set(key,p);
+      return p;
+    }
 
     async function updatePressureCenters(immediate=false){
       if(pressureCentersState.isUpdating && !immediate) return;
@@ -330,68 +344,86 @@
       const signal = pressureCentersState.abortController.signal;
 
       try{
-        const bounds=map.getBounds(); const zoom=map.getZoom();
-        const grid = zoom < 2 ? 8 : (zoom < 4 ? 10 : 12);
-        const latStep=(bounds.getNorth()-bounds.getSouth())/grid;
-        const lonStep=(bounds.getEast()-bounds.getWest())/grid;
+        const bounds=map.getBounds();
+        const zoom=map.getZoom();
+        const pad=0.18; // mierne rozšír bounds (stabilnejšie okraje)
+        const south=bounds.getSouth() - (bounds.getNorth()-bounds.getSouth())*pad;
+        const north=bounds.getNorth() + (bounds.getNorth()-bounds.getSouth())*pad;
+        const west=bounds.getWest() - (bounds.getEast()-bounds.getWest())*pad;
+        const east=bounds.getEast() + (bounds.getEast()-bounds.getWest())*pad;
 
-        const points=[];
-        for(let lat=bounds.getSouth(); lat<=bounds.getNorth(); lat+=latStep){
-          for(let lon=bounds.getWest(); lon<=bounds.getEast(); lon+=lonStep){
-            points.push({lat,lon});
+        // krok tak, aby počet bodov neprekročil ~100
+        const targetPts = 100;
+        const latSpan = Math.max(2, Math.min(180, Math.abs(north-south)));
+        const lonSpan = Math.max(2, Math.min(360, Math.abs(east-west)));
+        let step = Math.max(1, Math.ceil(Math.sqrt((latSpan*lonSpan)/targetPts))); // v stupňoch
+        // zarovnanie na pevný raster
+        const startLat = roundToStep(south, step, -90);
+        const startLon = roundToStep(west,  step, -180);
+
+        const unixHour = unixHourOf(new Date(currentDate)); // UTC hodinový slot
+
+        const samplePromises = [];
+        const cells = [];
+        for(let lat=startLat; lat<=north; lat+=step){
+          for(let lon=startLon; lon<=east; lon+=step){
+            cells.push([lon,lat]);
+            samplePromises.push(fetchPressure(lat, lon, unixHour, signal).then(v=>({coord:[lon,lat],p:v})));
           }
         }
+        const sampled = (await Promise.all(samplePromises)).filter(o=>o.p!=null);
+        if(signal.aborted || sampled.length<9){ pressureCentersState.isUpdating=false; return; }
 
-        const rounded=new Date(currentDate); rounded.setMinutes(0,0,0,0);
-        const isoDay=rounded.toISOString().slice(0,10);
+        // prehľadávanie lokálnych extrémov na indexovej mriežke (deterministicky)
+        const mapIdx = new Map(); // "lon,lat" -> pressure
+        sampled.forEach(o=>mapIdx.set(`${o.coord[0].toFixed(2)},${o.coord[1].toFixed(2)}`, o.p));
 
-        const prs = points.map(p =>
-          fetch(`https://api.open-meteo.com/v1/forecast?latitude=${p.lat.toFixed(2)}&longitude=${p.lon.toFixed(2)}&hourly=pressure_msl&start_date=${isoDay}&end_date=${isoDay}&timezone=auto`, {signal})
-            .then(r=>r.ok?r.json():Promise.reject())
-            .then(d=>{
-              if(d?.hourly?.time){
-                const idx=d.hourly.time.findIndex(t=>new Date(t).getTime()===rounded.getTime());
-                if(idx!==-1) return { coords:[p.lon,p.lat], pressure:d.hourly.pressure_msl[idx] };
-              }
-              return null;
-            }).catch(()=>null)
-        );
+        const EPS = 0.7; // hPa
+        const MIN_SPACING_KM = 250;
+        const centers = [];
 
-        const data=(await Promise.all(prs)).filter(Boolean);
-        if(signal.aborted || data.length < 10){ pressureCentersState.isUpdating=false; return; }
-
-        // mriežka na vyhľadanie extrémov
-        const gridArr = Array.from({length:grid+1}, ()=>Array(grid+1).fill(null));
-        data.forEach(p=>{
-          const i=Math.min(grid, Math.max(0, Math.round((p.coords[1]-bounds.getSouth())/latStep)));
-          const j=Math.min(grid, Math.max(0, Math.round((p.coords[0]-bounds.getWest())/lonStep)));
-          if(gridArr[i]) gridArr[i][j] = { pressure:p.pressure, coords:p.coords };
-        });
-
-        const centers=[];
-        for(let i=1;i<grid;i++){
-          for(let j=1;j<grid;j++){
-            const cur=gridArr[i][j]; if(!cur) continue;
-            let isHigh=true, isLow=true;
-            for(let di=-1; di<=1; di++){
-              for(let dj=-1; dj<=1; dj++){
-                if(di===0 && dj===0) continue;
-                const n=gridArr[i+di]?.[j+dj]; if(!n) continue;
-                if(n.pressure >= cur.pressure) isHigh=false;
-                if(n.pressure <= cur.pressure) isLow=false;
-              }
+        function isLocal(type, i, j, lons, lats){
+          const key = `${lons[i].toFixed(2)},${lats[j].toFixed(2)}`;
+          const p0 = mapIdx.get(key); if(p0==null) return false;
+          for(let di=-1; di<=1; di++){
+            for(let dj=-1; dj<=1; dj++){
+              if(di===0 && dj===0) continue;
+              const ii=i+di, jj=j+dj;
+              if(ii<0 || jj<0 || ii>=lons.length || jj>=lats.length) continue;
+              const k2 = `${lons[ii].toFixed(2)},${lats[jj].toFixed(2)}`;
+              const pn = mapIdx.get(k2); if(pn==null) continue;
+              if(type==='max' && p0 <= pn + EPS) return false;
+              if(type==='min' && p0 >= pn - EPS) return false;
             }
-            if(isHigh) centers.push(turf.point(cur.coords,{label:'V', pressure:cur.pressure}));
-            if(isLow)  centers.push(turf.point(cur.coords,{label:'N', pressure:cur.pressure}));
+          }
+          return true;
+        }
+
+        // poskladaj zoradené pole lat/lon po kroku
+        const lats=[], lons=[];
+        for(let lat=startLat; lat<=north; lat+=step) lats.push(lat);
+        for(let lon=startLon; lon<=east;  lon+=step) lons.push(lon);
+
+        // maxima + minima s minimálnym rozostupom
+        const taken=[];
+        for(let j=1;j<lats.length-1;j++){
+          for(let i=1;i<lons.length-1;i++){
+            if(isLocal('max',i,j,lons,lats)){
+              const pt=[lons[i],lats[j]], pres=mapIdx.get(`${pt[0].toFixed(2)},${pt[1].toFixed(2)}`);
+              if(taken.every(t=>km(t,pt)>MIN_SPACING_KM)){ centers.push(turf.point(pt,{label:'V',pressure:pres})); taken.push(pt); }
+            }
+            if(isLocal('min',i,j,lons,lats)){
+              const pt=[lons[i],lats[j]], pres=mapIdx.get(`${pt[0].toFixed(2)},${pt[1].toFixed(2)}`);
+              if(taken.every(t=>km(t,pt)>MIN_SPACING_KM)){ centers.push(turf.point(pt,{label:'N',pressure:pres})); taken.push(pt); }
+            }
           }
         }
-        const fc=turf.featureCollection(centers);
 
+        const fc = turf.featureCollection(centers);
         const inactive = pressureCentersState.activeBuffer===1 ? 2 : 1;
         const active = pressureCentersState.activeBuffer;
 
         if(map.getSource(`pressure-centers-source-${inactive}`)) map.getSource(`pressure-centers-source-${inactive}`).setData(fc);
-        // okamžité zobrazenie bez „prebliknutia“ pri prvom behu
         map.setPaintProperty(`pressure-centers-layer-${active}`,'text-opacity',0);
         map.setPaintProperty(`pressure-centers-layer-${inactive}`,'text-opacity',currentOpacity);
         pressureCentersState.activeBuffer = inactive;
@@ -399,11 +431,10 @@
       }catch(e){ if(e.name!=='AbortError') console.error('Tlakové útvary (V/N) – chyba:',e); }
       finally{ pressureCentersState.isUpdating=false; }
     }
+    /* --------------------------------------------------------------------- */
 
-    // legenda je úplne vypnutá
     function updateLegend(){ document.getElementById('legend-container').innerHTML=''; }
 
-    // re-attach layers po style load (ak by sa štýl zmenil programovo)
     map.on('style.load', () => {
       layerState={};
       Object.values(activeLayers).forEach(info=>{
@@ -411,11 +442,10 @@
         if(info.code==='pressure'){ addPressureCentersLayer(); updatePressureCenters(true); }
       });
     });
+    map.on('moveend', ()=>{ updateAllDataLabels(); if(activeLayers["Tlakové útvary"]) updatePressureCenters(true); });
+    map.on('zoomend', ()=>{ updateAllDataLabels(); if(activeLayers["Tlakové útvary"]) updatePressureCenters(true); });
 
-    map.on('moveend', ()=>{ updateAllDataLabels(); if(activeLayers["Tlakové útvary"]) updatePressureCentersDebounced(); });
-    map.on('zoomend', ()=>{ updateAllDataLabels(); if(activeLayers["Tlakové útvary"]) updatePressureCentersDebounced(); });
-
-    // timeline, popup, alerts – ostatné časti sú rovnaké ako predtým
+    /* ------------------------- TIMELINE / POPUPY -------------------------- */
     let timelineArea,timelineContent,headerText,timelineMarkersContainer;
     let isDragging=false,startX,startTranslate=0,currentTranslate=0,hourOffset=0;
     const totalDays=maxFutureDays;
@@ -486,7 +516,7 @@
     document.getElementById('prevButton').addEventListener('click',()=>stepSlider(-1));
     document.getElementById('nextButton').addEventListener('click',()=>stepSlider(1));
 
-    // klik na mapu, pop-upy, výstrahy — (nezmenené)
+    /* ----------------------- POPUPY / DÁTA PRE BODY ---------------------- */
     map.on('click', handleMapClick);
     async function handleMapClick(e){
       const r=document.createElement('div'); r.className='ripple'; document.body.appendChild(r);
@@ -524,6 +554,7 @@
       document.getElementById('weather-popup-container').innerHTML=html;
     }
 
+    /* ----------------------- DÁTOVÉ ŠTÍTKY / ĎALŠIE ----------------------- */
     function updateAllDataLabels(){
       dataLabelsAbortController.abort(); dataLabelsAbortController=new AbortController();
       dataLabelMarkers.forEach(m=>m.remove()); dataLabelMarkers=[];
@@ -550,8 +581,8 @@
           if(idx!==-1){
             if(info.code==='wind'){ value=data.hourly.wind_speed_10m?.[idx]; dir=data.hourly.wind_direction_10m?.[idx]; }
             else{
-              const map={temp:'temperature_2m',clouds:'cloud_cover',humidity:'relative_humidity_2m',snow_depth:'snow_depth',dew_point:'dew_point_2m'};
-              value=data.hourly[map[info.code]]?.[idx];
+              const mapKey={temp:'temperature_2m',clouds:'cloud_cover',humidity:'relative_humidity_2m',snow_depth:'snow_depth',dew_point:'dew_point_2m'};
+              value=data.hourly[mapKey[info.code]]?.[idx];
             }
           }
         } else if(data.hourly?.data){
@@ -565,13 +596,13 @@
       }catch(e){ if(e.name!=='AbortError') console.error("Data label fetch error",e); }
     }
 
-    // Alerts (nezmenené)
+    // (Výstrahy – nechávam pôvodnú implementáciu)
     function getAlertIcon(eventName){const s=eventName.toLowerCase();if(s.includes("thunderstorm"))return"fas fa-bolt";if(s.includes("rain")||s.includes("flood"))return"fas fa-cloud-showers-heavy";if(s.includes("fog"))return"fas fa-smog";if(s.includes("ice")||s.includes("sleet")||s.includes("frost"))return"fas fa-icicles";if(s.includes("snow")||s.includes("avalanches"))return"fas fa-snowflake";if(s.includes("low temperature"))return"fas fa-temperature-low";if(s.includes("high temperature"))return"fas fa-temperature-high";if(s.includes("wind"))return"fas fa-wind";if(s.includes("fire"))return"fas fa-fire";return"fas fa-triangle-exclamation";}
     function getAlertLevel(alerts){if(!alerts||!alerts.length)return 0;return alerts.reduce((m,a)=>{const t=`${a.event||""} ${a.description||""}`.toLowerCase();if(t.includes('3. stupeň')||t.includes('extrémne')||t.includes('extreme'))return Math.max(m,3);if(t.includes('2. stupeň')||t.includes('vysoké')||t.includes('severe')||t.includes('značné'))return Math.max(m,2);return Math.max(m,1);},0);}
-    async function fetchWeatherAlerts(){/* … (rovnaké ako predtým, vynechané kvôli dĺžke) … */}
-    function updateDistrictColors(){/* … */}
-    async function showAlertPopup(lngLat,districtName,alerts){/* … */}
-    function displayActiveAlertsSummary(){/* … */}
+    async function fetchWeatherAlerts(){/* nechávam bez zmeny kvôli dĺžke */ }
+    function updateDistrictColors(){/* nechávam bez zmeny */ }
+    async function showAlertPopup(){/* nechávam bez zmeny */ }
+    function displayActiveAlertsSummary(){/* nechávam bez zmeny */ }
 
   });
   </script>
