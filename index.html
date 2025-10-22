@@ -8,10 +8,11 @@
 <body>
     <h1>Aktuálna situácia počasia</h1>
     <p id="weather-description">Načítavam...</p>
+    <p id="error-message" style="color:red; display:none;">Chyba pri načítaní údajov. Skúste to znova neskôr.</p>
 
     <script>
         // URL pre získanie aktuálnych údajov o počasí z OpenMeteo API (pre Bratislavu)
-        const url = 'https://api.open-meteo.com/v1/forecast?latitude=48.1482&longitude=17.1067&current_weather=true&hourly=temperature_2m,humidity_2m,precipitation_sum,wind_speed_10m,pressure_msl';
+        const url = 'https://api.open-meteo.com/v1/forecast?latitude=48.1482&longitude=17.1067&current_weather=true';
 
         // Načítanie údajov z API
         fetch(url)
@@ -23,12 +24,12 @@
             })
             .then(data => {
                 const weather = data.current_weather;
-                const pressure = weather.pressure_msl;
 
                 // Dynamické generovanie popisu situácie podľa aktuálnych podmienok
                 let description = "Situácia: ";
 
                 // Určovanie tlakovej níže alebo výše
+                const pressure = weather.pressure_msl;
                 if (pressure < 1013) {
                     description += "Po prednej strane rozsiahlej tlakovej níže so stredom severne od Britských ostrovov prúdi teplý a vlhký vzduch do našej oblasti. ";
                 } else if (pressure > 1020) {
@@ -59,6 +60,7 @@
             .catch(error => {
                 console.error("Chyba pri získavaní údajov:", error);
                 document.getElementById('weather-description').textContent = "Nepodarilo sa načítať údaje o počasí. Skúste to znova.";
+                document.getElementById('error-message').style.display = 'block';
             });
     </script>
 </body>
