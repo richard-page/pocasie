@@ -8,11 +8,10 @@
 <body>
     <h1>Aktuálna situácia počasia</h1>
     <p id="weather-description">Načítavam...</p>
-    <p id="error-message" style="color:red; display:none;">Chyba pri načítaní údajov. Skúste to znova neskôr.</p>
 
     <script>
         // URL pre získanie aktuálnych údajov o počasí z OpenMeteo API (pre Bratislavu)
-        const url = 'https://api.open-meteo.com/v1/forecast?latitude=48.1482&longitude=17.1067&current_weather=true';
+        const url = 'https://api.open-meteo.com/v1/forecast?latitude=48.1482&longitude=17.1067&current_weather=true&hourly=temperature_2m,humidity_2m,precipitation_sum,wind_speed_10m,pressure_msl';
 
         // Načítanie údajov z API
         fetch(url)
@@ -24,32 +23,35 @@
             })
             .then(data => {
                 const weather = data.current_weather;
+                const pressure = weather.pressure_msl;
+                const temperature = weather.temperature_2m;
+                const humidity = weather.humidity_2m;
+                const wind_speed = weather.wind_speed_10m;
 
                 // Dynamické generovanie popisu situácie podľa aktuálnych podmienok
-                let description = "Situácia: ";
+                let description = "Aktuálna situácia počasia: ";
 
-                // Určovanie tlakovej níže alebo výše
-                const pressure = weather.pressure_msl;
+                // Popis tlakovej níže alebo výše
                 if (pressure < 1013) {
-                    description += "Po prednej strane rozsiahlej tlakovej níže so stredom severne od Britských ostrovov prúdi teplý a vlhký vzduch do našej oblasti. ";
+                    description += "Po prednej strane rozsiahlej tlakovej níže so stredom severne od Britských ostrovov prúdi od juhozápadu až západu do našej oblasti teplý a vlhký vzduch. ";
                 } else if (pressure > 1020) {
                     description += "V oblasti je vysoký tlak, čo naznačuje stabilné a suché počasie. ";
                 } else {
-                    description += "Tlak je v normálnych medziach, takže počasie je vyvážené. ";
+                    description += "Tlak je v normálnych medziach, počasie je vyvážené. ";
                 }
 
-                // Prispôsobenie podľa teploty a vlhkosti
-                if (weather.temperature_2m > 25 && weather.humidity_2m > 60) {
+                // Teplota a vlhkosť
+                if (temperature > 25 && humidity > 60) {
                     description += "Počasie je teplé a vlhké, čo môže podporovať vznik búrok. ";
-                } else if (weather.temperature_2m < 10) {
+                } else if (temperature < 10) {
                     description += "Počasie je chladné a suché, búrky nie sú pravdepodobné. ";
                 } else {
                     description += "Počasie je mierne, bez výrazných zmien. ";
                 }
 
-                // Určovanie smeru prúdenia vzduchu a vetra
-                if (weather.wind_speed_10m > 15) {
-                    description += "Vietor je silný, čo môže ovplyvniť pohyb vzduchu a komfort. ";
+                // Vietor
+                if (wind_speed > 15) {
+                    description += "Vietor je silný, čo môže ovplyvniť komfort a pohyb vzduchu. ";
                 } else {
                     description += "Vietor je slabý, počasie je pokojné. ";
                 }
@@ -60,7 +62,6 @@
             .catch(error => {
                 console.error("Chyba pri získavaní údajov:", error);
                 document.getElementById('weather-description').textContent = "Nepodarilo sa načítať údaje o počasí. Skúste to znova.";
-                document.getElementById('error-message').style.display = 'block';
             });
     </script>
 </body>
