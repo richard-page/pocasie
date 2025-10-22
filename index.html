@@ -10,10 +10,10 @@
     <p id="weather-description">Načítavam...</p>
 
     <script>
-        // URL pre získanie údajov z OpenMeteo API (pre Bratislavu)
+        // URL pre získanie aktuálnych údajov o počasí z OpenMeteo API (pre Bratislavu)
         const url = 'https://api.open-meteo.com/v1/forecast?latitude=48.1482&longitude=17.1067&current_weather=true&hourly=temperature_2m,humidity_2m,precipitation_sum,wind_speed_10m,pressure_msl';
 
-        // Príkaz na získanie údajov
+        // Načítanie údajov z API
         fetch(url)
             .then(response => {
                 if (!response.ok) {
@@ -25,7 +25,7 @@
                 const weather = data.current_weather;
                 const pressure = weather.pressure_msl;
 
-                // Dynamické generovanie popisu situácie na základe aktuálnych podmienok
+                // Dynamické generovanie popisu situácie podľa aktuálnych podmienok
                 let description = "Situácia: ";
 
                 // Určovanie tlakovej níže alebo výše
@@ -46,7 +46,7 @@
                     description += "Počasie je mierne, bez výrazných zmien. ";
                 }
 
-                // Určovanie smeru prúdenia vzduchu
+                // Určovanie smeru prúdenia vzduchu a vetra
                 if (weather.wind_speed_10m > 15) {
                     description += "Vietor je silný, čo môže ovplyvniť pohyb vzduchu a komfort. ";
                 } else {
