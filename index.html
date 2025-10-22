@@ -3,46 +3,54 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Aktuálna počasie a tlaková situácia</title>
+    <title>Aktuálna situácia počasia</title>
 </head>
 <body>
     <h1>Aktuálna situácia počasia</h1>
     <p id="weather-description">Načítavam...</p>
 
     <script>
-        // Príkaz na získanie údajov z OpenMeteo API (príklad pre Bratislavu)
-        fetch('https://api.open-meteo.com/v1/forecast?latitude=48.1482&longitude=17.1067&current_weather=true&hourly=temperature_2m,humidity_2m,precipitation_sum,wind_speed_10m,pressure_msl')
-            .then(response => response.json())
+        // URL pre získanie údajov z OpenMeteo API (pre Bratislavu)
+        const url = 'https://api.open-meteo.com/v1/forecast?latitude=48.1482&longitude=17.1067&current_weather=true&hourly=temperature_2m,humidity_2m,precipitation_sum,wind_speed_10m,pressure_msl';
+
+        // Príkaz na získanie údajov
+        fetch(url)
+            .then(response => {
+                if (!response.ok) {
+                    throw new Error('Chyba pri načítaní údajov z API');
+                }
+                return response.json();
+            })
             .then(data => {
                 const weather = data.current_weather;
                 const pressure = weather.pressure_msl;
 
                 // Dynamické generovanie popisu situácie na základe aktuálnych podmienok
-                let description = "Aktuálna tlaková situácia: ";
+                let description = "Situácia: ";
 
-                // Tlaková níž a výš
+                // Určovanie tlakovej níže alebo výše
                 if (pressure < 1013) {
-                    description += "V oblasti sa nachádza tlaková níž, čo znamená zvýšenú vlhkosť a zhoršené poveternostné podmienky.";
+                    description += "Po prednej strane rozsiahlej tlakovej níže so stredom severne od Britských ostrovov prúdi teplý a vlhký vzduch do našej oblasti. ";
                 } else if (pressure > 1020) {
-                    description += "V oblasti je vysoký tlak, čo naznačuje stabilné a suché počasie.";
+                    description += "V oblasti je vysoký tlak, čo naznačuje stabilné a suché počasie. ";
                 } else {
-                    description += "Tlak je v normálnych medziach, takže počasie by malo byť vyvážené.";
+                    description += "Tlak je v normálnych medziach, takže počasie je vyvážené. ";
                 }
 
-                // Teplota a vlhkosť vzduchu
+                // Prispôsobenie podľa teploty a vlhkosti
                 if (weather.temperature_2m > 25 && weather.humidity_2m > 60) {
-                    description += " Počasie je teplé a vlhké, čo môže podporovať vznik búrok.";
+                    description += "Počasie je teplé a vlhké, čo môže podporovať vznik búrok. ";
                 } else if (weather.temperature_2m < 10) {
-                    description += " Počasie je chladné a suché, takže búrky nie sú pravdepodobné.";
+                    description += "Počasie je chladné a suché, búrky nie sú pravdepodobné. ";
                 } else {
-                    description += " Počasie je mierne, bez výrazných zmien.";
+                    description += "Počasie je mierne, bez výrazných zmien. ";
                 }
 
-                // Vietor
+                // Určovanie smeru prúdenia vzduchu
                 if (weather.wind_speed_10m > 15) {
-                    description += " Vietor je silný, čo môže spôsobovať nepríjemné pocity a ovplyvňovať pohyb vzduchu.";
+                    description += "Vietor je silný, čo môže ovplyvniť pohyb vzduchu a komfort. ";
                 } else {
-                    description += " Vietor je slabý, takže počasie je pokojné.";
+                    description += "Vietor je slabý, počasie je pokojné. ";
                 }
 
                 // Zobrazenie popisu na stránke
@@ -50,7 +58,7 @@
             })
             .catch(error => {
                 console.error("Chyba pri získavaní údajov:", error);
-                document.getElementById('weather-description').textContent = "Nepodarilo sa načítať údaje o počasí.";
+                document.getElementById('weather-description').textContent = "Nepodarilo sa načítať údaje o počasí. Skúste to znova.";
             });
     </script>
 </body>
