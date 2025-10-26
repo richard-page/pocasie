@@ -16,6 +16,7 @@
   }
   .glass{ background:var(--glass); border:1px solid var(--glass-b); backdrop-filter:blur(12px); border-radius:1rem }
   .mono{ font-feature-settings:"tnum" 1,"lnum" 1 }
+
   .hero{
     position:relative; isolation:isolate;
     display:flex; flex-direction:column; align-items:center; justify-content:center;
@@ -41,12 +42,14 @@
       radial-gradient(1.6px 1.6px at 44% 86%, #fff 45%, transparent 47%)
   }
   #heroPlace{ font-size:1.25rem; font-weight:600; opacity:.95; letter-spacing:.2px }
-  #heroIcon{ width:120px; height:120px; margin:1.2rem auto }
+  #heroIcon{ width:140px; height:140px; margin:1.2rem auto } /* väčší hero symbol */
   #heroTemp{ font-size:6.5rem; line-height:1; font-weight:700; letter-spacing:2px }
+
   .sticky-header{ position:sticky; top:0; z-index:40 }
   .tbl th,.tbl td{ padding:.65rem .75rem; white-space:nowrap }
   .tbl thead th{ position:sticky; top:0; background:rgba(0,0,0,.15); backdrop-filter:blur(6px) }
   .val-bold{ font-weight:600; color:#fff }
+
   .card{ border-radius:1rem; border:1px solid var(--glass-b); background:var(--glass) }
   .acc-btn{ width:100%; background:none; border:0; cursor:pointer; padding:.9rem .95rem; display:flex; align-items:center; gap:.75rem; text-align:left; color:#fff }
   .acc-head{ flex:1; min-width:0 }
@@ -55,20 +58,23 @@
   .acc-btn[aria-expanded="true"] .chev{ transform:rotate(180deg) }
   .panel-wrap{ height:0; overflow:hidden; transition:height .22s ease }
   .panel{ padding:0 .95rem .95rem .95rem }
+
   .cols{ display:grid; grid-template-columns:1fr; gap:1rem }
   @media (min-width:1024px){ .cols{ display:flex; gap:1rem } .col-left,.col-right{ align-self:stretch } }
+
+  /* Väčšie emoji ikonky počasia */
+  .emo{ font-size:1.5em; line-height:1; display:inline-block; transform:translateY(1px) }
+  @media (min-width:1024px){ .emo{ font-size:1.65em } }
 </style>
 </head>
 <body data-mode="day">
 
-<!-- HERO -->
 <section class="hero">
   <div id="heroPlace">—</div>
   <div id="heroIcon" aria-hidden="true"></div>
   <div id="heroTemp" class="mono">--°</div>
 </section>
 
-<!-- HLAVIČKA: len formulár, centrovaný na mobile aj PC -->
 <header class="sticky-header w-full glass">
   <div class="w-full px-3 md:px-6 py-3 flex items-center justify-center">
     <form id="searchForm" class="grid grid-cols-1 gap-2 w-full sm:w-[560px] max-w-full place-items-center" novalidate>
@@ -84,9 +90,7 @@
 </header>
 
 <main class="w-full px-2 md:px-4 lg:px-6 py-4 space-y-4">
-
   <section class="cols">
-    <!-- 24h -->
     <div class="col-left glass overflow-visible lg:overflow-hidden lg:basis-7/12 flex flex-col min-h-0">
       <div class="flex items-center justify-between px-4 py-3 border-b border-white/20">
         <h2 class="text-lg font-semibold">24-hodinová predpoveď</h2>
@@ -182,7 +186,10 @@ function descFor(c){
            95:'Búrka',96:'Búrka s krúpami',99:'Silná búrka s krúpami'};
   return d[c]||'—';
 }
-function withIcon(code){ return `${iconFor(code)} ${descFor(code)}`; }
+function withIcon(code){
+  const e = iconFor(code);
+  return `<span class="emo">${e}</span> ${descFor(code)}`;
+}
 function dd2dir(dd){ if(dd==null||isNaN(dd)) return '—'; const deg=((dd%360)+360)%360; const dirs=['S','SV','V','JV','J','JZ','Z','SZ']; return dirs[Math.floor((deg+22.5)/45)%8]; }
 function fmtTime(iso){ const d=new Date(iso); return d.getHours().toString().padStart(2,'0')+':00'; }
 
@@ -216,6 +223,7 @@ function renderHero(city, wx){
   el.heroTemp.textContent = Math.round(wx.current.temperature_2m)+'°';
   el.heroIcon.innerHTML = isDay ? svgSun : svgMoon;
 }
+
 function renderHourly(wx){
   const H=wx.hourly; el.hourRows.innerHTML=''; el.hourList.innerHTML='';
   const now=new Date(); let start=0; for(let i=0;i<H.time.length;i++){ if(new Date(H.time[i])>=now){ start=i; break; } }
@@ -267,6 +275,7 @@ function renderHourly(wx){
     wrap.addEventListener('transitionend',e=>{ if(e.propertyName!=='height')return; if(open){ wrap.style.height='auto'; } });
   }
 }
+
 function renderDaily(wx){
   const D=wx.daily; el.dailyList.innerHTML=''; const n=Math.min(10,D.time.length);
   for(let i=0;i<n;i++){
@@ -284,6 +293,7 @@ function renderDaily(wx){
     el.dailyList.appendChild(card);
   }
 }
+
 function renderHistoryExact(hist){
   const H=hist.daily; const dateStr=H.time?.[0];
   if(!dateStr){ el.historyExact.innerHTML='<div class="text-white/80">Dáta nie sú dostupné.</div>'; return; }
@@ -306,6 +316,7 @@ function renderHistoryExact(hist){
       </div>
     </div>`;
 }
+
 function renderUV(wx){
   const H=wx.hourly; let uvNow=null; const now=new Date();
   for(let i=0;i<H.time.length;i++){ if(new Date(H.time[i])>=now){ uvNow=H.uv_index?.[i] ?? null; break; } }
@@ -331,8 +342,11 @@ async function run(q){
 }
 
 document.getElementById('searchForm').addEventListener('submit', (ev)=>{ ev.preventDefault(); const q=el.input.value.trim(); if(q) run(q); });
-el.input.value='Hlohovec';
-run('Hlohovec');
+
+// Predvolená Bratislava, input prázdny a fokus
+el.input.value='';
+setTimeout(()=>el.input.focus(),0);
+run('Bratislava');
 </script>
 </body>
 </html>
