@@ -12,12 +12,10 @@
   body{
     margin:0; color:#fff;
     font-family:system-ui,-apple-system,Segoe UI,Roboto,sans-serif;
-    background:#0e4d73; /* fallback */
+    background:#0e4d73;
   }
   .glass{ background:var(--glass); border:1px solid var(--glass-b); backdrop-filter:blur(12px); border-radius:1rem }
   .mono{ font-feature-settings:"tnum" 1,"lnum" 1 }
-
-  /* HERO deň/noc */
   .hero{
     position:relative; isolation:isolate;
     display:flex; flex-direction:column; align-items:center; justify-content:center;
@@ -45,13 +43,10 @@
   #heroPlace{ font-size:1.25rem; font-weight:600; opacity:.95; letter-spacing:.2px }
   #heroIcon{ width:120px; height:120px; margin:1.2rem auto }
   #heroTemp{ font-size:6.5rem; line-height:1; font-weight:700; letter-spacing:2px }
-
   .sticky-header{ position:sticky; top:0; z-index:40 }
   .tbl th,.tbl td{ padding:.65rem .75rem; white-space:nowrap }
   .tbl thead th{ position:sticky; top:0; background:rgba(0,0,0,.15); backdrop-filter:blur(6px) }
   .val-bold{ font-weight:600; color:#fff }
-
-  /* Mobilný akordeón (24h) */
   .card{ border-radius:1rem; border:1px solid var(--glass-b); background:var(--glass) }
   .acc-btn{ width:100%; background:none; border:0; cursor:pointer; padding:.9rem .95rem; display:flex; align-items:center; gap:.75rem; text-align:left; color:#fff }
   .acc-head{ flex:1; min-width:0 }
@@ -60,14 +55,11 @@
   .acc-btn[aria-expanded="true"] .chev{ transform:rotate(180deg) }
   .panel-wrap{ height:0; overflow:hidden; transition:height .22s ease }
   .panel{ padding:0 .95rem .95rem .95rem }
-
   .cols{ display:grid; grid-template-columns:1fr; gap:1rem }
   @media (min-width:1024px){ .cols{ display:flex; gap:1rem } .col-left,.col-right{ align-self:stretch } }
 </style>
 </head>
 <body data-mode="day">
-
-<!-- HERO -->
 <section class="hero">
   <div id="heroPlace">—</div>
   <div id="heroIcon" aria-hidden="true"></div>
@@ -91,9 +83,7 @@
 </header>
 
 <main class="w-full px-2 md:px-4 lg:px-6 py-4 space-y-4">
-
   <section class="cols">
-    <!-- 24h -->
     <div class="col-left glass overflow-visible lg:overflow-hidden lg:basis-7/12 flex flex-col min-h-0">
       <div class="flex items-center justify-between px-4 py-3 border-b border-white/20">
         <h2 class="text-lg font-semibold">24-hodinová predpoveď</h2>
@@ -130,7 +120,6 @@
             <div class="glass p-2 rounded-lg"><div class="text-white/70 text-sm">Aktuálne</div><div id="uvNow" class="mono font-semibold">—</div></div>
             <div class="glass p-2 rounded-lg"><div class="text-white/70 text-sm">Dnešné maximum</div><div id="uvMax" class="mono font-semibold">—</div></div>
           </div>
-          <!-- žiadna "Úroveň" ani progress bar -->
         </div>
       </div>
     </div>
@@ -149,9 +138,7 @@
 const API='https://api.open-meteo.com/v1';
 const GEO='https://geocoding-api.open-meteo.com/v1';
 const ARCH='https://archive-api.open-meteo.com/v1/era5';
-const DEFAULT_CITY='Bratislava';
 
-/* inline SVG – bez hostingu */
 const svgSun=`<svg viewBox="0 0 128 128" xmlns="http://www.w3.org/2000/svg"><defs><radialGradient id="g" cx="50%" cy="50%" r="50%"><stop offset="0%" stop-color="#ffe27a"/><stop offset="70%" stop-color="#ffd057"/><stop offset="100%" stop-color="#f7b538"/></radialGradient></defs><circle cx="64" cy="64" r="28" fill="url(#g)"/><g stroke="#ffd36a" stroke-width="6" stroke-linecap="round"><line x1="64" y1="8"  x2="64" y2="28"/><line x1="64" y1="100" x2="64" y2="120"/><line x1="8"  y1="64" x2="28" y2="64"/><line x1="100" y1="64" x2="120" y2="64"/><line x1="20" y1="20" x2="34" y2="34"/><line x1="94" y1="94" x2="108" y2="108"/><line x1="20" y1="108" x2="34" y2="94"/><line x1="94" y1="34" x2="108" y2="20"/></g></svg>`;
 const svgMoon=`<svg viewBox="0 0 128 128" xmlns="http://www.w3.org/2000/svg"><defs><radialGradient id="m" cx="40%" cy="35%" r="60%"><stop offset="0%" stop-color="#f4f4f6"/><stop offset="100%" stop-color="#cfd4da"/></radialGradient></defs><path d="M90 82c-29 0-52-23-52-52 0-7 1-14 4-20C25 16 16 32 16 50c0 30 24 54 54 54 18 0 34-9 40-26-6 3-13 4-20 4z" fill="url(#m)"/></svg>`;
 
@@ -171,7 +158,6 @@ const el={
   err:document.getElementById('err')
 };
 
-/* helpers */
 function sanitizeCode(c){ c=Number(c); return (c===45||c===48)?3:c; }
 function iconFor(code){
   code=sanitizeCode(code);
@@ -197,15 +183,9 @@ function withIcon(code){ return `${iconFor(code)} ${descFor(code)}`; }
 function dd2dir(dd){ if(dd==null||isNaN(dd)) return '—'; const deg=((dd%360)+360)%360; const dirs=['S','SV','V','JV','J','JZ','Z','SZ']; return dirs[Math.floor((deg+22.5)/45)%8]; }
 function fmtTime(iso){ const d=new Date(iso); return d.getHours().toString().padStart(2,'0')+':00'; }
 
-/* API */
 async function geocode(q){
   const r=await fetch(`${GEO}/search?name=${encodeURIComponent(q)}&count=1&language=sk`);
   const j=await r.json(); if(!j.results||j.results.length===0) throw new Error('notfound'); return j.results[0];
-}
-async function reverseGeocode(lat,lon){
-  const r=await fetch(`${GEO}/reverse?latitude=${lat}&longitude=${lon}&count=1&language=sk`);
-  const j=await r.json(); if(!j.results||!j.results.length) return {name:`${lat.toFixed(3)}, ${lon.toFixed(3)}`, country:''};
-  return j.results[0];
 }
 async function fetchWx(lat,lon){
   const url=`${API}/forecast?latitude=${lat}&longitude=${lon}`
@@ -226,7 +206,6 @@ async function fetchHistoryExact(lat,lon){
   const r=await fetch(url); if(!r.ok) throw new Error('arch1'); return await r.json();
 }
 
-/* render */
 function renderHero(city, wx){
   const isDay = !!wx.current.is_day;
   document.body.setAttribute('data-mode', isDay ? 'day' : 'night');
@@ -260,7 +239,6 @@ function renderHourly(wx){
       <td class="val-bold mono">${pres!=null?Math.round(pres):'—'} hPa</td>`;
     el.hourRows.appendChild(tr);
 
-    /* mobil karta */
     const card=document.createElement('div'); card.className='card';
     const btn=document.createElement('button'); btn.className='acc-btn'; btn.type='button'; btn.setAttribute('aria-expanded','false');
     btn.innerHTML=`
@@ -333,95 +311,25 @@ function renderUV(wx){
   el.uvMax.textContent = uvMax!=null ? uvMax.toFixed(1) : '—';
 }
 
-/* --------- FETCHERS --------- */
-async function runByCityName(q){
+async function run(q){
   el.loading.classList.remove('hidden'); el.err.classList.add('hidden');
   try{
     const city=await geocode(q);
     const wx=await fetchWx(city.latitude,city.longitude);
     const hist=await fetchHistoryExact(city.latitude,city.longitude);
-    renderHero(city,wx); renderHourly(wx); renderDaily(wx); renderHistoryExact(hist); renderUV(wx);
-  }catch{ el.err.classList.remove('hidden'); }
-  finally{ el.loading.classList.add('hidden'); }
-}
-async function runByCoords(lat,lon){
-  el.loading.classList.remove('hidden'); el.err.classList.add('hidden');
-  try{
-    const city=await reverseGeocode(lat,lon);
-    const wx=await fetchWx(lat,lon);
-    const hist=await fetchHistoryExact(lat,lon);
-    renderHero(city,wx); renderHourly(wx); renderDaily(wx); renderHistoryExact(hist); renderUV(wx);
-  }catch{ el.err.classList.remove('hidden'); }
+
+    renderHero(city,wx);
+    renderHourly(wx);
+    renderDaily(wx);
+    renderHistoryExact(hist);
+    renderUV(wx);
+  }catch(e){ el.err.classList.remove('hidden'); }
   finally{ el.loading.classList.add('hidden'); }
 }
 
-/* ======== ANDROID / iOS BRIDGE ======== */
-let geoInitTimer = null;   // ak app NEzavolá median_geolocation_ready()
-let geoReplyTimer = null;  // ak po ready nepríde poloha
-
-function requestNativeLocation(){
-  try{
-    if (window.Android && typeof window.Android.requestLocation === 'function') {
-      window.Android.requestLocation();                   // Android @JavascriptInterface
-      return true;
-    }
-    if (window.Median && typeof window.Median.requestLocation === 'function') {
-      window.Median.requestLocation();                   // iný Android/iOS bridge
-      return true;
-    }
-    if (window.webkit?.messageHandlers?.median?.postMessage) {
-      window.webkit.messageHandlers.median.postMessage({ action:'requestLocation' }); // iOS WKWebView
-      return true;
-    }
-  }catch(_){}
-  return false;
-}
-
-// volá natív po inicializácii geolokácie (aby sme NEpýtali povolenie z webu)
-window.median_geolocation_ready = function(){
-  const ok = requestNativeLocation();
-  clearTimeout(geoReplyTimer);
-  geoReplyTimer = setTimeout(()=> runByCityName(DEFAULT_CITY), 8000); // fallback ak nič nepríde
-  if(!ok){
-    // ak most neexistuje (spustené mimo app), nech to nesekne – fallback po 0 ms
-    clearTimeout(geoReplyTimer);
-    runByCityName(DEFAULT_CITY);
-  }
-};
-
-// aliasy, ktoré môže natív zavolať po získaní polohy
-window.median_set_location = function(lat, lon){ applyNativeLocation(lat, lon); };
-window.androidLocationReady  = function(lat, lon){ applyNativeLocation(lat, lon); };
-window.onLocation            = function(lat, lon){ applyNativeLocation(lat, lon); };
-
-// podpora WebMessage (Android 11+ addWebMessageListener → window.postMessage z natívu)
-window.addEventListener('message', (evt)=>{
-  try{
-    const d = typeof evt.data === 'string' ? JSON.parse(evt.data) : evt.data;
-    if(d && d.type==='location' && 'lat' in d && 'lon' in d){
-      applyNativeLocation(d.lat, d.lon);
-    }
-  }catch(_){}
-});
-
-function applyNativeLocation(lat, lon){
-  clearTimeout(geoReplyTimer);
-  clearTimeout(geoInitTimer);
-  const la = Number(lat), lo = Number(lon);
-  if (Number.isFinite(la) && Number.isFinite(lo)) {
-    runByCoords(la, lo);
-  } else {
-    runByCityName(DEFAULT_CITY);
-  }
-}
-
-/* Ak app NEzavolá median_geolocation_ready() (desktop/web) → fallback po 2s */
-geoInitTimer = setTimeout(()=> runByCityName(DEFAULT_CITY), 2000);
-
-/* UI handlers */
-document.getElementById('searchForm').addEventListener('submit', (ev)=>{
-  ev.preventDefault(); const q=el.input.value.trim(); if(q) runByCityName(q);
-});
+document.getElementById('searchForm').addEventListener('submit', (ev)=>{ ev.preventDefault(); const q=el.input.value.trim(); if(q) run(q); });
+el.input.value='Hlohovec';
+run('Hlohovec');
 </script>
 </body>
 </html>
