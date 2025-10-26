@@ -6,39 +6,32 @@
 <title>Predpoveď počasia – UV index + presne pred rokom</title>
 <script src="https://cdn.tailwindcss.com"></script>
 <style>
-  /* --- SAFE AREA + GLASS --- */
+  /* safe-area premenné */
   :root{
     --safe-top: env(safe-area-inset-top, 0px);
     --safe-right: env(safe-area-inset-right, 0px);
     --safe-bottom: env(safe-area-inset-bottom, 0px);
     --safe-left: env(safe-area-inset-left, 0px);
-
     --glass: rgba(255,255,255,.08);
     --glass-b: rgba(255,255,255,.18);
   }
-  html, body { height: 100%; }
 
-  /* Posunie celý obsah pod status bar / notch */
+  /* posuň celý obsah pod status bar / notch */
+  html, body{height:100%}
   body{
-    box-sizing: border-box;
+    box-sizing:border-box;
     padding-top: var(--safe-top);
     padding-right: var(--safe-right);
     padding-bottom: var(--safe-bottom);
     padding-left: var(--safe-left);
-    overscroll-behavior: contain;
-    -webkit-overflow-scrolling: touch;
   }
 
   .glass{background:var(--glass);border:1px solid var(--glass-b);backdrop-filter:blur(10px)}
   .mono{font-feature-settings:"tnum" 1,"lnum" 1}
 
-  /* Sticky header nech je vždy viditeľný a má vlastný „vnútorný“ safe padding */
+  /* sticky header má vlastný vnútorný safe padding */
   .sticky-header{
-    position: sticky;
-    top: 0;
-    z-index: 50;
-    backdrop-filter: blur(10px);
-    /* trocha extra, aby text nebol nalepený na horný okraj pri niektorých WebView */
+    position:sticky;top:0;z-index:50;backdrop-filter:blur(10px);
     padding-top: calc(0.5rem + var(--safe-top));
     padding-right: calc(0.75rem + var(--safe-right));
     padding-left: calc(0.75rem + var(--safe-left));
@@ -57,7 +50,7 @@
 </head>
 <body class="min-h-screen bg-gradient-to-br from-sky-600 via-cyan-600 to-emerald-600 text-white">
 
-<header class="sticky-header w-full glass rounded-b-xl">
+<header class="sticky-header w-full glass">
   <div class="w-full px-3 md:px-6 py-3 flex items-center gap-3">
     <h1 class="text-lg md:text-xl font-semibold">🌤️ Predpoveď</h1>
     <div class="flex-1"></div>
@@ -135,21 +128,15 @@
         <div id="historyExact" class="p-4"></div>
       </div>
 
-      <!-- UV index (bez textových rád) -->
+      <!-- UV index -->
       <div class="glass rounded-xl">
         <div class="px-4 py-3 border-b border-white/20">
           <h2 class="text-lg font-semibold">UV index</h2>
         </div>
         <div id="uvPanel" class="p-4 space-y-3">
           <div class="grid grid-cols-2 gap-3">
-            <div class="metric">
-              <div class="label">Aktuálne</div>
-              <div id="uvNow" class="val mono">—</div>
-            </div>
-            <div class="metric">
-              <div class="label">Dnešné maximum</div>
-              <div id="uvMax" class="val mono">—</div>
-            </div>
+            <div class="metric"><div class="label">Aktuálne</div><div id="uvNow" class="val mono">—</div></div>
+            <div class="metric"><div class="label">Dnešné maximum</div><div id="uvMax" class="val mono">—</div></div>
           </div>
           <div>
             <div class="flex items-center justify-between mb-1">
@@ -187,12 +174,10 @@ const el={
   hourRows:document.getElementById('hourRows'),
   dailyList:document.getElementById('dailyList'),
   historyExact:document.getElementById('historyExact'),
-  // UV
   uvNow:document.getElementById('uvNow'),
   uvMax:document.getElementById('uvMax'),
   uvFill:document.getElementById('uvFill'),
   uvCat:document.getElementById('uvCat'),
-  // current block
   place:document.getElementById('placeName'),
   curTemp:document.getElementById('curTemp'),
   curDesc:document.getElementById('curDesc'),
@@ -248,11 +233,9 @@ function ymd(d){ return d.toISOString().slice(0,10); }
 
 function uvCategory(u){
   if(u==null||isNaN(u)) return {name:'—',color:'background:rgba(255,255,255,.35);'};
-  if(u<=2) return {name:'Nízky',     color:'background:#9AE6B4;'};
-  if(u<=5) return {name:'Stredný',   color:'background:#F6E05E;'};
-  if(u<=7) return {name:'Vysoký',    color:'background:#F6AD55;'};
-  if(u<=10) return {name:'Veľmi vysoký', color:'background:#F56565;'};
-  return {name:'Extrémny', color:'background:#B83280;'};
+  if(u<=2) return {name:'Nízky',color:'background:#9AE6B4;'}; if(u<=5) return {name:'Stredný',color:'background:#F6E05E;'};
+  if(u<=7) return {name:'Vysoký',color:'background:#F6AD55;'}; if(u<=10) return {name:'Veľmi vysoký',color:'background:#F56565;'};
+  return {name:'Extrémny',color:'background:#B83280;'};
 }
 
 async function geocode(q){
@@ -282,7 +265,7 @@ function renderCurrent(city,wx){
   const c=wx.current, code=sanitizeCode(c.weather_code);
   el.curTemp.textContent=Math.round(c.temperature_2m)+'°';
   el.curDesc.textContent=descFor(code);
-  el.curIcon.textContent=iconFor(code,!!c.is_day);
+  el.curIcon.textContent=iconFor(code,!!c.is_day); /* 👈 EMOJI */
   el.curWind.textContent=`${Math.round(c.wind_speed_10m)} km/h ${dd2dir(c.wind_direction_10m)}`;
   el.curGust.textContent=`${Math.round(c.wind_gusts_10m)} km/h`;
   el.curHum.textContent=c.relative_humidity_2m+' %';
@@ -388,7 +371,6 @@ function renderHistoryExact(hist, todayTmax, todayTmin){
 }
 
 function renderUV(wx){
-  // aktuálny UV = najbližšia hodinová hodnota
   const H=wx.hourly;
   let uvNow = null;
   const now = new Date();
@@ -418,12 +400,10 @@ async function run(q){
     renderHourly(wx);
     renderDaily(wx);
 
-    // dnešné max/min pre porovnanie
     const todayTmax = wx.daily.temperature_2m_max?.[0];
     const todayTmin = wx.daily.temperature_2m_min?.[0];
     renderHistoryExact(histExact, todayTmax, todayTmin);
 
-    // UV
     renderUV(wx);
   }catch(e){ el.err.classList.remove('hidden'); }
   finally{ el.loading.classList.add('hidden'); }
