@@ -130,7 +130,7 @@
             <div class="glass p-2 rounded-lg"><div class="text-white/70 text-sm">Aktuálne</div><div id="uvNow" class="mono font-semibold">—</div></div>
             <div class="glass p-2 rounded-lg"><div class="text-white/70 text-sm">Dnešné maximum</div><div id="uvMax" class="mono font-semibold">—</div></div>
           </div>
-          <!-- bez textu „Úroveň“ a progress baru -->
+          <!-- bez „Úroveň“ a progress baru -->
         </div>
       </div>
     </div>
@@ -195,11 +195,6 @@ function descFor(c){
 function withIcon(code){ return `${iconFor(code)} ${descFor(code)}`; }
 function dd2dir(dd){ if(dd==null||isNaN(dd)) return '—'; const deg=((dd%360)+360)%360; const dirs=['S','SV','V','JV','J','JZ','Z','SZ']; return dirs[Math.floor((deg+22.5)/45)%8]; }
 function fmtTime(iso){ const d=new Date(iso); return d.getHours().toString().padStart(2,'0')+':00'; }
-
-/* platform */
-const isAndroid = () => /Android/i.test(navigator.userAgent);
-const isSecure = () => location.protocol === 'https:' || location.hostname === 'localhost';
-const isAndroidWebView = () => /; wv\)|Version\/\d+\.\d+ Chrome\/\d+\.\d+ Mobile Safari\/\d+/i.test(navigator.userAgent);
 
 /* API */
 async function geocode(q){
@@ -359,27 +354,58 @@ async function runByCoords(lat,lon){
   finally{ el.loading.classList.add('hidden'); }
 }
 
-/* AUTO GEO – len Android appka/webview; fallback Bratislava */
+/* === AUTO GEO PRI ŠTARTE (Android) → fallback Bratislava ===
+   - Skúsi getCurrentPosition hneď po load-e (aj vo WebView).
+   - Ak do 10 s nič, alebo error/deny → Bratislava.
+   - Pre vyššiu šancu použijeme watchPosition a po prvom fixe zrušíme. */
+function isAndroid(){ return /Android/i.test(navigator.userAgent); }
+function inSecureContext(){ return location.protocol==='https:' || location.hostname==='localhost' || location.origin.startsWith('file://'); }
+
 async function autoLocateOnStart(){
   const onAndroid = isAndroid();
-  const geoAvail = 'geolocation' in navigator;
-  // V prehliadači je potrebné HTTPS; vo WebView HTTPS nevyžadujem (rozhoduje WebView klient)
-  const allowedContext = isSecure() || isAndroidWebView();
+  const geoOK = 'geolocation' in navigator;
+  const ctxOK = inSecureContext();
 
-  if(onAndroid && geoAvail && allowedContext){
+  // 1) Pokus o auto-geo len na Androide a ak máme geolocation API
+  if(onAndroid && geoOK && ctxOK){
+    let settled=false, watchId=null;
+    const done = async (lat,lon) => {
+      if(settled) return; settled=true;
+      if(watchId!=null) try{ navigator.geolocation.clearWatch(watchId);}catch(_){}
+      await runByCoords(lat,lon);
+    };
+    const fail = async () => {
+      if(settled) return; settled=true;
+      if(watchId!=null) try{ navigator.geolocation.clearWatch(watchId);}catch(_){}
+      await runByCityName('Bratislava');
+    };
+
     try{
-      const pos = await new Promise((resolve,reject)=>{
-        navigator.geolocation.getCurrentPosition(resolve, reject, {
-          enableHighAccuracy:true, timeout:10000, maximumAge:0
-        });
-      });
-      await runByCoords(pos.coords.latitude, pos.coords.longitude);
+      // rýchly 1-shot (ak je povolenie a cache)
+      navigator.geolocation.getCurrentPosition(
+        pos => done(pos.coords.latitude, pos.coords.longitude),
+        _err => { /* nič, ideme na watch */ },
+        { enableHighAccuracy:true, timeout:3000, maximumAge:60000 }
+      );
+
+      // paralelný „watch“ – prvý fix ukončíme
+      watchId = navigator.geolocation.watchPosition(
+        pos => done(pos.coords.latitude, pos.coords.longitude),
+        _err => {}, // čakáme ešte do timeoutu
+        { enableHighAccuracy:true, maximumAge:0 }
+      );
+
+      // hard timeout 10s → fallback BA
+      setTimeout(()=>{ if(!settled) fail(); }, 10000);
       return;
-    }catch(e){
-      // zamietnuté / timeout / chyba -> padni na Bratislavu
+    }catch(_e){
+      // pre istotu BA
+      await runByCityName('Bratislava');
+      return;
     }
   }
-  // fallback pre všetko ostatné
+
+  // 2) Všetko ostatné → Bratislava
   await runByCityName('Bratislava');
 }
 
@@ -388,7 +414,7 @@ document.getElementById('searchForm').addEventListener('submit', (ev)=>{
   ev.preventDefault(); const q=el.input.value.trim(); if(q) runByCityName(q);
 });
 
-/* štart: auto GEO (Android), inak Bratislava */
+/* štart: automaticky Android geo, inak BA */
 autoLocateOnStart();
 </script>
 </body>
