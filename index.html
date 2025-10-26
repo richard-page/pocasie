@@ -8,7 +8,6 @@
 <style>
   :root { --glass: rgba(255,255,255,.08); --glass-b: rgba(255,255,255,.18); }
   * { box-sizing: border-box; }
-
   html, body { width:100%; max-width:100%; overflow-x:hidden; overscroll-behavior-x:none; touch-action:pan-y; }
   body { margin:0; background:linear-gradient(135deg,#0284c7,#06b6d4 55%,#10b981); color:#fff; font-family:system-ui,-apple-system,Segoe UI,Roboto,sans-serif; }
 
@@ -19,7 +18,6 @@
   .tbl th,.tbl td{ padding:.65rem .75rem; white-space:nowrap }
   .tbl thead th{ position:sticky; top:0; background:rgba(0,0,0,.15); backdrop-filter:blur(6px) }
   .val-bold{ font-weight:600; color:#fff }
-  .val-sub { color:rgba(255,255,255,.75); font-size:.9rem }
 
   .metric{ background:var(--glass); border:1px solid var(--glass-b); border-radius:.75rem; padding:.6rem .8rem }
   .metric .label{ color:rgba(255,255,255,.72); font-size:.8rem; line-height:1.15 }
@@ -29,26 +27,13 @@
   .uv-fill{ height:100%; border-radius:9999px }
 
   main, header, section, .glass, .grid, .flex { min-width:0 }
-  .overflow-x-auto { max-width:100%; overflow-x:auto; -webkit-overflow-scrolling:touch }
   img,video,canvas,table { max-width:100% }
 
-  .card{ border-radius:1rem; border:1px solid var(--glass-b); background:var(--glass); }
-  .acc-btn{ width:100%; padding:.9rem .95rem; display:flex; align-items:center; justify-content:space-between; gap:.75rem }
-  .acc-head{ display:flex; align-items:center; gap:.8rem; text-align:left }
-  .acc-right{ display:flex; align-items:center; gap:.5rem; margin-left:auto }
-  .chip{ font-size:.9rem; opacity:.95 }
-  .chev{ transition:transform .22s ease }
-  .acc-btn[aria-expanded="true"] .chev{ transform:rotate(180deg) }
-
-  .panel-wrap{ overflow:hidden; height:0; transition:height .22s ease }
-  .panel{ padding:0 .95rem .95rem .95rem; opacity:0; transform:translateY(-4px); transition:opacity .22s ease, transform .22s ease }
-  .panel.open{ opacity:1; transform:none }
-
-  /* --- PC layout fix: nezávislé výšky stĺpcov --- */
+  /* Layout: mobil grid 1 stĺpec, na ≥lg flex so zdieľanou výškou */
   .cols { display:grid; grid-template-columns:1fr; gap:1rem; }
-  @media (min-width:1024px){ /* lg breakpoint */
-    .cols { display:flex; align-items:flex-start; gap:1rem; }
-    .col-left, .col-right { align-self:flex-start; }
+  @media (min-width:1024px){
+    .cols { display:flex; align-items:stretch; gap:1rem; } /* STRETCH = rovnaká výška */
+    .col-left, .col-right { align-self:stretch; }
   }
 </style>
 </head>
@@ -56,13 +41,11 @@
 
 <header class="sticky-header w-full glass">
   <div class="w-full px-3 md:px-6 py-3 flex items-center gap-3">
-    <!-- nezalamovať, skrátiť s … -->
     <h1 class="text-base sm:text-lg md:text-xl font-semibold whitespace-nowrap truncate flex-shrink-0 max-w-[60vw]">
       Predpoveď počasia
     </h1>
     <div class="flex-1"></div>
 
-    <!-- FORM: mobil 2 riadky, ≥sm 1 riadok -->
     <form id="searchForm" class="grid grid-cols-1 sm:grid-cols-[1fr_auto] gap-2 w-full sm:w-[560px] max-w-full" novalidate>
       <input id="cityInput" placeholder="Zadaj mesto (napr. Hlohovec)"
              class="w-full px-4 py-2.5 rounded-lg bg-white/20 border border-white/20 placeholder-white/70 focus:outline-none focus:ring-2 focus:ring-white/50"
@@ -97,16 +80,16 @@
     </div>
   </section>
 
-  <!-- Layout sekcia – PC: flex s nezávislou výškou -->
+  <!-- HLAVNÝ LAYOUT -->
   <section class="cols">
-    <!-- Ľavý panel -->
-    <div class="col-left glass overflow-hidden lg:basis-7/12">
+    <!-- ĽAVÝ PANEL = musí siahať až dole -->
+    <div id="colLeft" class="col-left glass overflow-hidden lg:basis-7/12 flex flex-col min-h-0">
       <div class="flex items-center justify-between px-4 py-3 border-b border-white/20">
         <h2 class="text-lg font-semibold">24-hodinová predpoveď</h2>
       </div>
 
       <!-- Desktop tabuľka -->
-      <div class="hidden lg:block overflow-x-auto">
+      <div class="hidden lg:block overflow-x-auto flex-1 min-h-0">
         <table class="tbl w-full min-w-[600px] text-sm">
           <thead>
             <tr class="text-white/90">
@@ -126,8 +109,8 @@
       <div id="hourList" class="block lg:hidden p-2 space-y-2"></div>
     </div>
 
-    <!-- Pravý stĺpec -->
-    <div class="col-right lg:basis-5/12 space-y-4">
+    <!-- PRAVÝ STĹPEC -->
+    <div id="colRight" class="col-right lg:basis-5/12 space-y-4">
       <div class="glass">
         <div class="px-4 py-3 border-b border-white/20"><h2 class="text-lg font-semibold">10-dňová predpoveď</h2></div>
         <div id="dailyList" class="p-3 space-y-2"></div>
@@ -209,7 +192,6 @@ function descFor(c){
   return d[c] || '—';
 }
 
-/* slovenské 8-smerné skratky vetra */
 function dd2dir(dd){
   if(dd==null||isNaN(dd)) return '—';
   const deg=((dd%360)+360)%360;
@@ -295,6 +277,7 @@ function renderHourly(wx){
       <td class="val-bold mono">${cld!=null?`${cld}%`:'—'}</td>`;
     el.hourRows.appendChild(tr);
 
+    // MOBIL karta
     const card=document.createElement('div'); card.className='card';
     const btn=document.createElement('button'); btn.className='acc-btn'; btn.type='button'; btn.setAttribute('aria-expanded','false');
     btn.innerHTML=`
@@ -308,7 +291,6 @@ function renderHourly(wx){
         <span class="chip mono">${pop!=null?`${pop}%`:'—'} · ${pmm!=null?pmm.toFixed(1):'0.0'} mm</span>
         <svg class="chev" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="6 9 12 15 18 9"></polyline></svg>
       </div>`;
-
     const wrap=document.createElement('div'); wrap.className='panel-wrap';
     const panel=document.createElement('div'); panel.className='panel';
     panel.innerHTML=`
@@ -318,22 +300,10 @@ function renderHourly(wx){
         <div class="metric"><div class="label">Oblačnosť</div><div class="val mono">${cld!=null?`${cld}%`:'—'}</div></div>
         <div class="metric"><div class="label">Vietor</div><div class="val mono">${wind!=null?`${Math.round(wind)} km/h`:'—'} (${dd2dir(wdir)})</div></div>
       </div>`;
-    wrap.appendChild(panel);
-    card.appendChild(btn);
-    card.appendChild(wrap);
-    el.hourList.appendChild(card);
-
-    let open=false;
-    const adjust = () => { wrap.style.height = open ? panel.scrollHeight+'px' : '0px'; panel.classList.toggle('open', open); };
-    btn.addEventListener('click', ()=>{
-      const wasAuto = wrap.style.height==='auto';
-      if(wasAuto){ wrap.style.height = panel.scrollHeight+'px'; }
-      open=!open; btn.setAttribute('aria-expanded', String(open)); requestAnimationFrame(adjust);
-    });
-    wrap.addEventListener('transitionend', (e)=>{
-      if(e.propertyName!=='height') return;
-      if(open){ wrap.style.height='auto'; }
-    });
+    wrap.appendChild(panel); card.appendChild(btn); card.appendChild(wrap); el.hourList.appendChild(card);
+    let open=false; const adjust=()=>{ wrap.style.height=open?panel.scrollHeight+'px':'0px'; panel.classList.toggle('open',open); };
+    btn.addEventListener('click',()=>{ const wasAuto=wrap.style.height==='auto'; if(wasAuto){ wrap.style.height=panel.scrollHeight+'px'; } open=!open; btn.setAttribute('aria-expanded',String(open)); requestAnimationFrame(adjust); });
+    wrap.addEventListener('transitionend',(e)=>{ if(e.propertyName!=='height')return; if(open){ wrap.style.height='auto'; } });
   }
 }
 
@@ -412,6 +382,20 @@ function renderUV(wx){
   el.uvFill.style.cssText += ';'+cat.color;
 }
 
+/* ==== SYNC VÝŠKY: aby hodiny siahali až dole ==== */
+const left  = ()=>document.getElementById('colLeft');
+const right = ()=>document.getElementById('colRight');
+
+function syncHeights(){
+  const L = left(); const R = right(); if(!L||!R) return;
+  L.style.minHeight = '';
+  if (window.innerWidth >= 1024) { // lg
+    L.style.minHeight = R.offsetHeight + 'px';
+  }
+}
+window.addEventListener('resize', syncHeights);
+new ResizeObserver(syncHeights).observe(document.documentElement); // zachytí zmeny obsahu
+
 async function run(q){
   el.loading.classList.remove('hidden'); el.err.classList.add('hidden');
   try{
@@ -428,10 +412,17 @@ async function run(q){
     renderHistoryExact(histExact, todayTmax, todayTmin);
 
     renderUV(wx);
-  }catch(e){ el.err.classList.remove('hidden'); }
-  finally{ el.loading.classList.add('hidden'); }
+
+    // po vykreslení dát zarovnaj výšky
+    requestAnimationFrame(syncHeights);
+  }catch(e){
+    el.err.classList.remove('hidden');
+  }finally{
+    el.loading.classList.add('hidden');
+  }
 }
 
+/* submit aj Enter */
 el.form.addEventListener('submit', (ev)=>{
   ev.preventDefault();
   const q=el.input.value.trim();
