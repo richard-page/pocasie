@@ -74,6 +74,7 @@
 
 <main class="w-full px-2 md:px-4 lg:px-6 py-4 space-y-4">
 
+  <!-- Aktuálne -->
   <section id="current" class="hidden glass p-4">
     <div class="text-sm text-white/80"><span id="placeName">—</span></div>
     <div class="mt-2 flex flex-wrap items-center gap-4">
@@ -93,13 +94,15 @@
     </div>
   </section>
 
+  <!-- Layout -->
   <section class="cols">
+    <!-- 24 h predpoveď -->
     <div id="colLeft" class="col-left glass overflow-visible lg:overflow-hidden lg:basis-7/12 flex flex-col min-h-0">
       <div class="flex items-center justify-between px-4 py-3 border-b border-white/20">
         <h2 class="text-lg font-semibold">24-hodinová predpoveď</h2>
       </div>
 
-      <!-- Desktop tabuľka – min width zväčšená kvôli novým stĺpcom -->
+      <!-- Desktop tabuľka -->
       <div class="hidden lg:block overflow-x-auto flex-1 min-h-0">
         <table class="tbl w-full h-full min-w-[900px] text-sm">
           <thead>
@@ -122,6 +125,7 @@
       <div id="hourList" class="block lg:hidden p-2 space-y-2"></div>
     </div>
 
+    <!-- Pravý stĺpec -->
     <div id="colRight" class="col-right lg:basis-5/12 space-y-4">
       <div class="glass">
         <div class="px-4 py-3 border-b border-white/20"><h2 class="text-lg font-semibold">10-dňová predpoveď</h2></div>
@@ -203,6 +207,8 @@ function descFor(c){
            95:'Búrka',96:'Búrka s krúpami',99:'Silná búrka s krúpami'};
   return d[c] || '—';
 }
+
+/* 8-smerný vietor */
 function dd2dir(dd){
   if(dd==null||isNaN(dd)) return '—';
   const deg=((dd%360)+360)%360;
@@ -210,8 +216,19 @@ function dd2dir(dd){
   const idx=Math.floor((deg+22.5)/45)%8;
   return dirs[idx];
 }
+
 function fmtTime(iso){ const d=new Date(iso); return d.getHours().toString().padStart(2,'0')+':00'; }
 function ymd(d){ return d.toISOString().slice(0,10); }
+
+/* UV kategórie – v ženskom rode */
+function uvCategory(u){
+  if(u==null||isNaN(u)) return {name:'—',color:'background:rgba(255,255,255,.35);'};
+  if(u<=2)  return {name:'Nízka',         color:'background:#9AE6B4;'}; 
+  if(u<=5)  return {name:'Stredná',       color:'background:#F6E05E;'}; 
+  if(u<=7)  return {name:'Vysoká',        color:'background:#F6AD55;'}; 
+  if(u<=10) return {name:'Veľmi vysoká',  color:'background:#F56565;'}; 
+  return       {name:'Extrémna',       color:'background:#B83280;'};
+}
 
 async function geocode(q){
   const r=await fetch(`${GEO}/search?name=${encodeURIComponent(q)}&count=1&language=sk`);
@@ -240,7 +257,10 @@ function renderCurrent(city,wx){
   const c=wx.current, code=sanitizeCode(c.weather_code);
   el.curTemp.textContent=Math.round(c.temperature_2m)+'°';
   el.curDesc.textContent=descFor(code);
-  el.curWind.textContent=`${Math.round(c.wind_speed_10m)} km/h ${dd2dir(c.wind_direction_10m)}`;
+
+  /* ZMENA: zobraz iba rýchlosť vetra (bez smeru) */
+  el.curWind.textContent=`${Math.round(c.wind_speed_10m)} km/h`;
+
   el.curGust.textContent=`${Math.round(c.wind_gusts_10m)} km/h`;
   el.curHum.textContent=c.relative_humidity_2m+' %';
   el.curFeels.textContent=Math.round(c.apparent_temperature)+'°';
@@ -270,7 +290,7 @@ function renderHourly(wx){
     const cld=H.cloud_cover?.[i];
     const timeStr=fmtTime(H.time[i]);
 
-    /* Desktop riadok so stĺpcami Rosný bod + Tlak */
+    /* Desktop riadok – obsahuje Rosný bod + Tlak */
     const tr=document.createElement('tr'); tr.className='hover:bg-white/10';
     tr.innerHTML=`
       <td class="mono">${timeStr}</td>
@@ -283,7 +303,7 @@ function renderHourly(wx){
       <td class="val-bold mono">${pres!=null?Math.round(pres):'—'} hPa</td>`;
     el.hourRows.appendChild(tr);
 
-    /* Mobil karta (nezmenené) */
+    /* Mobil karta – default zatvorená */
     const card=document.createElement('div'); card.className='card';
     const btn=document.createElement('button'); btn.className='acc-btn'; btn.type='button';
     btn.setAttribute('aria-expanded','false');
@@ -346,7 +366,7 @@ function renderDaily(wx){
   }
 }
 
-function renderHistoryExact(hist, todayTmax, todayTmin){
+function renderHistoryExact(hist){
   const H=hist.daily;
   const dateStr=H.time?.[0];
   if(!dateStr){ el.historyExact.innerHTML='<div class="text-white/80">Dáta nie sú dostupné.</div>'; return; }
@@ -358,23 +378,17 @@ function renderHistoryExact(hist, todayTmax, todayTmin){
   const code=(H.weathercode?.[0] ?? 3);
   const desc=descFor(code);
 
-  const dMax = typeof todayTmax==='number' ? Math.round(todayTmax) : null;
-  const dMin = typeof todayTmin==='number' ? Math.round(todayTmin) : null;
-  const sign = v => (v>0?`+${v}`:`${v}`);
-
+  /* ZMENA: odstránený box "Rozdiel vs. dnes" */
   el.historyExact.innerHTML=`
     <div class="glass p-4 rounded-xl">
       <div>
         <div class="font-semibold text-lg">${dn} ${d.getDate()}.${(d.getMonth()+1).toString().padStart(2,'0')}.${d.getFullYear()}</div>
         <div class="text-white/80">${desc}</div>
       </div>
-      <div class="grid grid-cols-2 sm:grid-cols-4 gap-3 mt-4">
+      <div class="grid grid-cols-2 sm:grid-cols-3 gap-3 mt-4">
         <div class="metric"><div class="label">Max</div><div class="val mono">${tmax}°</div></div>
         <div class="metric"><div class="label">Min</div><div class="val mono">${tmin}°</div></div>
         <div class="metric"><div class="label">Zrážky</div><div class="val mono">${pr} mm</div></div>
-        <div class="metric"><div class="label">Rozdiel vs. dnes</div>
-          <div class="val mono">${(dMax!=null&&dMin!=null)?`${sign(tmax-dMax)}° / ${sign(tmin-dMin)}°`:'—'}</div>
-        </div>
       </div>
     </div>`;
 }
@@ -387,12 +401,15 @@ function renderUV(wx){
     if(new Date(H.time[i])>=now){ uvNow = H.uv_index?.[i] ?? null; break; }
   }
   const uvMax = wx.daily.uv_index_max?.[0] ?? null;
-  const u = Math.max(0, Math.min(11, (uvMax!=null?uvMax:uvNow)||0));
+  const cat = uvCategory(uvMax ?? uvNow);
+
   el.uvNow.textContent = uvNow!=null ? uvNow.toFixed(1) : '—';
   el.uvMax.textContent = uvMax!=null ? uvMax.toFixed(1) : '—';
-  el.uvCat.textContent = u<=2?'Nízky':u<=5?'Stredný':u<=7?'Vysoký':u<=10?'Veľmi vysoký':'Extrémny';
+  el.uvCat.textContent = cat.name;
+
+  const u = Math.max(0, Math.min(11, (uvMax!=null?uvMax:uvNow)||0));
   el.uvFill.style.width = (u/11*100).toFixed(0)+'%';
-  el.uvFill.style.cssText += ';'+(u<=2?'background:#9AE6B4;':u<=5?'background:#F6E05E;':u<=7?'background:#F6AD55;':u<=10?'background:#F56565;':'background:#B83280;');
+  el.uvFill.style.cssText += ';'+cat.color;
 }
 
 async function run(q){
@@ -405,11 +422,7 @@ async function run(q){
     renderCurrent(city,wx);
     renderHourly(wx);
     renderDaily(wx);
-
-    const todayTmax = wx.daily.temperature_2m_max?.[0];
-    const todayTmin = wx.daily.temperature_2m_min?.[0];
-    renderHistoryExact(histExact, todayTmax, todayTmin);
-
+    renderHistoryExact(histExact);
     renderUV(wx);
   }catch(e){
     el.err.classList.remove('hidden');
