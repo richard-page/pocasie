@@ -60,7 +60,6 @@
 
 <main class="w-full px-2 md:px-4 lg:px-6 py-4 space-y-4">
 
-  <!-- Aktuálne -->
   <section id="current" class="hidden glass p-4">
     <div class="text-sm text-white/80"><span id="placeName">—</span></div>
     <div class="mt-2 flex flex-wrap items-center gap-4">
@@ -80,17 +79,14 @@
     </div>
   </section>
 
-  <!-- HLAVNÝ LAYOUT -->
   <section class="cols">
-    <!-- ĽAVÝ PANEL = musí siahať až dole -->
     <div id="colLeft" class="col-left glass overflow-hidden lg:basis-7/12 flex flex-col min-h-0">
       <div class="flex items-center justify-between px-4 py-3 border-b border-white/20">
         <h2 class="text-lg font-semibold">24-hodinová predpoveď</h2>
       </div>
 
-      <!-- Desktop tabuľka -->
       <div class="hidden lg:block overflow-x-auto flex-1 min-h-0">
-        <table class="tbl w-full min-w-[600px] text-sm">
+        <table class="tbl w-full h-full min-w-[600px] text-sm">
           <thead>
             <tr class="text-white/90">
               <th class="text-left">Čas</th>
@@ -105,11 +101,9 @@
         </table>
       </div>
 
-      <!-- Mobil – rozbaľovacie karty -->
       <div id="hourList" class="block lg:hidden p-2 space-y-2"></div>
     </div>
 
-    <!-- PRAVÝ STĹPEC -->
     <div id="colRight" class="col-right lg:basis-5/12 space-y-4">
       <div class="glass">
         <div class="px-4 py-3 border-b border-white/20"><h2 class="text-lg font-semibold">10-dňová predpoveď</h2></div>
@@ -382,19 +376,8 @@ function renderUV(wx){
   el.uvFill.style.cssText += ';'+cat.color;
 }
 
-/* ==== SYNC VÝŠKY: aby hodiny siahali až dole ==== */
-const left  = ()=>document.getElementById('colLeft');
-const right = ()=>document.getElementById('colRight');
-
-function syncHeights(){
-  const L = left(); const R = right(); if(!L||!R) return;
-  L.style.minHeight = '';
-  if (window.innerWidth >= 1024) { // lg
-    L.style.minHeight = R.offsetHeight + 'px';
-  }
-}
-window.addEventListener('resize', syncHeights);
-new ResizeObserver(syncHeights).observe(document.documentElement); // zachytí zmeny obsahu
+/* ==== OPRAVA: Celý blok 'SYNC VÝŠKY' bol odstránený ==== */
+/* CSS trieda 'align-items:stretch' na '.cols' sa postará o rovnakú výšku */
 
 async function run(q){
   el.loading.classList.remove('hidden'); el.err.classList.add('hidden');
@@ -413,8 +396,8 @@ async function run(q){
 
     renderUV(wx);
 
-    // po vykreslení dát zarovnaj výšky
-    requestAnimationFrame(syncHeights);
+    /* OPRAVA: Odstránené volanie 'requestAnimationFrame(syncHeights);' */
+
   }catch(e){
     el.err.classList.remove('hidden');
   }finally{
