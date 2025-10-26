@@ -9,29 +9,14 @@
   :root { --glass: rgba(255,255,255,.08); --glass-b: rgba(255,255,255,.18); }
   *{ box-sizing:border-box }
   html,body{ width:100%; max-width:100%; overflow-x:hidden }
-  body{
-    margin:0; color:#fff;
-    font-family:system-ui,-apple-system,Segoe UI,Roboto,sans-serif;
-    background:#0e4d73; /* fallback */
-  }
+  body{ margin:0; color:#fff; font-family:system-ui,-apple-system,Segoe UI,Roboto,sans-serif; background:#0e4d73 }
   .glass{ background:var(--glass); border:1px solid var(--glass-b); backdrop-filter:blur(12px); border-radius:1rem }
   .mono{ font-feature-settings:"tnum" 1,"lnum" 1 }
-
-  /* HERO deň/noc */
-  .hero{
-    position:relative; isolation:isolate;
-    display:flex; flex-direction:column; align-items:center; justify-content:center;
-    min-height:56vh; width:100%;
-    padding:3.5rem 1rem 2rem; text-align:center; overflow:hidden
-  }
-  body[data-mode="day"] .hero{
-    background:linear-gradient(180deg,#3aa7e0 0%, #1e87c9 55%, #176ea9 100%)
-  }
-  body[data-mode="night"] .hero{
-    background:linear-gradient(180deg,#0b3550 0%, #0a2c44 60%, #08273b 100%)
-  }
+  .hero{ position:relative; isolation:isolate; display:flex; flex-direction:column; align-items:center; justify-content:center; min-height:56vh; width:100%; padding:3.5rem 1rem 2rem; text-align:center; overflow:hidden }
+  body[data-mode="day"] .hero{ background:linear-gradient(180deg,#3aa7e0 0%, #1e87c9 55%, #176ea9 100%) }
+  body[data-mode="night"] .hero{ background:linear-gradient(180deg,#0b3550 0%, #0a2c44 60%, #08273b 100%) }
   body[data-mode="night"] .hero::after{
-    content:""; position:absolute; inset:0; z-index:-1; pointer-events:none; opacity:.45;
+    content:""; position:absolute; inset:0; z-index:-1; opacity:.45;
     background:
       radial-gradient(2px 2px at 12% 18%, #fff 40%, transparent 42%),
       radial-gradient(1.5px 1.5px at 35% 28%, #fff 45%, transparent 47%),
@@ -45,13 +30,10 @@
   #heroPlace{ font-size:1.25rem; font-weight:600; opacity:.95; letter-spacing:.2px }
   #heroIcon{ width:120px; height:120px; margin:1.2rem auto }
   #heroTemp{ font-size:6.5rem; line-height:1; font-weight:700; letter-spacing:2px }
-
   .sticky-header{ position:sticky; top:0; z-index:40 }
   .tbl th,.tbl td{ padding:.65rem .75rem; white-space:nowrap }
   .tbl thead th{ position:sticky; top:0; background:rgba(0,0,0,.15); backdrop-filter:blur(6px) }
   .val-bold{ font-weight:600; color:#fff }
-
-  /* Mobilný akordeón (24h) */
   .card{ border-radius:1rem; border:1px solid var(--glass-b); background:var(--glass) }
   .acc-btn{ width:100%; background:none; border:0; cursor:pointer; padding:.9rem .95rem; display:flex; align-items:center; gap:.75rem; text-align:left; color:#fff }
   .acc-head{ flex:1; min-width:0 }
@@ -60,14 +42,12 @@
   .acc-btn[aria-expanded="true"] .chev{ transform:rotate(180deg) }
   .panel-wrap{ height:0; overflow:hidden; transition:height .22s ease }
   .panel{ padding:0 .95rem .95rem .95rem }
-
   .cols{ display:grid; grid-template-columns:1fr; gap:1rem }
   @media (min-width:1024px){ .cols{ display:flex; gap:1rem } .col-left,.col-right{ align-self:stretch } }
 </style>
 </head>
 <body data-mode="day">
 
-<!-- HERO -->
 <section class="hero">
   <div id="heroPlace">—</div>
   <div id="heroIcon" aria-hidden="true"></div>
@@ -78,7 +58,7 @@
   <div class="w-full px-3 md:px-6 py-3 flex items-center gap-3">
     <div class="font-semibold">Predpoveď počasia</div>
     <div class="flex-1"></div>
-    <form id="searchForm" class="grid grid-cols-1 sm:grid-cols-[1fr_auto] gap-2 w-full sm:w-[560px] max-w-full" novalidate>
+    <form id="searchForm" class="grid grid-cols-1 sm:grid-cols-[1fr_auto] gap-2 w-full sm:w-[560px]" novalidate>
       <input id="cityInput" placeholder="Zadaj mesto (napr. Hlohovec)"
              class="w-full px-4 py-2.5 rounded-lg bg-white/20 border border-white/20 placeholder-white/70 focus:outline-none focus:ring-2 focus:ring-white/50"
              autocomplete="off" inputmode="search" type="search" />
@@ -91,9 +71,7 @@
 </header>
 
 <main class="w-full px-2 md:px-4 lg:px-6 py-4 space-y-4">
-
   <section class="cols">
-    <!-- 24h -->
     <div class="col-left glass overflow-visible lg:overflow-hidden lg:basis-7/12 flex flex-col min-h-0">
       <div class="flex items-center justify-between px-4 py-3 border-b border-white/20">
         <h2 class="text-lg font-semibold">24-hodinová predpoveď</h2>
@@ -130,7 +108,6 @@
             <div class="glass p-2 rounded-lg"><div class="text-white/70 text-sm">Aktuálne</div><div id="uvNow" class="mono font-semibold">—</div></div>
             <div class="glass p-2 rounded-lg"><div class="text-white/70 text-sm">Dnešné maximum</div><div id="uvMax" class="mono font-semibold">—</div></div>
           </div>
-          <!-- žiadna „Úroveň“ ani progress bar -->
         </div>
       </div>
     </div>
@@ -195,15 +172,7 @@ function descFor(c){
 function withIcon(code){ return `${iconFor(code)} ${descFor(code)}`; }
 function dd2dir(dd){ if(dd==null||isNaN(dd)) return '—'; const deg=((dd%360)+360)%360; const dirs=['S','SV','V','JV','J','JZ','Z','SZ']; return dirs[Math.floor((deg+22.5)/45)%8]; }
 function fmtTime(iso){ const d=new Date(iso); return d.getHours().toString().padStart(2,'0')+':00'; }
-
-/* vzdialenosť (Haversine) – pre rozumný refresh pri watchPosition */
-function distMeters(a,b){
-  const R=6371000, toRad=deg=>deg*Math.PI/180;
-  const dLat=toRad(b.lat-a.lat), dLon=toRad(b.lon-a.lon);
-  const lat1=toRad(a.lat), lat2=toRad(b.lat);
-  const s=Math.sin(dLat/2)**2 + Math.cos(lat1)*Math.cos(lat2)*Math.sin(dLon/2)**2;
-  return 2*R*Math.asin(Math.sqrt(s));
-}
+function distMeters(a,b){ const R=6371000, toRad=deg=>deg*Math.PI/180; const dLat=toRad(b.lat-a.lat), dLon=toRad(b.lon-a.lon); const lat1=toRad(a.lat), lat2=toRad(b.lat); const s=Math.sin(dLat/2)**2 + Math.cos(lat1)*Math.cos(lat2)*Math.sin(dLon/2)**2; return 2*R*Math.asin(Math.sqrt(s)); }
 
 /* API */
 async function geocode(q){
@@ -268,7 +237,6 @@ function renderHourly(wx){
       <td class="val-bold mono">${pres!=null?Math.round(pres):'—'} hPa</td>`;
     el.hourRows.appendChild(tr);
 
-    /* mobil karta */
     const card=document.createElement('div'); card.className='card';
     const btn=document.createElement('button'); btn.className='acc-btn'; btn.type='button'; btn.setAttribute('aria-expanded','false');
     btn.innerHTML=`
@@ -356,69 +324,55 @@ async function runByCoords(lat,lon, cityMeta=null){
     const city = cityMeta || await reverseGeocode(lat,lon);
     const wx   = await fetchWx(lat,lon);
     const hist = await fetchHistoryExact(lat,lon);
-    renderHero(city,wx);
-    renderHourly(wx);
-    renderDaily(wx);
-    renderHistoryExact(hist);
-    renderUV(wx);
+    renderHero(city,wx); renderHourly(wx); renderDaily(wx); renderHistoryExact(hist); renderUV(wx);
     el.input.value = city.name || '';
     lastPosition = {lat,lon};
   }catch(e){ el.err.classList.remove('hidden'); }
   finally{ el.loading.classList.add('hidden'); }
 }
 
-/* Geolokácia: povolenie + sledovanie */
-let watchId=null;
-let lastPosition=null;
-const MIN_MOVE_METERS = 500;           // kedy refreshnúť (≈ pol kilometra)
-const MIN_REFRESH_MS  = 60_000;        // aspoň minúta medzi requestmi
+/* GEO – iba Android */
+const isAndroid = () => /Android/i.test(navigator.userAgent) && 'geolocation' in navigator;
+
+let watchId=null, lastPosition=null;
+const MIN_MOVE_METERS = 500;
+const MIN_REFRESH_MS  = 60_000;
 let lastRefreshTs = 0;
 
-async function requestLocationOnce(){
-  return new Promise((resolve,reject)=>{
-    if(!('geolocation' in navigator)) return reject(new Error('no-geo'));
-    navigator.geolocation.getCurrentPosition(
-      pos=>resolve(pos),
-      err=>reject(err),
-      { enableHighAccuracy:true, timeout:10000, maximumAge:0 }
-    );
-  });
+function distOk(cur){
+  if(!lastPosition) return true;
+  return distMeters(lastPosition, cur) > MIN_MOVE_METERS;
 }
+function timeOk(){ return (Date.now() - lastRefreshTs) > MIN_REFRESH_MS; }
+
 function startWatching(){
-  if(!('geolocation' in navigator)) return;
-  if(watchId!=null) return;
+  if(!isAndroid() || watchId!=null) return;
   watchId = navigator.geolocation.watchPosition(
     pos=>{
-      const now = Date.now();
-      const cur = {lat:pos.coords.latitude, lon:pos.coords.longitude};
-      const movedEnough = !lastPosition || distMeters(lastPosition, cur) > MIN_MOVE_METERS;
-      const spacedOut   = (now - lastRefreshTs) > MIN_REFRESH_MS;
-      if(movedEnough && spacedOut){
-        lastRefreshTs = now;
-        runByCoords(cur.lat, cur.lon).catch(()=>{});
-      }
+      const cur={lat:pos.coords.latitude, lon:pos.coords.longitude};
+      if(distOk(cur) && timeOk()){ lastRefreshTs=Date.now(); runByCoords(cur.lat,cur.lon).catch(()=>{}); }
     },
-    err=>{ /* ignoruj – používateľ mohol zakázať */ },
+    _err=>{},
     { enableHighAccuracy:true, timeout:15000, maximumAge:15000 }
   );
 }
-async function initGeolocationFlow(){
-  try{
-    // Permissions API (ak je k dispozícii)
-    const perm = await (navigator.permissions?.query({name:'geolocation'}) ?? Promise.resolve({state:'prompt'}));
-    if(perm.state === 'granted' || perm.state === 'prompt'){
-      // vyvolá systémové okno (Android/iOS)
-      const pos = await requestLocationOnce();
+
+async function initFlow(){
+  if(isAndroid()){
+    try{
+      // vyvolá natívne Android dialógové okno
+      const pos = await new Promise((res,rej)=>{
+        navigator.geolocation.getCurrentPosition(res,rej,{ enableHighAccuracy:true, timeout:10000, maximumAge:0 });
+      });
       await runByCoords(pos.coords.latitude, pos.coords.longitude);
       startWatching();
-    }else{
-      // denied -> nič, necháme ručné vyhľadávanie
-      await runByCityName('Hlohovec');
+      return;
+    }catch(_e){
+      // odmietnuté / chyba -> fallback
     }
-  }catch{
-    // chyba alebo odmietnuté -> fallback
-    await runByCityName('Hlohovec');
   }
+  // PC a iné platformy: žiadne pýtanie polohy, rovno predvolené mesto
+  await runByCityName('Hlohovec');
 }
 
 /* UI */
@@ -428,8 +382,8 @@ document.getElementById('searchForm').addEventListener('submit', (ev)=>{
   if(q) runByCityName(q);
 });
 
-/* štart: najprv sa spýtaj polohu */
-initGeolocationFlow();
+/* štart */
+initFlow();
 </script>
 </body>
 </html>
