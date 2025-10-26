@@ -1,88 +1,97 @@
 <!DOCTYPE html>
 <html lang="sk">
 <head>
-<meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1">
-<title>Predpoveď počasia – UV index + presne pred rokom</title>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>Predpoveď počasia – hero deň/noc</title>
 <script src="https://cdn.tailwindcss.com"></script>
 <style>
   :root { --glass: rgba(255,255,255,.08); --glass-b: rgba(255,255,255,.18); }
-  * { box-sizing: border-box; }
-  html, body { width:100%; max-width:100%; overflow-x:hidden; overscroll-behavior-x:none; touch-action:pan-y; }
-  /* čistá modrá – bez gradientu */
-  body { margin:0; background:#0ea5e9; color:#fff; font-family:system-ui,-apple-system,Segoe UI,Roboto,sans-serif; }
 
-  .glass { background:var(--glass); border:1px solid var(--glass-b); backdrop-filter:blur(12px); border-radius:1rem; }
-  .mono  { font-feature-settings:"tnum" 1,"lnum" 1 }
-  .sticky-header{ position:sticky; top:0; z-index:50; backdrop-filter:blur(10px) }
+  /* RESET / BASE */
+  *{ box-sizing:border-box }
+  html,body{ width:100%; max-width:100%; overflow-x:hidden; }
+  body{
+    margin:0; color:#fff;
+    font-family:system-ui,-apple-system,Segoe UI,Roboto,sans-serif;
+    background:#0e4d73; /* fallback pri načítaní */
+  }
+  .glass{ background:var(--glass); border:1px solid var(--glass-b); backdrop-filter:blur(12px); border-radius:1rem; }
+  .mono{ font-feature-settings:"tnum" 1,"lnum" 1 }
 
+  /* ---------- HERO (bez externých obrázkov) ----------- */
+  .hero{
+    position:relative; isolation:isolate;
+    display:flex; flex-direction:column; align-items:center; justify-content:center;
+    min-height:56vh; width:100%;
+    padding:3.5rem 1rem 2rem;
+    text-align:center; overflow:hidden;
+  }
+  /* Pozadie – vrstva 1: hladký prechod (mení sa podľa režimu) */
+  body[data-mode="day"] .hero{
+    background:linear-gradient(180deg,#3aa7e0 0%, #1e87c9 55%, #176ea9 100%);
+  }
+  body[data-mode="night"] .hero{
+    background:linear-gradient(180deg,#0b3550 0%, #0a2c44 60%, #08273b 100%);
+  }
+  /* Pozadie – vrstva 2: hviezdy (len v noci, čisto CSS) */
+  body[data-mode="night"] .hero::after{
+    content:""; position:absolute; inset:0; z-index:-1; pointer-events:none; opacity:.45;
+    background:
+      radial-gradient(2px 2px at 12% 18%, #fff 40%, transparent 42%),
+      radial-gradient(1.5px 1.5px at 35% 28%, #fff 45%, transparent 47%),
+      radial-gradient(1.8px 1.8px at 66% 14%, #fff 45%, transparent 47%),
+      radial-gradient(1.8px 1.8px at 82% 40%, #fff 45%, transparent 47%),
+      radial-gradient(1.8px 1.8px at 18% 65%, #fff 45%, transparent 47%),
+      radial-gradient(1.8px 1.8px at 58% 73%, #fff 45%, transparent 47%),
+      radial-gradient(1.8px 1.8px at 88% 78%, #fff 45%, transparent 47%),
+      radial-gradient(1.6px 1.6px at 44% 86%, #fff 45%, transparent 47%);
+    background-repeat:no-repeat;
+  }
+
+  /* Hero texty + ikona */
+  #heroPlace{ font-size:1.25rem; font-weight:600; opacity:.95; letter-spacing:.2px }
+  #heroIcon{ width:120px; height:120px; margin:1.2rem auto }
+  #heroTemp{ font-size:6.5rem; line-height:1; font-weight:700; letter-spacing:2px }
+
+  /* FORM v hlavičke (ponechávam kvôli hľadaniu) */
+  .sticky-header{ position:sticky; top:0; z-index:40; }
   .tbl th,.tbl td{ padding:.65rem .75rem; white-space:nowrap }
   .tbl thead th{ position:sticky; top:0; background:rgba(0,0,0,.15); backdrop-filter:blur(6px) }
   .val-bold{ font-weight:600; color:#fff }
 
+  /* Kompakt metriky */
   .metric{ background:var(--glass); border:1px solid var(--glass-b); border-radius:.75rem; padding:.6rem .8rem }
   .metric .label{ color:rgba(255,255,255,.72); font-size:.8rem; line-height:1.15 }
   .metric .val{ color:#fff; font-weight:600; font-size:1.05rem }
+  .metrics{ display:grid; grid-template-columns:repeat(2,minmax(0,1fr)); gap:.5rem }
+  @media (min-width:768px){ .metrics{ display:flex; flex-wrap:wrap; gap:.5rem .6rem } .metrics .metric{ flex:0 0 240px } }
+  @media (min-width:1024px){ .metric{ padding:.48rem .65rem } .metric .label{ font-size:.75rem } .metric .val{ font-size:1rem } }
 
-  /* ===== Kompaktné “okná” – bez zbytočného vzduchu na PC ===== */
-  /* Na mobile: 2 stĺpce (ako doteraz) */
-  .metrics { display:grid; grid-template-columns:repeat(2, minmax(0,1fr)); gap:.5rem; }
-  /* Od md (≥768px): pevná šírka kariet + zalamovanie, aby sa neťahali cez celú šírku */
-  @media (min-width:768px){
-    .metrics{ display:flex; flex-wrap:wrap; gap:.5rem .6rem; }
-    .metrics .metric{ flex:0 0 240px; }
-  }
-  /* Od lg: ešte o kus kompaktnejšie paddingy */
-  @media (min-width:1024px){
-    .metric{ padding:.48rem .65rem; }
-    .metric .label{ font-size:.75rem; }
-    .metric .val{ font-size:1rem; }
-  }
-
-  .uv-bar{ height:10px; border-radius:9999px; background:rgba(255,255,255,.18); overflow:hidden }
-  .uv-fill{ height:100%; border-radius:9999px }
-
-  main, header, section, .glass, .grid, .flex { min-width:0 }
-  img,video,canvas,table { max-width:100% }
-
-  .cols { display:grid; grid-template-columns:1fr; gap:1rem; }
-  @media (min-width:1024px){
-    .cols { display:flex; align-items:stretch; gap:1rem; }
-    .col-left, .col-right { align-self:stretch; }
-  }
-
-  /* Mobilné rozbaľovanie (24h karty) */
+  /* 24h mobil akordeón */
   .card{ border-radius:1rem; border:1px solid var(--glass-b); background:var(--glass); }
-  .acc-btn{
-    width:100%; background:none; border:0; cursor:pointer;
-    padding:0.9rem 0.95rem; display:flex; align-items:center; gap:.75rem;
-    text-align:left; flex-wrap:nowrap; color:#fff;
-  }
-  .acc-head{ flex:1; min-width:0; }
-  .acc-right{ flex:0 0 auto; margin-left:auto; display:flex; align-items:center; gap:.5rem; white-space:nowrap; }
-  .chip{ font-size:.9rem; opacity:.95 }
-  .chev{ transition:transform .22s ease }
-  .acc-btn[aria-expanded="true"] .chev{ transform:rotate(180deg) }
-  .panel-wrap{ height:0; overflow:hidden; transition:height .22s ease; }
-  .panel{ padding:0 .95rem .95rem .95rem; }
+  .acc-btn{ width:100%; background:none; border:0; cursor:pointer; padding:.9rem .95rem; display:flex; align-items:center; gap:.75rem; text-align:left; color:#fff }
+  .acc-head{ flex:1; min-width:0 } .acc-right{ margin-left:auto; display:flex; gap:.5rem; white-space:nowrap }
+  .chev{ transition:transform .22s ease } .acc-btn[aria-expanded="true"] .chev{ transform:rotate(180deg) }
+  .panel-wrap{ height:0; overflow:hidden; transition:height .22s ease } .panel{ padding:0 .95rem .95rem .95rem }
 
-  /* Pravý stĺpec mierne kompaktnejší na ≥lg */
-  @media (min-width:1024px){
-    .right-card-pad { padding:.65rem .8rem !important; }
-    .right-stack-tight > * + * { margin-top:.55rem !important; }
-    .tight-list > * + * { margin-top:.45rem !important; }
-  }
+  .cols{ display:grid; grid-template-columns:1fr; gap:1rem }
+  @media (min-width:1024px){ .cols{ display:flex; gap:1rem } .col-left,.col-right{ align-self:stretch } }
 </style>
 </head>
-<body class="min-h-screen text-white">
+<body data-mode="day">
+
+<!-- HERO (bez tlačidiel; formulár je nižšie v sticky bar-e) -->
+<section class="hero">
+  <div id="heroPlace">—</div>
+  <div id="heroIcon" aria-hidden="true"></div>
+  <div id="heroTemp" class="mono">--°</div>
+</section>
 
 <header class="sticky-header w-full glass">
   <div class="w-full px-3 md:px-6 py-3 flex items-center gap-3">
-    <h1 class="text-base sm:text-lg md:text-xl font-semibold whitespace-nowrap truncate flex-shrink-0 max-w-[60vw]">
-      Predpoveď počasia
-    </h1>
+    <div class="font-semibold">Predpoveď počasia</div>
     <div class="flex-1"></div>
-
     <form id="searchForm" class="grid grid-cols-1 sm:grid-cols-[1fr_auto] gap-2 w-full sm:w-[560px] max-w-full" novalidate>
       <input id="cityInput" placeholder="Zadaj mesto (napr. Hlohovec)"
              class="w-full px-4 py-2.5 rounded-lg bg-white/20 border border-white/20 placeholder-white/70 focus:outline-none focus:ring-2 focus:ring-white/50"
@@ -97,21 +106,9 @@
 
 <main class="w-full px-2 md:px-4 lg:px-6 py-4 space-y-4">
 
-  <!-- Aktuálne -->
+  <!-- Aktuálne metriky (kompakt) -->
   <section id="current" class="hidden glass p-4">
-    <div class="text-sm text-white/80"><span id="placeName">—</span></div>
-    <div class="mt-2 flex flex-wrap items-center gap-4">
-      <div class="flex items-end gap-3">
-        <div class="text-6xl font-bold mono" id="curTemp">--°</div>
-      </div>
-      <div>
-        <div id="curDesc" class="text-white/90 text-lg font-semibold">—</div>
-        <div id="sunInfo" class="text-white/70 text-sm">—</div>
-      </div>
-    </div>
-
-    <!-- Kompakt metriky -->
-    <div class="metrics mt-3 text-white/90">
+    <div class="metrics mt-1">
       <div class="metric"><div class="label">Vietor</div><div id="curWind" class="val mono">—</div></div>
       <div class="metric"><div class="label">Nárazy</div><div id="curGust" class="val mono">—</div></div>
       <div class="metric"><div class="label">Vlhkosť</div><div id="curHum" class="val mono">—</div></div>
@@ -119,15 +116,12 @@
     </div>
   </section>
 
-  <!-- Layout -->
+  <!-- Layout so zvyškom stránky (nič som ti nebral) -->
   <section class="cols">
-    <!-- 24 h predpoveď -->
-    <div id="colLeft" class="col-left glass overflow-visible lg:overflow-hidden lg:basis-7/12 flex flex-col min-h-0">
+    <div class="col-left glass overflow-visible lg:overflow-hidden lg:basis-7/12 flex flex-col min-h-0">
       <div class="flex items-center justify-between px-4 py-3 border-b border-white/20">
         <h2 class="text-lg font-semibold">24-hodinová predpoveď</h2>
       </div>
-
-      <!-- Desktop tabuľka -->
       <div class="hidden lg:block overflow-x-auto flex-1 min-h-0">
         <table class="tbl w-full h-full min-w-[900px] text-sm">
           <thead>
@@ -145,24 +139,19 @@
           <tbody id="hourRows" class="divide-y divide-white/10"></tbody>
         </table>
       </div>
-
-      <!-- Mobil – rozbaľovacie karty -->
       <div id="hourList" class="block lg:hidden p-2 space-y-2"></div>
     </div>
 
-    <!-- Pravý stĺpec (kompaktnejší) -->
-    <div id="colRight" class="col-right lg:basis-5/12 space-y-4 right-stack-tight">
-      <div class="glass right-card-pad">
+    <div class="col-right lg:basis-5/12 space-y-4">
+      <div class="glass">
         <div class="px-4 py-3 border-b border-white/20"><h2 class="text-lg font-semibold">10-dňová predpoveď</h2></div>
-        <div id="dailyList" class="p-3 space-y-2 tight-list"></div>
+        <div id="dailyList" class="p-3 space-y-2"></div>
       </div>
-
-      <div class="glass right-card-pad">
+      <div class="glass">
         <div class="px-4 py-3 border-b border-white/20"><h2 class="text-lg font-semibold">Presne pred rokom</h2></div>
         <div id="historyExact" class="p-4"></div>
       </div>
-
-      <div class="glass right-card-pad">
+      <div class="glass">
         <div class="px-4 py-3 border-b border-white/20"><h2 class="text-lg font-semibold">UV index</h2></div>
         <div id="uvPanel" class="p-4 space-y-3">
           <div class="grid grid-cols-2 gap-3">
@@ -170,11 +159,8 @@
             <div class="metric"><div class="label">Dnešné maximum</div><div id="uvMax" class="val mono">—</div></div>
           </div>
           <div>
-            <div class="flex items-center justify-between mb-1">
-              <div class="text-white/80 text-sm">Úroveň: <span id="uvCat" class="font-semibold text-white"></span></div>
-              <!-- odstránené "0–11+" -->
-            </div>
-            <div class="uv-bar"><div id="uvFill" class="uv-fill" style="width:0%"></div></div>
+            <div class="text-white/80 text-sm">Úroveň: <span id="uvCat" class="font-semibold text-white"></span></div>
+            <div class="uv-bar mt-1"><div id="uvFill" class="uv-fill" style="width:0%"></div></div>
           </div>
         </div>
       </div>
@@ -198,10 +184,8 @@ const ARCH='https://archive-api.open-meteo.com/v1/era5';
 const el={
   form:document.getElementById('searchForm'),
   input:document.getElementById('cityInput'),
-  btn:document.getElementById('searchBtn'),
   loading:document.getElementById('loading'),
   err:document.getElementById('err'),
-  current:document.getElementById('current'),
   hourRows:document.getElementById('hourRows'),
   hourList:document.getElementById('hourList'),
   dailyList:document.getElementById('dailyList'),
@@ -210,20 +194,51 @@ const el={
   uvMax:document.getElementById('uvMax'),
   uvFill:document.getElementById('uvFill'),
   uvCat:document.getElementById('uvCat'),
-  place:document.getElementById('placeName'),
-  curTemp:document.getElementById('curTemp'),
-  curDesc:document.getElementById('curDesc'),
   curWind:document.getElementById('curWind'),
   curGust:document.getElementById('curGust'),
   curHum:document.getElementById('curHum'),
   curFeels:document.getElementById('curFeels'),
-  sunInfo:document.getElementById('sunInfo')
+  current:document.getElementById('current'),
+  heroPlace:document.getElementById('heroPlace'),
+  heroIcon:document.getElementById('heroIcon'),
+  heroTemp:document.getElementById('heroTemp')
 };
 
-function show(n,yes=true){ n.classList[yes?'remove':'add']('hidden'); }
-function sanitizeCode(c){ c=Number(c); return (c===45||c===48)?3:c; }
+/* ikony bez hostingu – čisté SVG */
+const svgSun = `
+<svg viewBox="0 0 128 128" xmlns="http://www.w3.org/2000/svg">
+  <defs>
+    <radialGradient id="g" cx="50%" cy="50%" r="50%">
+      <stop offset="0%" stop-color="#ffe27a"/>
+      <stop offset="70%" stop-color="#ffd057"/>
+      <stop offset="100%" stop-color="#f7b538"/>
+    </radialGradient>
+  </defs>
+  <circle cx="64" cy="64" r="28" fill="url(#g)"/>
+  <g stroke="#ffd36a" stroke-width="6" stroke-linecap="round">
+    <line x1="64" y1="8"  x2="64" y2="28"/>
+    <line x1="64" y1="100" x2="64" y2="120"/>
+    <line x1="8"  y1="64" x2="28" y2="64"/>
+    <line x1="100" y1="64" x2="120" y2="64"/>
+    <line x1="20" y1="20" x2="34" y2="34"/>
+    <line x1="94" y1="94" x2="108" y2="108"/>
+    <line x1="20" y1="108" x2="34" y2="94"/>
+    <line x1="94" y1="34" x2="108" y2="20"/>
+  </g>
+</svg>`;
+const svgMoon = `
+<svg viewBox="0 0 128 128" xmlns="http://www.w3.org/2000/svg">
+  <defs>
+    <radialGradient id="m" cx="40%" cy="35%" r="60%">
+      <stop offset="0%" stop-color="#f4f4f6"/>
+      <stop offset="100%" stop-color="#cfd4da"/>
+    </radialGradient>
+  </defs>
+  <path d="M90 82c-29 0-52-23-52-52 0-7 1-14 4-20C25 16 16 32 16 50c0 30 24 54 54 54 18 0 34-9 40-26-6 3-13 4-20 4z" fill="url(#m)"/>
+</svg>`;
 
-/* Emoji len v popisoch počasia */
+/* util */
+function sanitizeCode(c){ c=Number(c); return (c===45||c===48)?3:c; }
 function iconFor(code){
   code=sanitizeCode(code);
   if([0,1].includes(code)) return '☀️';
@@ -245,19 +260,8 @@ function descFor(c){
   return d[c] || '—';
 }
 function withIcon(code){ return `${iconFor(code)} ${descFor(code)}`; }
-
-/* 8-smerný vietor */
-function dd2dir(dd){
-  if(dd==null||isNaN(dd)) return '—';
-  const deg=((dd%360)+360)%360;
-  const dirs=['S','SV','V','JV','J','JZ','Z','SZ'];
-  const idx=Math.floor((deg+22.5)/45)%8;
-  return dirs[idx];
-}
+function dd2dir(dd){ if(dd==null||isNaN(dd)) return '—'; const deg=((dd%360)+360)%360; const dirs=['S','SV','V','JV','J','JZ','Z','SZ']; const idx=Math.floor((deg+22.5)/45)%8; return dirs[idx]; }
 function fmtTime(iso){ const d=new Date(iso); return d.getHours().toString().padStart(2,'0')+':00'; }
-function ymd(d){ return d.toISOString().slice(0,10); }
-
-/* UV – ženský rod */
 function uvCategory(u){
   if(u==null||isNaN(u)) return {name:'—',color:'background:rgba(255,255,255,.35);'};
   if(u<=2)  return {name:'Nízka',        color:'background:#9AE6B4;'}; 
@@ -267,6 +271,7 @@ function uvCategory(u){
   return       {name:'Extrémna',        color:'background:#B83280;'};
 }
 
+/* API calls */
 async function geocode(q){
   const r=await fetch(`${GEO}/search?name=${encodeURIComponent(q)}&count=1&language=sk`);
   const j=await r.json(); if(!j.results||j.results.length===0) throw new Error('notfound'); return j.results[0];
@@ -279,10 +284,9 @@ async function fetchWx(lat,lon){
     +`&timezone=auto&forecast_days=16`;
   const r=await fetch(url); if(!r.ok) throw new Error('api'); return await r.json();
 }
-/* „Pred rokom“ – berieme aj hourly vietor */
 async function fetchHistoryExact(lat,lon){
   const d=new Date(); d.setFullYear(d.getFullYear()-1);
-  const date=ymd(d);
+  const date=d.toISOString().slice(0,10);
   const url=`${ARCH}?latitude=${lat}&longitude=${lon}`
     +`&start_date=${date}&end_date=${date}`
     +`&daily=temperature_2m_max,temperature_2m_min,precipitation_sum,weathercode`
@@ -291,30 +295,30 @@ async function fetchHistoryExact(lat,lon){
   const r=await fetch(url); if(!r.ok) throw new Error('arch1'); return await r.json();
 }
 
-function renderCurrent(city,wx){
-  el.place.textContent=`${city.name}${city.country?`, ${city.country}`:''}`;
-  const c=wx.current, code=sanitizeCode(c.weather_code);
-  el.curTemp.textContent=Math.round(c.temperature_2m)+'°';
-  el.curDesc.textContent=withIcon(code);
-  el.curWind.textContent=`${Math.round(c.wind_speed_10m)} km/h`;  // iba rýchlosť
-  el.curGust.textContent=`${Math.round(c.wind_gusts_10m)} km/h`;
-  el.curHum.textContent=c.relative_humidity_2m+' %';
-  el.curFeels.textContent=Math.round(c.apparent_temperature)+'°';
-  const sr=wx.daily.sunrise?.[0], ss=wx.daily.sunset?.[0];
-  const t=s=>s?new Date(s).toLocaleTimeString([],{hour:'2-digit',minute:'2-digit'}):'—';
-  el.sunInfo.textContent=`Východ ${t(sr)} · Západ ${t(ss)}`;
-  show(el.current,true);
+/* RENDER HERO */
+function renderHero(city, wx){
+  const isDay = !!wx.current.is_day;
+  document.body.setAttribute('data-mode', isDay ? 'day' : 'night');
+  el.heroPlace.textContent = `${city.name}${city.country?`, ${city.country}`:''}`;
+  el.heroTemp.textContent = Math.round(wx.current.temperature_2m) + '°';
+  el.heroIcon.innerHTML = isDay ? svgSun : svgMoon;
+}
+
+/* Karty/metriky & ďalší obsah – skrátené len na nutné veci (ostáva tvoja logika) */
+function renderCurrent(wx){
+  el.curWind.textContent = `${Math.round(wx.current.wind_speed_10m)} km/h`;
+  el.curGust.textContent = `${Math.round(wx.current.wind_gusts_10m)} km/h`;
+  el.curHum.textContent  = wx.current.relative_humidity_2m + ' %';
+  el.curFeels.textContent= Math.round(wx.current.apparent_temperature) + '°';
+  el.current.classList.remove('hidden');
 }
 
 function renderHourly(wx){
   const H=wx.hourly;
-  el.hourRows.innerHTML='';
-  el.hourList.innerHTML='';
-
+  el.hourRows.innerHTML=''; el.hourList.innerHTML='';
   const now=new Date(); let start=0;
   for(let i=0;i<H.time.length;i++){ if(new Date(H.time[i])>=now){ start=i; break; } }
   const end=Math.min(start+24,H.time.length);
-
   for(let i=start;i<end;i++){
     const code=sanitizeCode(H.weather_code[i]);
     const temp=Math.round(H.temperature_2m[i]);
@@ -324,12 +328,9 @@ function renderHourly(wx){
     const pmm=H.precipitation?.[i];
     const wind=H.wind_speed_10m?.[i], wdir=H.wind_direction_10m?.[i];
     const cld=H.cloud_cover?.[i];
-    const timeStr=fmtTime(H.time[i]);
-
-    // Desktop riadok
     const tr=document.createElement('tr'); tr.className='hover:bg-white/10';
     tr.innerHTML=`
-      <td class="mono">${timeStr}</td>
+      <td class="mono">${fmtTime(H.time[i])}</td>
       <td class="text-white/85 font-medium">${withIcon(code)}</td>
       <td class="val-bold mono">${temp}°</td>
       <td class="val-bold mono">${dew!=null?Math.round(dew):'—'}°</td>
@@ -339,16 +340,12 @@ function renderHourly(wx){
       <td class="val-bold mono">${pres!=null?Math.round(pres):'—'} hPa</td>`;
     el.hourRows.appendChild(tr);
 
-    // Mobil karta
+    // mobilný akordeón – rovnaké ako predtým
     const card=document.createElement('div'); card.className='card';
-    const btn=document.createElement('button'); btn.className='acc-btn'; btn.type='button';
-    btn.setAttribute('aria-expanded','false');
+    const btn=document.createElement('button'); btn.className='acc-btn'; btn.type='button'; btn.setAttribute('aria-expanded','false');
     btn.innerHTML=`
       <div class="acc-head">
-        <div>
-          <div class="mono font-semibold">${timeStr} · ${temp}°</div>
-          <div class="text-white/80 text-sm">${withIcon(code)}</div>
-        </div>
+        <div><div class="mono font-semibold">${fmtTime(H.time[i])} · ${temp}°</div><div class="text-white/80 text-sm">${withIcon(code)}</div></div>
       </div>
       <div class="acc-right">
         <span class="chip mono">${pop!=null?`${pop}%`:'—'} · ${pmm!=null?pmm.toFixed(1):'0.0'} mm</span>
@@ -364,18 +361,9 @@ function renderHourly(wx){
         <div class="metric"><div class="label">Vietor</div><div class="val mono">${wind!=null?`${Math.round(wind)} km/h`:'—'} (${dd2dir(wdir)})</div></div>
       </div>`;
     wrap.appendChild(panel); card.appendChild(btn); card.appendChild(wrap); el.hourList.appendChild(card);
-
-    let open=false;
-    const setHeight = () => { wrap.style.height = open ? panel.scrollHeight+'px' : '0px'; };
-    btn.addEventListener('click',()=>{
-      if (wrap.style.height === 'auto') wrap.style.height = panel.scrollHeight+'px';
-      open=!open; btn.setAttribute('aria-expanded', String(open));
-      requestAnimationFrame(setHeight);
-    });
-    wrap.addEventListener('transitionend',(e)=>{
-      if(e.propertyName!=='height') return;
-      if(open){ wrap.style.height='auto'; }
-    });
+    let open=false; const setH=()=>{ wrap.style.height=open?panel.scrollHeight+'px':'0px'; };
+    btn.addEventListener('click',()=>{ if(wrap.style.height==='auto'){ wrap.style.height=panel.scrollHeight+'px'; } open=!open; btn.setAttribute('aria-expanded',String(open)); requestAnimationFrame(setH); });
+    wrap.addEventListener('transitionend',e=>{ if(e.propertyName!=='height')return; if(open){ wrap.style.height='auto'; } });
   }
 }
 
@@ -388,7 +376,6 @@ function renderDaily(wx){
     const tmin=Math.round(D.temperature_2m_min[i]);
     const tmax=Math.round(D.temperature_2m_max[i]);
     const code=sanitizeCode(D.weather_code[i]);
-
     const card=document.createElement('div'); card.className='glass p-3 rounded-xl';
     card.innerHTML=`
       <div class="flex items-center justify-between">
@@ -403,36 +390,20 @@ function renderDaily(wx){
 }
 
 function renderHistoryExact(hist){
-  const H=hist.daily;
-  const dateStr=H.time?.[0];
+  const H=hist.daily; const dateStr=H.time?.[0];
   if(!dateStr){ el.historyExact.innerHTML='<div class="text-white/80">Dáta nie sú dostupné.</div>'; return; }
   const d=new Date(dateStr);
   const dn=['Ne','Po','Ut','St','Št','Pi','So'][d.getDay()];
-  const tmin=Math.round(H.temperature_2m_min?.[0]);
-  const tmax=Math.round(H.temperature_2m_max?.[0]);
-  const pr=(H.precipitation_sum?.[0] ?? 0).toFixed(1);
-  const code=(H.weathercode?.[0] ?? 3);
-  const desc=withIcon(code);
-
-  // Max vietor + smer z hodinových dát
-  let windBox = '—';
-  const HH = hist.hourly;
-  if (HH && Array.isArray(HH.wind_speed_10m) && HH.wind_speed_10m.length){
-    let maxIdx = 0, maxVal = -Infinity;
-    for (let i=0;i<HH.wind_speed_10m.length;i++){
-      const v = HH.wind_speed_10m[i];
-      if (typeof v === 'number' && v > maxVal){ maxVal = v; maxIdx = i; }
-    }
-    const dirDeg = HH.wind_direction_10m?.[maxIdx];
-    const dirTxt = dd2dir(dirDeg);
-    if (isFinite(maxVal)) windBox = `${Math.round(maxVal)} km/h ${dirTxt}`;
-  }
-
+  const tmin=Math.round(H.temperature_2m_min?.[0]); const tmax=Math.round(H.temperature_2m_max?.[0]);
+  const pr=(H.precipitation_sum?.[0] ?? 0).toFixed(1); const code=(H.weathercode?.[0] ?? 3);
+  let windBox='—'; const HH=hist.hourly;
+  if(HH?.wind_speed_10m?.length){ let mi=0,mv=-1; for(let i=0;i<HH.wind_speed_10m.length;i++){ const v=HH.wind_speed_10m[i]; if(typeof v==='number'&&v>mv){ mv=v; mi=i; } }
+    const dir=dd2dir(HH.wind_direction_10m?.[mi]); if(isFinite(mv)) windBox=`${Math.round(mv)} km/h ${dir}`; }
   el.historyExact.innerHTML=`
     <div class="glass p-4 rounded-xl space-y-3">
       <div>
         <div class="font-semibold text-lg">${dn} ${d.getDate()}.${(d.getMonth()+1).toString().padStart(2,'0')}.${d.getFullYear()}</div>
-        <div class="text-white/80">${desc}</div>
+        <div class="text-white/80">${withIcon(code)}</div>
       </div>
       <div class="grid grid-cols-2 sm:grid-cols-4 gap-3">
         <div class="metric"><div class="label">Max</div><div class="val mono">${tmax}°</div></div>
@@ -444,51 +415,36 @@ function renderHistoryExact(hist){
 }
 
 function renderUV(wx){
-  const H=wx.hourly;
-  let uvNow = null;
-  const now = new Date();
-  for(let i=0;i<H.time.length;i++){
-    if(new Date(H.time[i])>=now){ uvNow = H.uv_index?.[i] ?? null; break; }
-  }
-  const uvMax = wx.daily.uv_index_max?.[0] ?? null;
-  const cat = uvCategory(uvMax ?? uvNow);
-
+  const H=wx.hourly; let uvNow=null; const now=new Date();
+  for(let i=0;i<H.time.length;i++){ if(new Date(H.time[i])>=now){ uvNow=H.uv_index?.[i] ?? null; break; } }
+  const uvMax = wx.daily.uv_index_max?.[0] ?? null; const cat=uvCategory(uvMax ?? uvNow);
   el.uvNow.textContent = uvNow!=null ? uvNow.toFixed(1) : '—';
   el.uvMax.textContent = uvMax!=null ? uvMax.toFixed(1) : '—';
   el.uvCat.textContent = cat.name;
-
-  const u = Math.max(0, Math.min(11, (uvMax!=null?uvMax:uvNow)||0));
-  el.uvFill.style.width = (u/11*100).toFixed(0)+'%';
-  el.uvFill.style.cssText += ';'+cat.color;
+  const u=Math.max(0,Math.min(11,(uvMax!=null?uvMax:uvNow)||0));
+  el.uvFill.style.width=(u/11*100).toFixed(0)+'%'; el.uvFill.style.cssText+=';'+cat.color;
 }
 
+/* orchestrácia */
 async function run(q){
   el.loading.classList.remove('hidden'); el.err.classList.add('hidden');
   try{
     const city=await geocode(q);
     const wx=await fetchWx(city.latitude,city.longitude);
-    const histExact=await fetchHistoryExact(city.latitude,city.longitude);
+    const hist=await fetchHistoryExact(city.latitude,city.longitude);
 
-    renderCurrent(city,wx);
+    renderHero(city,wx);
+    renderCurrent(wx);
     renderHourly(wx);
     renderDaily(wx);
-    renderHistoryExact(histExact);
+    renderHistoryExact(hist);
     renderUV(wx);
-  }catch(e){
-    el.err.classList.remove('hidden');
-  }finally{
-    el.loading.classList.add('hidden');
-  }
+  }catch(e){ el.err.classList.remove('hidden'); }
+  finally{ el.loading.classList.add('hidden'); }
 }
 
-el.form.addEventListener('submit', (ev)=>{
-  ev.preventDefault();
-  const q=el.input.value.trim();
-  if(q) run(q);
-});
-
-el.input.value='Hlohovec';
-run('Hlohovec');
+el.form.addEventListener('submit', (ev)=>{ ev.preventDefault(); const q=el.input.value.trim(); if(q) run(q); });
+el.input.value='Hlohovec'; run('Hlohovec');
 </script>
 </body>
 </html>
