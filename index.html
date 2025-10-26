@@ -7,34 +7,29 @@
 <script src="https://cdn.tailwindcss.com"></script>
 <style>
   :root { --glass: rgba(255,255,255,.08); --glass-b: rgba(255,255,255,.18); }
-
-  /* RESET / BASE */
   *{ box-sizing:border-box }
   html,body{ width:100%; max-width:100%; overflow-x:hidden; }
   body{
     margin:0; color:#fff;
     font-family:system-ui,-apple-system,Segoe UI,Roboto,sans-serif;
-    background:#0e4d73; /* fallback pri načítaní */
+    background:#0e4d73; /* fallback */
   }
   .glass{ background:var(--glass); border:1px solid var(--glass-b); backdrop-filter:blur(12px); border-radius:1rem; }
   .mono{ font-feature-settings:"tnum" 1,"lnum" 1 }
 
-  /* ---------- HERO (bez externých obrázkov) ----------- */
+  /* ---------- HERO (deň/noc) ----------- */
   .hero{
     position:relative; isolation:isolate;
     display:flex; flex-direction:column; align-items:center; justify-content:center;
     min-height:56vh; width:100%;
-    padding:3.5rem 1rem 2rem;
-    text-align:center; overflow:hidden;
+    padding:3.5rem 1rem 2rem; text-align:center; overflow:hidden;
   }
-  /* Pozadie – vrstva 1: hladký prechod (mení sa podľa režimu) */
   body[data-mode="day"] .hero{
     background:linear-gradient(180deg,#3aa7e0 0%, #1e87c9 55%, #176ea9 100%);
   }
   body[data-mode="night"] .hero{
     background:linear-gradient(180deg,#0b3550 0%, #0a2c44 60%, #08273b 100%);
   }
-  /* Pozadie – vrstva 2: hviezdy (len v noci, čisto CSS) */
   body[data-mode="night"] .hero::after{
     content:""; position:absolute; inset:0; z-index:-1; pointer-events:none; opacity:.45;
     background:
@@ -48,32 +43,24 @@
       radial-gradient(1.6px 1.6px at 44% 86%, #fff 45%, transparent 47%);
     background-repeat:no-repeat;
   }
-
-  /* Hero texty + ikona */
   #heroPlace{ font-size:1.25rem; font-weight:600; opacity:.95; letter-spacing:.2px }
   #heroIcon{ width:120px; height:120px; margin:1.2rem auto }
   #heroTemp{ font-size:6.5rem; line-height:1; font-weight:700; letter-spacing:2px }
 
-  /* FORM v hlavičke (ponechávam kvôli hľadaniu) */
   .sticky-header{ position:sticky; top:0; z-index:40; }
   .tbl th,.tbl td{ padding:.65rem .75rem; white-space:nowrap }
   .tbl thead th{ position:sticky; top:0; background:rgba(0,0,0,.15); backdrop-filter:blur(6px) }
   .val-bold{ font-weight:600; color:#fff }
 
-  /* Kompakt metriky */
-  .metric{ background:var(--glass); border:1px solid var(--glass-b); border-radius:.75rem; padding:.6rem .8rem }
-  .metric .label{ color:rgba(255,255,255,.72); font-size:.8rem; line-height:1.15 }
-  .metric .val{ color:#fff; font-weight:600; font-size:1.05rem }
-  .metrics{ display:grid; grid-template-columns:repeat(2,minmax(0,1fr)); gap:.5rem }
-  @media (min-width:768px){ .metrics{ display:flex; flex-wrap:wrap; gap:.5rem .6rem } .metrics .metric{ flex:0 0 240px } }
-  @media (min-width:1024px){ .metric{ padding:.48rem .65rem } .metric .label{ font-size:.75rem } .metric .val{ font-size:1rem } }
-
-  /* 24h mobil akordeón */
+  /* Mobil akordeón (24 h) */
   .card{ border-radius:1rem; border:1px solid var(--glass-b); background:var(--glass); }
   .acc-btn{ width:100%; background:none; border:0; cursor:pointer; padding:.9rem .95rem; display:flex; align-items:center; gap:.75rem; text-align:left; color:#fff }
-  .acc-head{ flex:1; min-width:0 } .acc-right{ margin-left:auto; display:flex; gap:.5rem; white-space:nowrap }
-  .chev{ transition:transform .22s ease } .acc-btn[aria-expanded="true"] .chev{ transform:rotate(180deg) }
-  .panel-wrap{ height:0; overflow:hidden; transition:height .22s ease } .panel{ padding:0 .95rem .95rem .95rem }
+  .acc-head{ flex:1; min-width:0 }
+  .acc-right{ margin-left:auto; display:flex; gap:.5rem; white-space:nowrap }
+  .chev{ transition:transform .22s ease }
+  .acc-btn[aria-expanded="true"] .chev{ transform:rotate(180deg) }
+  .panel-wrap{ height:0; overflow:hidden; transition:height .22s ease }
+  .panel{ padding:0 .95rem .95rem .95rem }
 
   .cols{ display:grid; grid-template-columns:1fr; gap:1rem }
   @media (min-width:1024px){ .cols{ display:flex; gap:1rem } .col-left,.col-right{ align-self:stretch } }
@@ -81,7 +68,7 @@
 </head>
 <body data-mode="day">
 
-<!-- HERO (bez tlačidiel; formulár je nižšie v sticky bar-e) -->
+<!-- HERO -->
 <section class="hero">
   <div id="heroPlace">—</div>
   <div id="heroIcon" aria-hidden="true"></div>
@@ -106,18 +93,10 @@
 
 <main class="w-full px-2 md:px-4 lg:px-6 py-4 space-y-4">
 
-  <!-- Aktuálne metriky (kompakt) -->
-  <section id="current" class="hidden glass p-4">
-    <div class="metrics mt-1">
-      <div class="metric"><div class="label">Vietor</div><div id="curWind" class="val mono">—</div></div>
-      <div class="metric"><div class="label">Nárazy</div><div id="curGust" class="val mono">—</div></div>
-      <div class="metric"><div class="label">Vlhkosť</div><div id="curHum" class="val mono">—</div></div>
-      <div class="metric"><div class="label">Pocitovo</div><div id="curFeels" class="val mono">—</div></div>
-    </div>
-  </section>
+  <!-- Bez “aktuálnych okien” – úplne odstránené -->
 
-  <!-- Layout so zvyškom stránky (nič som ti nebral) -->
   <section class="cols">
+    <!-- 24 h predpoveď -->
     <div class="col-left glass overflow-visible lg:overflow-hidden lg:basis-7/12 flex flex-col min-h-0">
       <div class="flex items-center justify-between px-4 py-3 border-b border-white/20">
         <h2 class="text-lg font-semibold">24-hodinová predpoveď</h2>
@@ -155,12 +134,12 @@
         <div class="px-4 py-3 border-b border-white/20"><h2 class="text-lg font-semibold">UV index</h2></div>
         <div id="uvPanel" class="p-4 space-y-3">
           <div class="grid grid-cols-2 gap-3">
-            <div class="metric"><div class="label">Aktuálne</div><div id="uvNow" class="val mono">—</div></div>
-            <div class="metric"><div class="label">Dnešné maximum</div><div id="uvMax" class="val mono">—</div></div>
+            <div class="glass p-2 rounded-lg"><div class="text-white/70 text-sm">Aktuálne</div><div id="uvNow" class="mono font-semibold">—</div></div>
+            <div class="glass p-2 rounded-lg"><div class="text-white/70 text-sm">Dnešné maximum</div><div id="uvMax" class="mono font-semibold">—</div></div>
           </div>
-          <div>
+          <div class="mt-2">
             <div class="text-white/80 text-sm">Úroveň: <span id="uvCat" class="font-semibold text-white"></span></div>
-            <div class="uv-bar mt-1"><div id="uvFill" class="uv-fill" style="width:0%"></div></div>
+            <div class="h-[10px] rounded-full bg-white/25 overflow-hidden mt-1"><div id="uvFill" style="width:0%"></div></div>
           </div>
         </div>
       </div>
@@ -181,6 +160,28 @@ const API='https://api.open-meteo.com/v1';
 const GEO='https://geocoding-api.open-meteo.com/v1';
 const ARCH='https://archive-api.open-meteo.com/v1/era5';
 
+/* Hero SVG (bez hostingu) */
+const svgSun = `
+<svg viewBox="0 0 128 128" xmlns="http://www.w3.org/2000/svg">
+  <defs><radialGradient id="g" cx="50%" cy="50%" r="50%">
+    <stop offset="0%" stop-color="#ffe27a"/><stop offset="70%" stop-color="#ffd057"/><stop offset="100%" stop-color="#f7b538"/></radialGradient>
+  </defs>
+  <circle cx="64" cy="64" r="28" fill="url(#g)"/>
+  <g stroke="#ffd36a" stroke-width="6" stroke-linecap="round">
+    <line x1="64" y1="8"  x2="64" y2="28"/><line x1="64" y1="100" x2="64" y2="120"/>
+    <line x1="8"  y1="64" x2="28" y2="64"/><line x1="100" y1="64" x2="120" y2="64"/>
+    <line x1="20" y1="20" x2="34" y2="34"/><line x1="94" y1="94" x2="108" y2="108"/>
+    <line x1="20" y1="108" x2="34" y2="94"/><line x1="94" y1="34" x2="108" y2="20"/>
+  </g>
+</svg>`;
+const svgMoon = `
+<svg viewBox="0 0 128 128" xmlns="http://www.w3.org/2000/svg">
+  <defs><radialGradient id="m" cx="40%" cy="35%" r="60%">
+    <stop offset="0%" stop-color="#f4f4f6"/><stop offset="100%" stop-color="#cfd4da"/></radialGradient></defs>
+  <path d="M90 82c-29 0-52-23-52-52 0-7 1-14 4-20C25 16 16 32 16 50c0 30 24 54 54 54 18 0 34-9 40-26-6 3-13 4-20 4z" fill="url(#m)"/>
+</svg>`;
+
+/* Elements */
 const el={
   form:document.getElementById('searchForm'),
   input:document.getElementById('cityInput'),
@@ -194,50 +195,12 @@ const el={
   uvMax:document.getElementById('uvMax'),
   uvFill:document.getElementById('uvFill'),
   uvCat:document.getElementById('uvCat'),
-  curWind:document.getElementById('curWind'),
-  curGust:document.getElementById('curGust'),
-  curHum:document.getElementById('curHum'),
-  curFeels:document.getElementById('curFeels'),
-  current:document.getElementById('current'),
   heroPlace:document.getElementById('heroPlace'),
   heroIcon:document.getElementById('heroIcon'),
   heroTemp:document.getElementById('heroTemp')
 };
 
-/* ikony bez hostingu – čisté SVG */
-const svgSun = `
-<svg viewBox="0 0 128 128" xmlns="http://www.w3.org/2000/svg">
-  <defs>
-    <radialGradient id="g" cx="50%" cy="50%" r="50%">
-      <stop offset="0%" stop-color="#ffe27a"/>
-      <stop offset="70%" stop-color="#ffd057"/>
-      <stop offset="100%" stop-color="#f7b538"/>
-    </radialGradient>
-  </defs>
-  <circle cx="64" cy="64" r="28" fill="url(#g)"/>
-  <g stroke="#ffd36a" stroke-width="6" stroke-linecap="round">
-    <line x1="64" y1="8"  x2="64" y2="28"/>
-    <line x1="64" y1="100" x2="64" y2="120"/>
-    <line x1="8"  y1="64" x2="28" y2="64"/>
-    <line x1="100" y1="64" x2="120" y2="64"/>
-    <line x1="20" y1="20" x2="34" y2="34"/>
-    <line x1="94" y1="94" x2="108" y2="108"/>
-    <line x1="20" y1="108" x2="34" y2="94"/>
-    <line x1="94" y1="34" x2="108" y2="20"/>
-  </g>
-</svg>`;
-const svgMoon = `
-<svg viewBox="0 0 128 128" xmlns="http://www.w3.org/2000/svg">
-  <defs>
-    <radialGradient id="m" cx="40%" cy="35%" r="60%">
-      <stop offset="0%" stop-color="#f4f4f6"/>
-      <stop offset="100%" stop-color="#cfd4da"/>
-    </radialGradient>
-  </defs>
-  <path d="M90 82c-29 0-52-23-52-52 0-7 1-14 4-20C25 16 16 32 16 50c0 30 24 54 54 54 18 0 34-9 40-26-6 3-13 4-20 4z" fill="url(#m)"/>
-</svg>`;
-
-/* util */
+/* helpers */
 function sanitizeCode(c){ c=Number(c); return (c===45||c===48)?3:c; }
 function iconFor(code){
   code=sanitizeCode(code);
@@ -271,16 +234,16 @@ function uvCategory(u){
   return       {name:'Extrémna',        color:'background:#B83280;'};
 }
 
-/* API calls */
+/* API */
 async function geocode(q){
   const r=await fetch(`${GEO}/search?name=${encodeURIComponent(q)}&count=1&language=sk`);
   const j=await r.json(); if(!j.results||j.results.length===0) throw new Error('notfound'); return j.results[0];
 }
 async function fetchWx(lat,lon){
   const url=`${API}/forecast?latitude=${lat}&longitude=${lon}`
-    +`&current=temperature_2m,relative_humidity_2m,apparent_temperature,is_day,weather_code,wind_speed_10m,wind_gusts_10m,wind_direction_10m`
-    +`&hourly=temperature_2m,dew_point_2m,surface_pressure,weather_code,precipitation_probability,precipitation,wind_speed_10m,wind_gusts_10m,wind_direction_10m,cloud_cover,uv_index`
-    +`&daily=weather_code,temperature_2m_max,temperature_2m_min,sunrise,sunset,uv_index_max`
+    +`&current=temperature_2m,is_day,weather_code`
+    +`&hourly=temperature_2m,dew_point_2m,surface_pressure,weather_code,precipitation_probability,precipitation,wind_speed_10m,wind_direction_10m,cloud_cover,uv_index`
+    +`&daily=weather_code,temperature_2m_max,temperature_2m_min,uv_index_max`
     +`&timezone=auto&forecast_days=16`;
   const r=await fetch(url); if(!r.ok) throw new Error('api'); return await r.json();
 }
@@ -295,24 +258,14 @@ async function fetchHistoryExact(lat,lon){
   const r=await fetch(url); if(!r.ok) throw new Error('arch1'); return await r.json();
 }
 
-/* RENDER HERO */
+/* Render */
 function renderHero(city, wx){
   const isDay = !!wx.current.is_day;
   document.body.setAttribute('data-mode', isDay ? 'day' : 'night');
-  el.heroPlace.textContent = `${city.name}${city.country?`, ${city.country}`:''}`;
-  el.heroTemp.textContent = Math.round(wx.current.temperature_2m) + '°';
-  el.heroIcon.innerHTML = isDay ? svgSun : svgMoon;
+  document.getElementById('heroPlace').textContent = `${city.name}${city.country?`, ${city.country}`:''}`;
+  document.getElementById('heroTemp').textContent = Math.round(wx.current.temperature_2m) + '°';
+  document.getElementById('heroIcon').innerHTML = isDay ? svgSun : svgMoon;
 }
-
-/* Karty/metriky & ďalší obsah – skrátené len na nutné veci (ostáva tvoja logika) */
-function renderCurrent(wx){
-  el.curWind.textContent = `${Math.round(wx.current.wind_speed_10m)} km/h`;
-  el.curGust.textContent = `${Math.round(wx.current.wind_gusts_10m)} km/h`;
-  el.curHum.textContent  = wx.current.relative_humidity_2m + ' %';
-  el.curFeels.textContent= Math.round(wx.current.apparent_temperature) + '°';
-  el.current.classList.remove('hidden');
-}
-
 function renderHourly(wx){
   const H=wx.hourly;
   el.hourRows.innerHTML=''; el.hourList.innerHTML='';
@@ -328,6 +281,7 @@ function renderHourly(wx){
     const pmm=H.precipitation?.[i];
     const wind=H.wind_speed_10m?.[i], wdir=H.wind_direction_10m?.[i];
     const cld=H.cloud_cover?.[i];
+
     const tr=document.createElement('tr'); tr.className='hover:bg-white/10';
     tr.innerHTML=`
       <td class="mono">${fmtTime(H.time[i])}</td>
@@ -340,7 +294,6 @@ function renderHourly(wx){
       <td class="val-bold mono">${pres!=null?Math.round(pres):'—'} hPa</td>`;
     el.hourRows.appendChild(tr);
 
-    // mobilný akordeón – rovnaké ako predtým
     const card=document.createElement('div'); card.className='card';
     const btn=document.createElement('button'); btn.className='acc-btn'; btn.type='button'; btn.setAttribute('aria-expanded','false');
     btn.innerHTML=`
@@ -348,17 +301,17 @@ function renderHourly(wx){
         <div><div class="mono font-semibold">${fmtTime(H.time[i])} · ${temp}°</div><div class="text-white/80 text-sm">${withIcon(code)}</div></div>
       </div>
       <div class="acc-right">
-        <span class="chip mono">${pop!=null?`${pop}%`:'—'} · ${pmm!=null?pmm.toFixed(1):'0.0'} mm</span>
+        <span class="mono">${pop!=null?`${pop}%`:'—'} · ${pmm!=null?pmm.toFixed(1):'0.0'} mm</span>
         <svg class="chev" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="6 9 12 15 18 9"></polyline></svg>
       </div>`;
     const wrap=document.createElement('div'); wrap.className='panel-wrap';
     const panel=document.createElement('div'); panel.className='panel';
     panel.innerHTML=`
       <div class="grid grid-cols-2 gap-2 mt-3 text-sm">
-        <div class="metric"><div class="label">Tlak</div><div class="val mono">${pres!=null?Math.round(pres):'—'} hPa</div></div>
-        <div class="metric"><div class="label">Rosný bod</div><div class="val mono">${dew!=null?Math.round(dew):'—'}°</div></div>
-        <div class="metric"><div class="label">Oblačnosť</div><div class="val mono">${cld!=null?`${cld}%`:'—'}</div></div>
-        <div class="metric"><div class="label">Vietor</div><div class="val mono">${wind!=null?`${Math.round(wind)} km/h`:'—'} (${dd2dir(wdir)})</div></div>
+        <div class="glass p-2 rounded-lg"><div class="text-white/70 text-sm">Tlak</div><div class="mono font-semibold">${pres!=null?Math.round(pres):'—'} hPa</div></div>
+        <div class="glass p-2 rounded-lg"><div class="text-white/70 text-sm">Rosný bod</div><div class="mono font-semibold">${dew!=null?Math.round(dew):'—'}°</div></div>
+        <div class="glass p-2 rounded-lg"><div class="text-white/70 text-sm">Oblačnosť</div><div class="mono font-semibold">${cld!=null?`${cld}%`:'—'}</div></div>
+        <div class="glass p-2 rounded-lg"><div class="text-white/70 text-sm">Vietor</div><div class="mono font-semibold">${wind!=null?`${Math.round(wind)} km/h`:'—'} (${dd2dir(wdir)})</div></div>
       </div>`;
     wrap.appendChild(panel); card.appendChild(btn); card.appendChild(wrap); el.hourList.appendChild(card);
     let open=false; const setH=()=>{ wrap.style.height=open?panel.scrollHeight+'px':'0px'; };
@@ -366,7 +319,6 @@ function renderHourly(wx){
     wrap.addEventListener('transitionend',e=>{ if(e.propertyName!=='height')return; if(open){ wrap.style.height='auto'; } });
   }
 }
-
 function renderDaily(wx){
   const D=wx.daily; el.dailyList.innerHTML='';
   const n=Math.min(10,D.time.length);
@@ -388,7 +340,6 @@ function renderDaily(wx){
     el.dailyList.appendChild(card);
   }
 }
-
 function renderHistoryExact(hist){
   const H=hist.daily; const dateStr=H.time?.[0];
   if(!dateStr){ el.historyExact.innerHTML='<div class="text-white/80">Dáta nie sú dostupné.</div>'; return; }
@@ -406,14 +357,13 @@ function renderHistoryExact(hist){
         <div class="text-white/80">${withIcon(code)}</div>
       </div>
       <div class="grid grid-cols-2 sm:grid-cols-4 gap-3">
-        <div class="metric"><div class="label">Max</div><div class="val mono">${tmax}°</div></div>
-        <div class="metric"><div class="label">Min</div><div class="val mono">${tmin}°</div></div>
-        <div class="metric"><div class="label">Zrážky</div><div class="val mono">${pr} mm</div></div>
-        <div class="metric"><div class="label">Vietor (max)</div><div class="val mono">${windBox}</div></div>
+        <div class="glass p-2 rounded-lg"><div class="text-white/70 text-sm">Max</div><div class="mono font-semibold">${tmax}°</div></div>
+        <div class="glass p-2 rounded-lg"><div class="text-white/70 text-sm">Min</div><div class="mono font-semibold">${tmin}°</div></div>
+        <div class="glass p-2 rounded-lg"><div class="text-white/70 text-sm">Zrážky</div><div class="mono font-semibold">${pr} mm</div></div>
+        <div class="glass p-2 rounded-lg"><div class="text-white/70 text-sm">Vietor (max)</div><div class="mono font-semibold">${windBox}</div></div>
       </div>
     </div>`;
 }
-
 function renderUV(wx){
   const H=wx.hourly; let uvNow=null; const now=new Date();
   for(let i=0;i<H.time.length;i++){ if(new Date(H.time[i])>=now){ uvNow=H.uv_index?.[i] ?? null; break; } }
@@ -434,7 +384,6 @@ async function run(q){
     const hist=await fetchHistoryExact(city.latitude,city.longitude);
 
     renderHero(city,wx);
-    renderCurrent(wx);
     renderHourly(wx);
     renderDaily(wx);
     renderHistoryExact(hist);
@@ -443,8 +392,9 @@ async function run(q){
   finally{ el.loading.classList.add('hidden'); }
 }
 
-el.form.addEventListener('submit', (ev)=>{ ev.preventDefault(); const q=el.input.value.trim(); if(q) run(q); });
-el.input.value='Hlohovec'; run('Hlohovec');
+document.getElementById('searchForm').addEventListener('submit', (ev)=>{ ev.preventDefault(); const q=el.input.value.trim(); if(q) run(q); });
+el.input.value='Hlohovec';
+run('Hlohovec');
 </script>
 </body>
 </html>
