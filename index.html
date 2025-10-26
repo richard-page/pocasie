@@ -3,32 +3,32 @@
 <head>
 <meta charset="UTF-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1" />
-<title>Predpoveď počasia – hero deň/noc</title>
+<title>Predpoveď počasia</title>
 <script src="https://cdn.tailwindcss.com"></script>
 <style>
   :root { --glass: rgba(255,255,255,.08); --glass-b: rgba(255,255,255,.18); }
   *{ box-sizing:border-box }
-  html,body{ width:100%; max-width:100%; overflow-x:hidden; }
+  html,body{ width:100%; max-width:100%; overflow-x:hidden }
   body{
     margin:0; color:#fff;
     font-family:system-ui,-apple-system,Segoe UI,Roboto,sans-serif;
     background:#0e4d73; /* fallback */
   }
-  .glass{ background:var(--glass); border:1px solid var(--glass-b); backdrop-filter:blur(12px); border-radius:1rem; }
+  .glass{ background:var(--glass); border:1px solid var(--glass-b); backdrop-filter:blur(12px); border-radius:1rem }
   .mono{ font-feature-settings:"tnum" 1,"lnum" 1 }
 
-  /* ---------- HERO (deň/noc) ----------- */
+  /* HERO deň/noc */
   .hero{
     position:relative; isolation:isolate;
     display:flex; flex-direction:column; align-items:center; justify-content:center;
     min-height:56vh; width:100%;
-    padding:3.5rem 1rem 2rem; text-align:center; overflow:hidden;
+    padding:3.5rem 1rem 2rem; text-align:center; overflow:hidden
   }
   body[data-mode="day"] .hero{
-    background:linear-gradient(180deg,#3aa7e0 0%, #1e87c9 55%, #176ea9 100%);
+    background:linear-gradient(180deg,#3aa7e0 0%, #1e87c9 55%, #176ea9 100%)
   }
   body[data-mode="night"] .hero{
-    background:linear-gradient(180deg,#0b3550 0%, #0a2c44 60%, #08273b 100%);
+    background:linear-gradient(180deg,#0b3550 0%, #0a2c44 60%, #08273b 100%)
   }
   body[data-mode="night"] .hero::after{
     content:""; position:absolute; inset:0; z-index:-1; pointer-events:none; opacity:.45;
@@ -40,20 +40,19 @@
       radial-gradient(1.8px 1.8px at 18% 65%, #fff 45%, transparent 47%),
       radial-gradient(1.8px 1.8px at 58% 73%, #fff 45%, transparent 47%),
       radial-gradient(1.8px 1.8px at 88% 78%, #fff 45%, transparent 47%),
-      radial-gradient(1.6px 1.6px at 44% 86%, #fff 45%, transparent 47%);
-    background-repeat:no-repeat;
+      radial-gradient(1.6px 1.6px at 44% 86%, #fff 45%, transparent 47%)
   }
   #heroPlace{ font-size:1.25rem; font-weight:600; opacity:.95; letter-spacing:.2px }
   #heroIcon{ width:120px; height:120px; margin:1.2rem auto }
   #heroTemp{ font-size:6.5rem; line-height:1; font-weight:700; letter-spacing:2px }
 
-  .sticky-header{ position:sticky; top:0; z-index:40; }
+  .sticky-header{ position:sticky; top:0; z-index:40 }
   .tbl th,.tbl td{ padding:.65rem .75rem; white-space:nowrap }
   .tbl thead th{ position:sticky; top:0; background:rgba(0,0,0,.15); backdrop-filter:blur(6px) }
   .val-bold{ font-weight:600; color:#fff }
 
-  /* Mobil akordeón (24 h) */
-  .card{ border-radius:1rem; border:1px solid var(--glass-b); background:var(--glass); }
+  /* Mobilný akordeón (24h) */
+  .card{ border-radius:1rem; border:1px solid var(--glass-b); background:var(--glass) }
   .acc-btn{ width:100%; background:none; border:0; cursor:pointer; padding:.9rem .95rem; display:flex; align-items:center; gap:.75rem; text-align:left; color:#fff }
   .acc-head{ flex:1; min-width:0 }
   .acc-right{ margin-left:auto; display:flex; gap:.5rem; white-space:nowrap }
@@ -93,10 +92,8 @@
 
 <main class="w-full px-2 md:px-4 lg:px-6 py-4 space-y-4">
 
-  <!-- Bez “aktuálnych okien” – úplne odstránené -->
-
   <section class="cols">
-    <!-- 24 h predpoveď -->
+    <!-- 24h -->
     <div class="col-left glass overflow-visible lg:overflow-hidden lg:basis-7/12 flex flex-col min-h-0">
       <div class="flex items-center justify-between px-4 py-3 border-b border-white/20">
         <h2 class="text-lg font-semibold">24-hodinová predpoveď</h2>
@@ -105,14 +102,8 @@
         <table class="tbl w-full h-full min-w-[900px] text-sm">
           <thead>
             <tr class="text-white/90">
-              <th class="text-left">Čas</th>
-              <th class="text-left">Počasie</th>
-              <th class="text-left">Teplota</th>
-              <th class="text-left">Rosný bod</th>
-              <th class="text-left">Zrážky</th>
-              <th class="text-left">Vietor</th>
-              <th class="text-left">Oblačnosť</th>
-              <th class="text-left">Tlak</th>
+              <th>Čas</th><th>Počasie</th><th>Teplota</th><th>Rosný bod</th>
+              <th>Zrážky</th><th>Vietor</th><th>Oblačnosť</th><th>Tlak</th>
             </tr>
           </thead>
           <tbody id="hourRows" class="divide-y divide-white/10"></tbody>
@@ -126,21 +117,20 @@
         <div class="px-4 py-3 border-b border-white/20"><h2 class="text-lg font-semibold">10-dňová predpoveď</h2></div>
         <div id="dailyList" class="p-3 space-y-2"></div>
       </div>
+
       <div class="glass">
         <div class="px-4 py-3 border-b border-white/20"><h2 class="text-lg font-semibold">Presne pred rokom</h2></div>
         <div id="historyExact" class="p-4"></div>
       </div>
+
       <div class="glass">
         <div class="px-4 py-3 border-b border-white/20"><h2 class="text-lg font-semibold">UV index</h2></div>
-        <div id="uvPanel" class="p-4 space-y-3">
+        <div id="uvPanel" class="p-4">
           <div class="grid grid-cols-2 gap-3">
             <div class="glass p-2 rounded-lg"><div class="text-white/70 text-sm">Aktuálne</div><div id="uvNow" class="mono font-semibold">—</div></div>
             <div class="glass p-2 rounded-lg"><div class="text-white/70 text-sm">Dnešné maximum</div><div id="uvMax" class="mono font-semibold">—</div></div>
           </div>
-          <div class="mt-2">
-            <div class="text-white/80 text-sm">Úroveň: <span id="uvCat" class="font-semibold text-white"></span></div>
-            <div class="h-[10px] rounded-full bg-white/25 overflow-hidden mt-1"><div id="uvFill" style="width:0%"></div></div>
-          </div>
+          <!-- ŽIADNA „Úroveň“ ani progress bar -->
         </div>
       </div>
     </div>
@@ -160,44 +150,24 @@ const API='https://api.open-meteo.com/v1';
 const GEO='https://geocoding-api.open-meteo.com/v1';
 const ARCH='https://archive-api.open-meteo.com/v1/era5';
 
-/* Hero SVG (bez hostingu) */
-const svgSun = `
-<svg viewBox="0 0 128 128" xmlns="http://www.w3.org/2000/svg">
-  <defs><radialGradient id="g" cx="50%" cy="50%" r="50%">
-    <stop offset="0%" stop-color="#ffe27a"/><stop offset="70%" stop-color="#ffd057"/><stop offset="100%" stop-color="#f7b538"/></radialGradient>
-  </defs>
-  <circle cx="64" cy="64" r="28" fill="url(#g)"/>
-  <g stroke="#ffd36a" stroke-width="6" stroke-linecap="round">
-    <line x1="64" y1="8"  x2="64" y2="28"/><line x1="64" y1="100" x2="64" y2="120"/>
-    <line x1="8"  y1="64" x2="28" y2="64"/><line x1="100" y1="64" x2="120" y2="64"/>
-    <line x1="20" y1="20" x2="34" y2="34"/><line x1="94" y1="94" x2="108" y2="108"/>
-    <line x1="20" y1="108" x2="34" y2="94"/><line x1="94" y1="34" x2="108" y2="20"/>
-  </g>
-</svg>`;
-const svgMoon = `
-<svg viewBox="0 0 128 128" xmlns="http://www.w3.org/2000/svg">
-  <defs><radialGradient id="m" cx="40%" cy="35%" r="60%">
-    <stop offset="0%" stop-color="#f4f4f6"/><stop offset="100%" stop-color="#cfd4da"/></radialGradient></defs>
-  <path d="M90 82c-29 0-52-23-52-52 0-7 1-14 4-20C25 16 16 32 16 50c0 30 24 54 54 54 18 0 34-9 40-26-6 3-13 4-20 4z" fill="url(#m)"/>
-</svg>`;
+/* inline SVG – bez hostingu */
+const svgSun=`<svg viewBox="0 0 128 128" xmlns="http://www.w3.org/2000/svg"><defs><radialGradient id="g" cx="50%" cy="50%" r="50%"><stop offset="0%" stop-color="#ffe27a"/><stop offset="70%" stop-color="#ffd057"/><stop offset="100%" stop-color="#f7b538"/></radialGradient></defs><circle cx="64" cy="64" r="28" fill="url(#g)"/><g stroke="#ffd36a" stroke-width="6" stroke-linecap="round"><line x1="64" y1="8"  x2="64" y2="28"/><line x1="64" y1="100" x2="64" y2="120"/><line x1="8"  y1="64" x2="28" y2="64"/><line x1="100" y1="64" x2="120" y2="64"/><line x1="20" y1="20" x2="34" y2="34"/><line x1="94" y1="94" x2="108" y2="108"/><line x1="20" y1="108" x2="34" y2="94"/><line x1="94" y1="34" x2="108" y2="20"/></g></svg>`;
+const svgMoon=`<svg viewBox="0 0 128 128" xmlns="http://www.w3.org/2000/svg"><defs><radialGradient id="m" cx="40%" cy="35%" r="60%"><stop offset="0%" stop-color="#f4f4f6"/><stop offset="100%" stop-color="#cfd4da"/></radialGradient></defs><path d="M90 82c-29 0-52-23-52-52 0-7 1-14 4-20C25 16 16 32 16 50c0 30 24 54 54 54 18 0 34-9 40-26-6 3-13 4-20 4z" fill="url(#m)"/></svg>`;
 
-/* Elements */
 const el={
   form:document.getElementById('searchForm'),
   input:document.getElementById('cityInput'),
-  loading:document.getElementById('loading'),
-  err:document.getElementById('err'),
   hourRows:document.getElementById('hourRows'),
   hourList:document.getElementById('hourList'),
   dailyList:document.getElementById('dailyList'),
   historyExact:document.getElementById('historyExact'),
   uvNow:document.getElementById('uvNow'),
   uvMax:document.getElementById('uvMax'),
-  uvFill:document.getElementById('uvFill'),
-  uvCat:document.getElementById('uvCat'),
   heroPlace:document.getElementById('heroPlace'),
   heroIcon:document.getElementById('heroIcon'),
-  heroTemp:document.getElementById('heroTemp')
+  heroTemp:document.getElementById('heroTemp'),
+  loading:document.getElementById('loading'),
+  err:document.getElementById('err')
 };
 
 /* helpers */
@@ -220,19 +190,11 @@ function descFor(c){
            71:'Slabé sneženie',73:'Mierne sneženie',75:'Silné sneženie',
            80:'Prehánky',81:'Mierne prehánky',82:'Silné prehánky',
            95:'Búrka',96:'Búrka s krúpami',99:'Silná búrka s krúpami'};
-  return d[c] || '—';
+  return d[c]||'—';
 }
 function withIcon(code){ return `${iconFor(code)} ${descFor(code)}`; }
-function dd2dir(dd){ if(dd==null||isNaN(dd)) return '—'; const deg=((dd%360)+360)%360; const dirs=['S','SV','V','JV','J','JZ','Z','SZ']; const idx=Math.floor((deg+22.5)/45)%8; return dirs[idx]; }
+function dd2dir(dd){ if(dd==null||isNaN(dd)) return '—'; const deg=((dd%360)+360)%360; const dirs=['S','SV','V','JV','J','JZ','Z','SZ']; return dirs[Math.floor((deg+22.5)/45)%8]; }
 function fmtTime(iso){ const d=new Date(iso); return d.getHours().toString().padStart(2,'0')+':00'; }
-function uvCategory(u){
-  if(u==null||isNaN(u)) return {name:'—',color:'background:rgba(255,255,255,.35);'};
-  if(u<=2)  return {name:'Nízka',        color:'background:#9AE6B4;'}; 
-  if(u<=5)  return {name:'Stredná',      color:'background:#F6E05E;'}; 
-  if(u<=7)  return {name:'Vysoká',       color:'background:#F6AD55;'}; 
-  if(u<=10) return {name:'Veľmi vysoká', color:'background:#F56565;'}; 
-  return       {name:'Extrémna',        color:'background:#B83280;'};
-}
 
 /* API */
 async function geocode(q){
@@ -258,19 +220,17 @@ async function fetchHistoryExact(lat,lon){
   const r=await fetch(url); if(!r.ok) throw new Error('arch1'); return await r.json();
 }
 
-/* Render */
+/* render */
 function renderHero(city, wx){
   const isDay = !!wx.current.is_day;
   document.body.setAttribute('data-mode', isDay ? 'day' : 'night');
-  document.getElementById('heroPlace').textContent = `${city.name}${city.country?`, ${city.country}`:''}`;
-  document.getElementById('heroTemp').textContent = Math.round(wx.current.temperature_2m) + '°';
-  document.getElementById('heroIcon').innerHTML = isDay ? svgSun : svgMoon;
+  el.heroPlace.textContent = `${city.name}${city.country?`, ${city.country}`:''}`;
+  el.heroTemp.textContent = Math.round(wx.current.temperature_2m)+'°';
+  el.heroIcon.innerHTML = isDay ? svgSun : svgMoon;
 }
 function renderHourly(wx){
-  const H=wx.hourly;
-  el.hourRows.innerHTML=''; el.hourList.innerHTML='';
-  const now=new Date(); let start=0;
-  for(let i=0;i<H.time.length;i++){ if(new Date(H.time[i])>=now){ start=i; break; } }
+  const H=wx.hourly; el.hourRows.innerHTML=''; el.hourList.innerHTML='';
+  const now=new Date(); let start=0; for(let i=0;i<H.time.length;i++){ if(new Date(H.time[i])>=now){ start=i; break; } }
   const end=Math.min(start+24,H.time.length);
   for(let i=start;i<end;i++){
     const code=sanitizeCode(H.weather_code[i]);
@@ -294,6 +254,7 @@ function renderHourly(wx){
       <td class="val-bold mono">${pres!=null?Math.round(pres):'—'} hPa</td>`;
     el.hourRows.appendChild(tr);
 
+    /* mobil karta */
     const card=document.createElement('div'); card.className='card';
     const btn=document.createElement('button'); btn.className='acc-btn'; btn.type='button'; btn.setAttribute('aria-expanded','false');
     btn.innerHTML=`
@@ -320,14 +281,10 @@ function renderHourly(wx){
   }
 }
 function renderDaily(wx){
-  const D=wx.daily; el.dailyList.innerHTML='';
-  const n=Math.min(10,D.time.length);
+  const D=wx.daily; el.dailyList.innerHTML=''; const n=Math.min(10,D.time.length);
   for(let i=0;i<n;i++){
-    const d=new Date(D.time[i]);
-    const dn=['Ne','Po','Ut','St','Št','Pi','So'][d.getDay()];
-    const tmin=Math.round(D.temperature_2m_min[i]);
-    const tmax=Math.round(D.temperature_2m_max[i]);
-    const code=sanitizeCode(D.weather_code[i]);
+    const d=new Date(D.time[i]); const dn=['Ne','Po','Ut','St','Št','Pi','So'][d.getDay()];
+    const tmin=Math.round(D.temperature_2m_min[i]); const tmax=Math.round(D.temperature_2m_max[i]); const code=sanitizeCode(D.weather_code[i]);
     const card=document.createElement('div'); card.className='glass p-3 rounded-xl';
     card.innerHTML=`
       <div class="flex items-center justify-between">
@@ -343,10 +300,8 @@ function renderDaily(wx){
 function renderHistoryExact(hist){
   const H=hist.daily; const dateStr=H.time?.[0];
   if(!dateStr){ el.historyExact.innerHTML='<div class="text-white/80">Dáta nie sú dostupné.</div>'; return; }
-  const d=new Date(dateStr);
-  const dn=['Ne','Po','Ut','St','Št','Pi','So'][d.getDay()];
-  const tmin=Math.round(H.temperature_2m_min?.[0]); const tmax=Math.round(H.temperature_2m_max?.[0]);
-  const pr=(H.precipitation_sum?.[0] ?? 0).toFixed(1); const code=(H.weathercode?.[0] ?? 3);
+  const d=new Date(dateStr); const dn=['Ne','Po','Ut','St','Št','Pi','So'][d.getDay()];
+  const tmin=Math.round(H.temperature_2m_min?.[0]); const tmax=Math.round(H.temperature_2m_max?.[0]); const pr=(H.precipitation_sum?.[0] ?? 0).toFixed(1); const code=(H.weathercode?.[0] ?? 3);
   let windBox='—'; const HH=hist.hourly;
   if(HH?.wind_speed_10m?.length){ let mi=0,mv=-1; for(let i=0;i<HH.wind_speed_10m.length;i++){ const v=HH.wind_speed_10m[i]; if(typeof v==='number'&&v>mv){ mv=v; mi=i; } }
     const dir=dd2dir(HH.wind_direction_10m?.[mi]); if(isFinite(mv)) windBox=`${Math.round(mv)} km/h ${dir}`; }
@@ -367,15 +322,11 @@ function renderHistoryExact(hist){
 function renderUV(wx){
   const H=wx.hourly; let uvNow=null; const now=new Date();
   for(let i=0;i<H.time.length;i++){ if(new Date(H.time[i])>=now){ uvNow=H.uv_index?.[i] ?? null; break; } }
-  const uvMax = wx.daily.uv_index_max?.[0] ?? null; const cat=uvCategory(uvMax ?? uvNow);
+  const uvMax = wx.daily.uv_index_max?.[0] ?? null;
   el.uvNow.textContent = uvNow!=null ? uvNow.toFixed(1) : '—';
   el.uvMax.textContent = uvMax!=null ? uvMax.toFixed(1) : '—';
-  el.uvCat.textContent = cat.name;
-  const u=Math.max(0,Math.min(11,(uvMax!=null?uvMax:uvNow)||0));
-  el.uvFill.style.width=(u/11*100).toFixed(0)+'%'; el.uvFill.style.cssText+=';'+cat.color;
 }
 
-/* orchestrácia */
 async function run(q){
   el.loading.classList.remove('hidden'); el.err.classList.add('hidden');
   try{
