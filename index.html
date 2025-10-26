@@ -14,7 +14,7 @@
 
   .glass { background:var(--glass); border:1px solid var(--glass-b); backdrop-filter:blur(12px); border-radius:1rem; }
   .mono  { font-feature-settings:"tnum" 1,"lnum" 1 }
-  .sticky-header { position:sticky; top:0; z-index:50; backdrop-filter:blur(10px) }
+  .sticky-header{ position:sticky; top:0; z-index:50; backdrop-filter:blur(10px) }
 
   /* Desktop tabuľka */
   .tbl th,.tbl td{ padding:.65rem .75rem; white-space:nowrap }
@@ -30,10 +30,10 @@
   .uv-fill{ height:100%; border-radius:9999px }
 
   main, header, section, .glass, .grid, .flex { min-width:0 }
-  .overflow-x-auto{ max-width:100%; overflow-x:auto; -webkit-overflow-scrolling:touch }
-  img,video,canvas,table{ max-width:100% }
+  .overflow-x-auto { max-width:100%; overflow-x:auto; -webkit-overflow-scrolling:touch }
+  img,video,canvas,table { max-width:100% }
 
-  /* Mobilný accordion – plynulé rozbaľovanie výšky (bez miznutia textu) */
+  /* Mobilný accordion – plynulé rozbaľovanie */
   .card{ border-radius:1rem; border:1px solid var(--glass-b); background:var(--glass); }
   .acc-btn{ width:100%; padding:.9rem .95rem; display:flex; align-items:center; justify-content:space-between; gap:.75rem }
   .acc-head{ display:flex; align-items:center; gap:.8rem; text-align:left }
@@ -234,7 +234,7 @@ async function geocode(q){
 async function fetchWx(lat,lon){
   const url=`${API}/forecast?latitude=${lat}&longitude=${lon}`
     +`&current=temperature_2m,relative_humidity_2m,apparent_temperature,is_day,weather_code,wind_speed_10m,wind_gusts_10m,wind_direction_10m`
-    +`&hourly=temperature_2m,apparent_temperature,dew_point_2m,surface_pressure,weather_code,precipitation_probability,precipitation,wind_speed_10m,wind_gusts_10m,wind_direction_10m,cloud_cover,uv_index`
+    +`&hourly=temperature_2m,dew_point_2m,surface_pressure,weather_code,precipitation_probability,precipitation,wind_speed_10m,wind_gusts_10m,wind_direction_10m,cloud_cover,uv_index`
     +`&daily=weather_code,temperature_2m_max,temperature_2m_min,sunrise,sunset,uv_index_max`
     +`&timezone=auto&forecast_days=16`;
   const r=await fetch(url); if(!r.ok) throw new Error('api'); return await r.json();
@@ -268,22 +268,21 @@ function renderCurrent(city,wx){
 function renderHourly(wx){
   const H=wx.hourly;
   el.tzInfo.textContent=wx.timezone;
-  el.hourRows.innerHTML=''; 
+  el.hourRows.innerHTML='';
   el.hourList.innerHTML='';
 
-  const now=new Date();
-  let start=0; for(let i=0;i<H.time.length;i++){ if(new Date(H.time[i])>=now){ start=i; break; } }
+  const now=new Date(); let start=0;
+  for(let i=0;i<H.time.length;i++){ if(new Date(H.time[i])>=now){ start=i; break; } }
   const end=Math.min(start+24,H.time.length);
 
   for(let i=start;i<end;i++){
     const code=sanitizeCode(H.weather_code[i]);
     const temp=Math.round(H.temperature_2m[i]);
-    const app=H.apparent_temperature?.[i];
     const dew=H.dew_point_2m?.[i];
     const pres=H.surface_pressure?.[i];
     const pop=H.precipitation_probability?.[i];
     const pmm=H.precipitation?.[i];
-    const wind=H.wind_speed_10m?.[i], gust=H.wind_gusts_10m?.[i], wdir=H.wind_direction_10m?.[i];
+    const wind=H.wind_speed_10m?.[i], wdir=H.wind_direction_10m?.[i];
     const cld=H.cloud_cover?.[i];
     const timeStr=fmtTime(H.time[i]);
 
@@ -294,7 +293,7 @@ function renderHourly(wx){
       <td class="flex items-center gap-2"><span class="text-xl">${iconFor(code,true)}</span><span class="text-white/85 font-medium">${descFor(code)}</span></td>
       <td class="val-bold mono">${temp}°</td>
       <td class="val-bold mono">${pop!=null?`${pop}%`:'—'} · ${pmm!=null?pmm.toFixed(1):'0.0'} mm</td>
-      <td class="val-bold mono">${wind!=null?`${Math.round(wind)} km/h`:'—'} (${dd2dir(wdir)})<div class="val-sub">nárazy ${gust!=null?Math.round(gust)+' km/h':'—'}</div></td>
+      <td class="val-bold mono">${wind!=null?`${Math.round(wind)} km/h`:'—'} (${dd2dir(wdir)})</td>
       <td class="val-bold mono">${cld!=null?`${cld}%`:'—'}</td>`;
     el.hourRows.appendChild(tr);
 
@@ -318,13 +317,10 @@ function renderHourly(wx){
     const panel=document.createElement('div'); panel.className='panel';
     panel.innerHTML=`
       <div class="grid grid-cols-2 gap-2 mt-3 text-sm">
-        <div class="metric"><div class="label">Zrážky</div><div class="val mono">${pop!=null?`${pop}%`:'—'} · ${pmm!=null?pmm.toFixed(1):'0.0'} mm</div></div>
-        <div class="metric"><div class="label">Oblačnosť</div><div class="val mono">${cld!=null?`${cld}%`:'—'}</div></div>
-        <div class="metric"><div class="label">Vietor</div><div class="val mono">${wind!=null?`${Math.round(wind)} km/h`:'—'} (${dd2dir(wdir)})</div></div>
-        <div class="metric"><div class="label">Nárazy</div><div class="val mono">${gust!=null?Math.round(gust)+' km/h':'—'}</div></div>
         <div class="metric"><div class="label">Tlak</div><div class="val mono">${pres!=null?Math.round(pres):'—'} hPa</div></div>
         <div class="metric"><div class="label">Rosný bod</div><div class="val mono">${dew!=null?Math.round(dew):'—'}°</div></div>
-        <div class="metric"><div class="label">Pocitovo</div><div class="val mono">${app!=null?Math.round(app):'—'}°</div></div>
+        <div class="metric"><div class="label">Oblačnosť</div><div class="val mono">${cld!=null?`${cld}%`:'—'}</div></div>
+        <div class="metric"><div class="label">Vietor</div><div class="val mono">${wind!=null?`${Math.round(wind)} km/h`:'—'} (${dd2dir(wdir)})</div></div>
       </div>`;
 
     wrap.appendChild(panel);
@@ -334,25 +330,15 @@ function renderHourly(wx){
 
     // plynulé rozbaľovanie
     let open=false;
-    const setHeight = () => {
-      if(open){
-        wrap.style.height = panel.scrollHeight+'px';
-        panel.classList.add('open');
-      }else{
-        wrap.style.height = '0px';
-        panel.classList.remove('open');
-      }
-    };
+    const adjust = () => { wrap.style.height = open ? panel.scrollHeight+'px' : '0px'; panel.classList.toggle('open', open); };
     btn.addEventListener('click', ()=>{
-      open = !open;
-      btn.setAttribute('aria-expanded', String(open));
-      // ak bolo auto, krátko nastav px aby animácia začala z aktuálnej výšky
-      if(open){ wrap.style.height = panel.scrollHeight+'px'; requestAnimationFrame(()=>setHeight()); }
-      else setHeight();
+      const wasAuto = wrap.style.height==='auto';
+      if(wasAuto){ wrap.style.height = panel.scrollHeight+'px'; }
+      open=!open; btn.setAttribute('aria-expanded', String(open)); requestAnimationFrame(adjust);
     });
     wrap.addEventListener('transitionend', (e)=>{
       if(e.propertyName!=='height') return;
-      if(open){ wrap.style.height='auto'; }  // po otvorení necháme prirodzenú výšku
+      if(open){ wrap.style.height='auto'; }
     });
   }
 }
@@ -416,7 +402,7 @@ function renderHistoryExact(hist, todayTmax, todayTmin){
         <div class="metric"><div class="label">Min</div><div class="val mono">${tmin}°</div></div>
         <div class="metric"><div class="label">Zrážky</div><div class="val mono">${pr} mm</div></div>
         <div class="metric"><div class="label">Rozdiel vs. dnes</div>
-          <div class="val mono">${(deltaMax!=null&&deltaMin!=null)?`${sign(deltaMax)}° / ${sign(deltaMin)}°`:'—'}</div>
+          <div class="val mono">${(dMax!=null&&dMin!=null)?`${sign(tmax-dMax)}° / ${sign(tmin-dMin)}°`:'—'}</div>
         </div>
       </div>
     </div>`;
