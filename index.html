@@ -29,12 +29,28 @@
   main, header, section, .glass, .grid, .flex { min-width:0 }
   img,video,canvas,table { max-width:100% }
 
-  /* Layout: mobil 1 stĺpec, ≥lg flex so zdieľanou výškou */
+  /* Layout */
   .cols { display:grid; grid-template-columns:1fr; gap:1rem; }
   @media (min-width:1024px){
     .cols { display:flex; align-items:stretch; gap:1rem; }
     .col-left, .col-right { align-self:stretch; }
   }
+
+  /* ---- Mobilné rozbaľovanie (accordion) – FIX ---- */
+  .card{ border-radius:1rem; border:1px solid var(--glass-b); background:var(--glass); }
+  .acc-btn{
+    width:100%; background:none; border:0; cursor:pointer;
+    padding:0.9rem 0.95rem; display:flex; align-items:center; gap:.75rem;
+    text-align:left; flex-wrap:nowrap; color:#fff;
+  }
+  .acc-head{ flex:1; min-width:0; }
+  .acc-right{ flex:0 0 auto; margin-left:auto; display:flex; align-items:center; gap:.5rem; white-space:nowrap; }
+  .chip{ font-size:.9rem; opacity:.95 }
+  .chev{ transition:transform .22s ease }
+  .acc-btn[aria-expanded="true"] .chev{ transform:rotate(180deg) }
+
+  .panel-wrap{ height:0; overflow:hidden; transition:height .22s ease; }
+  .panel{ padding:0 .95rem .95rem .95rem; }
 </style>
 </head>
 <body class="min-h-screen text-white">
@@ -60,6 +76,7 @@
 
 <main class="w-full px-2 md:px-4 lg:px-6 py-4 space-y-4">
 
+  <!-- Aktuálne -->
   <section id="current" class="hidden glass p-4">
     <div class="text-sm text-white/80"><span id="placeName">—</span></div>
     <div class="mt-2 flex flex-wrap items-center gap-4">
@@ -79,13 +96,15 @@
     </div>
   </section>
 
+  <!-- Layout -->
   <section class="cols">
-    <!-- JEDINÁ zmena: overflow-visible na mobile, overflow-hidden len na ≥lg -->
+    <!-- 24 h predpoveď -->
     <div id="colLeft" class="col-left glass overflow-visible lg:overflow-hidden lg:basis-7/12 flex flex-col min-h-0">
       <div class="flex items-center justify-between px-4 py-3 border-b border-white/20">
         <h2 class="text-lg font-semibold">24-hodinová predpoveď</h2>
       </div>
 
+      <!-- Desktop tabuľka -->
       <div class="hidden lg:block overflow-x-auto flex-1 min-h-0">
         <table class="tbl w-full h-full min-w-[600px] text-sm">
           <thead>
@@ -102,9 +121,11 @@
         </table>
       </div>
 
+      <!-- Mobil – rozbaľovacie karty -->
       <div id="hourList" class="block lg:hidden p-2 space-y-2"></div>
     </div>
 
+    <!-- Pravý stĺpec -->
     <div id="colRight" class="col-right lg:basis-5/12 space-y-4">
       <div class="glass">
         <div class="px-4 py-3 border-b border-white/20"><h2 class="text-lg font-semibold">10-dňová predpoveď</h2></div>
@@ -186,6 +207,8 @@ function descFor(c){
            95:'Búrka',96:'Búrka s krúpami',99:'Silná búrka s krúpami'};
   return d[c] || '—';
 }
+
+/* slovenské 8-smerné skratky vetra */
 function dd2dir(dd){
   if(dd==null||isNaN(dd)) return '—';
   const deg=((dd%360)+360)%360;
@@ -193,14 +216,9 @@ function dd2dir(dd){
   const idx=Math.floor((deg+22.5)/45)%8;
   return dirs[idx];
 }
+
 function fmtTime(iso){ const d=new Date(iso); return d.getHours().toString().padStart(2,'0')+':00'; }
 function ymd(d){ return d.toISOString().slice(0,10); }
-function uvCategory(u){
-  if(u==null||isNaN(u)) return {name:'—',color:'background:rgba(255,255,255,.35);'};
-  if(u<=2) return {name:'Nízky',color:'background:#9AE6B4;'}; if(u<=5) return {name:'Stredný',color:'background:#F6E05E;'};
-  if(u<=7) return {name:'Vysoký',color:'background:#F6AD55;'}; if(u<=10) return {name:'Veľmi vysoký',color:'background:#F56565;'};
-  return {name:'Extrémny',color:'background:#B83280;'};
-}
 
 async function geocode(q){
   const r=await fetch(`${GEO}/search?name=${encodeURIComponent(q)}&count=1&language=sk`);
@@ -259,6 +277,7 @@ function renderHourly(wx){
     const cld=H.cloud_cover?.[i];
     const timeStr=fmtTime(H.time[i]);
 
+    /* Desktop riadok */
     const tr=document.createElement('tr'); tr.className='hover:bg-white/10';
     tr.innerHTML=`
       <td class="mono">${timeStr}</td>
@@ -269,9 +288,10 @@ function renderHourly(wx){
       <td class="val-bold mono">${cld!=null?`${cld}%`:'—'}</td>`;
     el.hourRows.appendChild(tr);
 
-    // Mobilná karta
+    /* Mobil karta – default zatvorená */
     const card=document.createElement('div'); card.className='card';
-    const btn=document.createElement('button'); btn.className='acc-btn'; btn.type='button'; btn.setAttribute('aria-expanded','false');
+    const btn=document.createElement('button'); btn.className='acc-btn'; btn.type='button';
+    btn.setAttribute('aria-expanded','false');
     btn.innerHTML=`
       <div class="acc-head">
         <div>
@@ -293,9 +313,19 @@ function renderHourly(wx){
         <div class="metric"><div class="label">Vietor</div><div class="val mono">${wind!=null?`${Math.round(wind)} km/h`:'—'} (${dd2dir(wdir)})</div></div>
       </div>`;
     wrap.appendChild(panel); card.appendChild(btn); card.appendChild(wrap); el.hourList.appendChild(card);
-    let open=false; const adjust=()=>{ wrap.style.height=open?panel.scrollHeight+'px':'0px'; panel.classList.toggle('open',open); };
-    btn.addEventListener('click',()=>{ const wasAuto=wrap.style.height==='auto'; if(wasAuto){ wrap.style.height=panel.scrollHeight+'px'; } open=!open; btn.setAttribute('aria-expanded',String(open)); requestAnimationFrame(adjust); });
-    wrap.addEventListener('transitionend',(e)=>{ if(e.propertyName!=='height')return; if(open){ wrap.style.height='auto'; } });
+
+    let open=false;
+    const setHeight = () => { wrap.style.height = open ? panel.scrollHeight+'px' : '0px'; };
+    btn.addEventListener('click',()=>{
+      // ak bolo 'auto', najprv nastav presnú výšku, aby animácia fungovala
+      if (wrap.style.height === 'auto') wrap.style.height = panel.scrollHeight+'px';
+      open=!open; btn.setAttribute('aria-expanded', String(open));
+      requestAnimationFrame(setHeight);
+    });
+    wrap.addEventListener('transitionend',(e)=>{
+      if(e.propertyName!=='height') return;
+      if(open){ wrap.style.height='auto'; } // nech sa otvorený panel prispôsobí obsahu
+    });
   }
 }
 
@@ -363,15 +393,12 @@ function renderUV(wx){
     if(new Date(H.time[i])>=now){ uvNow = H.uv_index?.[i] ?? null; break; }
   }
   const uvMax = wx.daily.uv_index_max?.[0] ?? null;
-  const cat = uvCategory(uvMax ?? uvNow);
-
+  const u = Math.max(0, Math.min(11, (uvMax!=null?uvMax:uvNow)||0));
   el.uvNow.textContent = uvNow!=null ? uvNow.toFixed(1) : '—';
   el.uvMax.textContent = uvMax!=null ? uvMax.toFixed(1) : '—';
-  el.uvCat.textContent = cat.name;
-
-  const u = Math.max(0, Math.min(11, (uvMax!=null?uvMax:uvNow)||0));
+  el.uvCat.textContent = u<=2?'Nízky':u<=5?'Stredný':u<=7?'Vysoký':u<=10?'Veľmi vysoký':'Extrémny';
   el.uvFill.style.width = (u/11*100).toFixed(0)+'%';
-  el.uvFill.style.cssText += ';'+cat.color;
+  el.uvFill.style.cssText += ';'+(u<=2?'background:#9AE6B4;':u<=5?'background:#F6E05E;':u<=7?'background:#F6AD55;':u<=10?'background:#F56565;':'background:#B83280;');
 }
 
 async function run(q){
