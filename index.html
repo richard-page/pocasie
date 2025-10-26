@@ -12,9 +12,9 @@
   html, body {
     width: 100%;
     max-width: 100%;
-    overflow-x: hidden;          /* zabráni horizontálnemu posunu tela stránky */
-    overscroll-behavior-x: none; /* žiadne „odskočenia“ do strany */
-    touch-action: pan-y;         /* povoľ len vertikálny scroll */
+    overflow-x: hidden;          /* bez horizontálneho posunu celej stránky */
+    overscroll-behavior-x: none;
+    touch-action: pan-y;
   }
 
   body {
@@ -41,10 +41,7 @@
   .uv-bar{ height:10px; border-radius:9999px; background:rgba(255,255,255,.18); overflow:hidden }
   .uv-fill{ height:100%; border-radius:9999px }
 
-  /* dôležité pre grid/flex – nič nesmie rozťahovať kontajnery do šírky */
   main, header, section, .glass, .grid, .flex { min-width: 0; }
-
-  /* lokálny horizontálny scroll pre tabuľku (nie celé <body>) */
   .overflow-x-auto { max-width: 100%; overflow-x: auto; -webkit-overflow-scrolling: touch }
   img, video, canvas, table { max-width: 100%; }
 </style>
@@ -86,15 +83,17 @@
     </div>
   </section>
 
-  <!-- Layout: mobil 1 stĺpec, >=lg dva stĺpce -->
+  <!-- Layout: mobil 1 stĺpec, ≥lg dva stĺpce -->
   <section class="grid grid-cols-1 lg:grid-cols-12 gap-4">
-    <!-- 24 h tabuľka -->
+    <!-- 24 h predpoveď -->
     <div class="lg:col-span-7 glass rounded-xl overflow-hidden">
       <div class="flex items-center justify-between px-4 py-3 border-b border-white/20">
         <h2 class="text-lg font-semibold">24-hodinová predpoveď</h2>
         <div id="tzInfo" class="text-white/70 text-sm"></div>
       </div>
-      <div class="overflow-x-auto">
+
+      <!-- DESKTOP: tabuľka -->
+      <div class="hidden lg:block overflow-x-auto">
         <table class="tbl w-full min-w-[600px] text-sm">
           <thead>
             <tr class="text-white/90">
@@ -109,6 +108,9 @@
           <tbody id="hourRows" class="divide-y divide-white/10"></tbody>
         </table>
       </div>
+
+      <!-- MOBILE: karty -->
+      <div id="hourList" class="block lg:hidden p-2 space-y-2"></div>
     </div>
 
     <!-- Pravý stĺpec -->
@@ -173,6 +175,7 @@ const el={
   current:document.getElementById('current'),
   tzInfo:document.getElementById('tzInfo'),
   hourRows:document.getElementById('hourRows'),
+  hourList:document.getElementById('hourList'),
   dailyList:document.getElementById('dailyList'),
   historyExact:document.getElementById('historyExact'),
   uvNow:document.getElementById('uvNow'),
@@ -271,9 +274,16 @@ function renderCurrent(city,wx){
 }
 
 function renderHourly(wx){
-  const H=wx.hourly; el.tzInfo.textContent=wx.timezone; el.hourRows.innerHTML='';
-  const now=new Date(); let start=0; for(let i=0;i<H.time.length;i++){ if(new Date(H.time[i])>=now){ start=i; break; } }
+  const H=wx.hourly; 
+  el.tzInfo.textContent=wx.timezone; 
+  el.hourRows.innerHTML=''; 
+  el.hourList.innerHTML='';
+
+  const now=new Date(); 
+  let start=0; 
+  for(let i=0;i<H.time.length;i++){ if(new Date(H.time[i])>=now){ start=i; break; } }
   const end=Math.min(start+24,H.time.length);
+
   for(let i=start;i<end;i++){
     const code=sanitizeCode(H.weather_code[i]);
     const temp=Math.round(H.temperature_2m[i]);
@@ -281,10 +291,12 @@ function renderHourly(wx){
     const pmm=H.precipitation?.[i];
     const wind=H.wind_speed_10m?.[i], gust=H.wind_gusts_10m?.[i], wdir=H.wind_direction_10m?.[i];
     const cld=H.cloud_cover?.[i];
+    const timeStr=fmtTime(H.time[i]);
 
+    /* DESKTOP: riadok tabuľky */
     const tr=document.createElement('tr'); tr.className='hover:bg-white/10';
     tr.innerHTML=`
-      <td class="mono">${fmtTime(H.time[i])}</td>
+      <td class="mono">${timeStr}</td>
       <td class="flex items-center gap-2">
         <span class="text-xl">${iconFor(code,true)}</span>
         <span class="text-white/85 font-medium">${descFor(code)}</span>
@@ -296,6 +308,28 @@ function renderHourly(wx){
       </td>
       <td class="val-bold mono">${cld!=null?`${cld}%`:'—'}</td>`;
     el.hourRows.appendChild(tr);
+
+    /* MOBILE: karta */
+    const card=document.createElement('div'); 
+    card.className='glass rounded-lg p-3';
+    card.innerHTML=`
+      <div class="flex items-center justify-between">
+        <div class="flex items-center gap-3">
+          <div class="text-2xl">${iconFor(code,true)}</div>
+          <div>
+            <div class="mono font-semibold">${timeStr}</div>
+            <div class="text-white/80 text-sm">${descFor(code)}</div>
+          </div>
+        </div>
+        <div class="mono text-lg font-semibold">${temp}°</div>
+      </div>
+      <div class="grid grid-cols-2 gap-2 mt-3 text-sm">
+        <div class="metric"><div class="label">Zrážky</div><div class="val mono">${pop!=null?`${pop}%`:'—'} · ${pmm!=null?pmm.toFixed(1):'0.0'} mm</div></div>
+        <div class="metric"><div class="label">Vietor</div><div class="val mono">${wind!=null?`${Math.round(wind)} km/h`:'—'} (${dd2dir(wdir)})</div></div>
+        <div class="metric"><div class="label">Nárazy</div><div class="val mono">${gust!=null?Math.round(gust)+' km/h':'—'}</div></div>
+        <div class="metric"><div class="label">Oblačnosť</div><div class="val mono">${cld!=null?`${cld}%`:'—'}</div></div>
+      </div>`;
+    el.hourList.appendChild(card);
   }
 }
 
