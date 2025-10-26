@@ -43,6 +43,13 @@
   .panel-wrap{ overflow:hidden; height:0; transition:height .22s ease }
   .panel{ padding:0 .95rem .95rem .95rem; opacity:0; transform:translateY(-4px); transition:opacity .22s ease, transform .22s ease }
   .panel.open{ opacity:1; transform:none }
+
+  /* --- PC layout fix: nezávislé výšky stĺpcov --- */
+  .cols { display:grid; grid-template-columns:1fr; gap:1rem; }
+  @media (min-width:1024px){ /* lg breakpoint */
+    .cols { display:flex; align-items:flex-start; gap:1rem; }
+    .col-left, .col-right { align-self:flex-start; }
+  }
 </style>
 </head>
 <body class="min-h-screen text-white">
@@ -90,10 +97,10 @@
     </div>
   </section>
 
-  <!-- Layout: na mobile grid (1 stĺpec), na ≥lg flex s nezávislou výškou stĺpcov -->
-  <section class="grid grid-cols-1 gap-4 lg:flex lg:gap-4 lg:items-start">
+  <!-- Layout sekcia – PC: flex s nezávislou výškou -->
+  <section class="cols">
     <!-- Ľavý panel -->
-    <div class="glass overflow-hidden lg:w-7/12">
+    <div class="col-left glass overflow-hidden lg:basis-7/12">
       <div class="flex items-center justify-between px-4 py-3 border-b border-white/20">
         <h2 class="text-lg font-semibold">24-hodinová predpoveď</h2>
       </div>
@@ -120,7 +127,7 @@
     </div>
 
     <!-- Pravý stĺpec -->
-    <div class="lg:w-5/12 space-y-4">
+    <div class="col-right lg:basis-5/12 space-y-4">
       <div class="glass">
         <div class="px-4 py-3 border-b border-white/20"><h2 class="text-lg font-semibold">10-dňová predpoveď</h2></div>
         <div id="dailyList" class="p-3 space-y-2"></div>
