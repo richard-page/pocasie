@@ -12,7 +12,7 @@
   body{
     margin:0; color:#fff;
     font-family:system-ui,-apple-system,Segoe UI,Roboto,sans-serif;
-    background:#0e4d73;
+    background:#0e4d73; /* fallback */
   }
   .glass{ background:var(--glass); border:1px solid var(--glass-b); backdrop-filter:blur(12px); border-radius:1rem }
   .mono{ font-feature-settings:"tnum" 1,"lnum" 1 }
@@ -63,18 +63,6 @@
 
   .cols{ display:grid; grid-template-columns:1fr; gap:1rem }
   @media (min-width:1024px){ .cols{ display:flex; gap:1rem } .col-left,.col-right{ align-self:stretch } }
-
-  /* Lokalizačné tlačidlo (len Android) */
-  #locBtn{ display:none }
-  .loc-btn{
-    padding:.55rem .8rem; border-radius:.6rem; background:rgba(255,255,255,.18);
-    border:1px solid rgba(255,255,255,.28); color:#fff; font-weight:600
-  }
-  .toast{
-    position:fixed; left:50%; transform:translateX(-50%);
-    bottom:14px; background:rgba(0,0,0,.6); color:#fff; padding:.6rem .8rem;
-    border-radius:.6rem; font-size:.9rem; z-index:60; backdrop-filter:blur(6px)
-  }
 </style>
 </head>
 <body data-mode="day">
@@ -90,12 +78,8 @@
   <div class="w-full px-3 md:px-6 py-3 flex items-center gap-3">
     <div class="font-semibold">Predpoveď počasia</div>
     <div class="flex-1"></div>
-
-    <!-- iba Android: Moja poloha -->
-    <button id="locBtn" type="button" class="loc-btn">📍 Moja poloha</button>
-
     <form id="searchForm" class="grid grid-cols-1 sm:grid-cols-[1fr_auto] gap-2 w-full sm:w-[560px] max-w-full" novalidate>
-      <input id="cityInput" placeholder="Zadaj mesto (napr. Hlohovec)"
+      <input id="cityInput" placeholder="Zadaj mesto (napr. Bratislava)"
              class="w-full px-4 py-2.5 rounded-lg bg-white/20 border border-white/20 placeholder-white/70 focus:outline-none focus:ring-2 focus:ring-white/50"
              autocomplete="off" inputmode="search" type="search" />
       <button id="searchBtn" type="submit"
@@ -146,7 +130,7 @@
             <div class="glass p-2 rounded-lg"><div class="text-white/70 text-sm">Aktuálne</div><div id="uvNow" class="mono font-semibold">—</div></div>
             <div class="glass p-2 rounded-lg"><div class="text-white/70 text-sm">Dnešné maximum</div><div id="uvMax" class="mono font-semibold">—</div></div>
           </div>
-          <!-- žiadna „Úroveň“ ani progress bar -->
+          <!-- bez textu „Úroveň“ a progress baru -->
         </div>
       </div>
     </div>
@@ -183,8 +167,7 @@ const el={
   heroIcon:document.getElementById('heroIcon'),
   heroTemp:document.getElementById('heroTemp'),
   loading:document.getElementById('loading'),
-  err:document.getElementById('err'),
-  locBtn:document.getElementById('locBtn')
+  err:document.getElementById('err')
 };
 
 /* helpers */
@@ -213,35 +196,20 @@ function withIcon(code){ return `${iconFor(code)} ${descFor(code)}`; }
 function dd2dir(dd){ if(dd==null||isNaN(dd)) return '—'; const deg=((dd%360)+360)%360; const dirs=['S','SV','V','JV','J','JZ','Z','SZ']; return dirs[Math.floor((deg+22.5)/45)%8]; }
 function fmtTime(iso){ const d=new Date(iso); return d.getHours().toString().padStart(2,'0')+':00'; }
 
-/* platform / geolokácia */
+/* platform */
 const isAndroid = () => /Android/i.test(navigator.userAgent);
 const isSecure = () => location.protocol === 'https:' || location.hostname === 'localhost';
-
-function maybeShowLocateButton(){
-  if(isAndroid() && isSecure() && 'geolocation' in navigator){
-    el.locBtn.style.display='inline-flex';
-    // nenútený hint pre prvú návštevu
-    if(!sessionStorage.getItem('loc_hint')){
-      const t=document.createElement('div');
-      t.className='toast'; t.textContent='Tip: klikni na „Moja poloha“ a povol prístup.';
-      document.body.appendChild(t);
-      setTimeout(()=>{ t.remove(); }, 3200);
-      sessionStorage.setItem('loc_hint','1');
-    }
-  }
-}
-
-async function reverseGeocode(lat,lon){
-  const r=await fetch(`${GEO}/reverse?latitude=${lat}&longitude=${lon}&language=sk&format=json`);
-  const j=await r.json();
-  const res = j?.results?.[0] || {};
-  return { name: res.name || 'Moja poloha', country: res.country || '', latitude: lat, longitude: lon };
-}
+const isAndroidWebView = () => /; wv\)|Version\/\d+\.\d+ Chrome\/\d+\.\d+ Mobile Safari\/\d+/i.test(navigator.userAgent);
 
 /* API */
 async function geocode(q){
   const r=await fetch(`${GEO}/search?name=${encodeURIComponent(q)}&count=1&language=sk`);
   const j=await r.json(); if(!j.results||j.results.length===0) throw new Error('notfound'); return j.results[0];
+}
+async function reverseGeocode(lat,lon){
+  const r=await fetch(`${GEO}/reverse?latitude=${lat}&longitude=${lon}&count=1&language=sk`);
+  const j=await r.json(); if(!j.results||!j.results.length) return {name:`${lat.toFixed(3)}, ${lon.toFixed(3)}`, country:''};
+  return j.results[0];
 }
 async function fetchWx(lat,lon){
   const url=`${API}/forecast?latitude=${lat}&longitude=${lon}`
@@ -369,7 +337,7 @@ function renderUV(wx){
   el.uvMax.textContent = uvMax!=null ? uvMax.toFixed(1) : '—';
 }
 
-/* beh */
+/* beh podľa mesta / súradníc */
 async function runByCityName(q){
   el.loading.classList.remove('hidden'); el.err.classList.add('hidden');
   try{
@@ -391,30 +359,37 @@ async function runByCoords(lat,lon){
   finally{ el.loading.classList.add('hidden'); }
 }
 
+/* AUTO GEO – len Android appka/webview; fallback Bratislava */
+async function autoLocateOnStart(){
+  const onAndroid = isAndroid();
+  const geoAvail = 'geolocation' in navigator;
+  // V prehliadači je potrebné HTTPS; vo WebView HTTPS nevyžadujem (rozhoduje WebView klient)
+  const allowedContext = isSecure() || isAndroidWebView();
+
+  if(onAndroid && geoAvail && allowedContext){
+    try{
+      const pos = await new Promise((resolve,reject)=>{
+        navigator.geolocation.getCurrentPosition(resolve, reject, {
+          enableHighAccuracy:true, timeout:10000, maximumAge:0
+        });
+      });
+      await runByCoords(pos.coords.latitude, pos.coords.longitude);
+      return;
+    }catch(e){
+      // zamietnuté / timeout / chyba -> padni na Bratislavu
+    }
+  }
+  // fallback pre všetko ostatné
+  await runByCityName('Bratislava');
+}
+
 /* UI handlers */
 document.getElementById('searchForm').addEventListener('submit', (ev)=>{
   ev.preventDefault(); const q=el.input.value.trim(); if(q) runByCityName(q);
 });
 
-/* Android-only „Moja poloha“ */
-el.locBtn.addEventListener('click', async ()=>{
-  if(!isSecure()){ alert('Geolokácia vyžaduje HTTPS.'); return; }
-  const opts={ enableHighAccuracy:true, timeout:12000, maximumAge:0 };
-  navigator.geolocation.getCurrentPosition(
-    pos => runByCoords(pos.coords.latitude, pos.coords.longitude),
-    err => {
-      const t=document.createElement('div'); t.className='toast';
-      t.textContent = err.code===1 ? 'Prístup k polohe bol zamietnutý.' : 'Polohu sa nepodarilo získať.';
-      document.body.appendChild(t); setTimeout(()=>t.remove(), 3000);
-    },
-    opts
-  );
-});
-
-/* init */
-maybeShowLocateButton();
-el.input.value='Hlohovec';
-runByCityName('Hlohovec');
+/* štart: auto GEO (Android), inak Bratislava */
+autoLocateOnStart();
 </script>
 </body>
 </html>
