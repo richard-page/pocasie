@@ -12,7 +12,7 @@
   html, body {
     width: 100%;
     max-width: 100%;
-    overflow-x: hidden;          /* bez horizontálneho posunu celej stránky */
+    overflow-x: hidden;          /* bez horizontálneho posunu tela */
     overscroll-behavior-x: none;
     touch-action: pan-y;
   }
@@ -34,9 +34,9 @@
   .val-bold{ font-weight: 600; color:#fff }
   .val-sub { color: rgba(255,255,255,.75); font-size:.9rem }
 
-  .metric{ background: var(--glass); border: 1px solid var(--glass-b); border-radius:.75rem; padding:.75rem .9rem }
-  .metric .label{ color: rgba(255,255,255,.75); font-size:.9rem }
-  .metric .val{ font-size:1.125rem; font-weight:600; color:#fff }
+  .metric{ background: var(--glass); border: 1px solid var(--glass-b); border-radius:.65rem; padding:.55rem .7rem }
+  .metric .label{ color: rgba(255,255,255,.72); font-size:.8rem; line-height:1.15 }
+  .metric .val{ font-size:1.05rem; font-weight:600; color:#fff; line-height:1.25 }
 
   .uv-bar{ height:10px; border-radius:9999px; background:rgba(255,255,255,.18); overflow:hidden }
   .uv-fill{ height:100%; border-radius:9999px }
@@ -109,7 +109,7 @@
         </table>
       </div>
 
-      <!-- MOBILE: karty -->
+      <!-- MOBILE: karty (všetko viditeľné bez bočného posuvu) -->
       <div id="hourList" class="block lg:hidden p-2 space-y-2"></div>
     </div>
 
@@ -293,7 +293,7 @@ function renderHourly(wx){
     const cld=H.cloud_cover?.[i];
     const timeStr=fmtTime(H.time[i]);
 
-    /* DESKTOP: riadok tabuľky */
+    /* DESKTOP riadok */
     const tr=document.createElement('tr'); tr.className='hover:bg-white/10';
     tr.innerHTML=`
       <td class="mono">${timeStr}</td>
@@ -309,7 +309,7 @@ function renderHourly(wx){
       <td class="val-bold mono">${cld!=null?`${cld}%`:'—'}</td>`;
     el.hourRows.appendChild(tr);
 
-    /* MOBILE: karta */
+    /* MOBILE karta – 2 riadky mriežky, všetko viditeľné */
     const card=document.createElement('div'); 
     card.className='glass rounded-lg p-3';
     card.innerHTML=`
@@ -323,11 +323,24 @@ function renderHourly(wx){
         </div>
         <div class="mono text-lg font-semibold">${temp}°</div>
       </div>
+
       <div class="grid grid-cols-2 gap-2 mt-3 text-sm">
-        <div class="metric"><div class="label">Zrážky</div><div class="val mono">${pop!=null?`${pop}%`:'—'} · ${pmm!=null?pmm.toFixed(1):'0.0'} mm</div></div>
-        <div class="metric"><div class="label">Vietor</div><div class="val mono">${wind!=null?`${Math.round(wind)} km/h`:'—'} (${dd2dir(wdir)})</div></div>
-        <div class="metric"><div class="label">Nárazy</div><div class="val mono">${gust!=null?Math.round(gust)+' km/h':'—'}</div></div>
-        <div class="metric"><div class="label">Oblačnosť</div><div class="val mono">${cld!=null?`${cld}%`:'—'}</div></div>
+        <div class="metric">
+          <div class="label">Zrážky</div>
+          <div class="val mono">${pop!=null?`${pop}%`:'—'} · ${pmm!=null?pmm.toFixed(1):'0.0'} mm</div>
+        </div>
+        <div class="metric">
+          <div class="label">Vietor</div>
+          <div class="val mono">${wind!=null?`${Math.round(wind)} km/h`:'—'} (${dd2dir(wdir)})</div>
+        </div>
+        <div class="metric">
+          <div class="label">Nárazy</div>
+          <div class="val mono">${gust!=null?Math.round(gust)+' km/h':'—'}</div>
+        </div>
+        <div class="metric">
+          <div class="label">Oblačnosť</div>
+          <div class="val mono">${cld!=null?`${cld}%`:'—'}</div>
+        </div>
       </div>`;
     el.hourList.appendChild(card);
   }
