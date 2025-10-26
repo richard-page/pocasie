@@ -16,9 +16,11 @@
   .mono  { font-feature-settings:"tnum" 1,"lnum" 1 }
   .sticky-header{ position:sticky; top:0; z-index:50; backdrop-filter:blur(10px) }
 
+  /* Desktop tabuľka */
   .tbl th,.tbl td{ padding:.65rem .75rem; white-space:nowrap }
   .tbl thead th{ position:sticky; top:0; background:rgba(0,0,0,.15); backdrop-filter:blur(6px) }
   .val-bold{ font-weight:600; color:#fff }
+  .val-sub { color:rgba(255,255,255,.75); font-size:.9rem }
 
   .metric{ background:var(--glass); border:1px solid var(--glass-b); border-radius:.75rem; padding:.6rem .8rem }
   .metric .label{ color:rgba(255,255,255,.72); font-size:.8rem; line-height:1.15 }
@@ -27,12 +29,19 @@
   .uv-bar{ height:10px; border-radius:9999px; background:rgba(255,255,255,.18); overflow:hidden }
   .uv-fill{ height:100%; border-radius:9999px }
 
+  main, header, section, .glass, .grid, .flex { min-width:0 }
+  .overflow-x-auto { max-width:100%; overflow-x:auto; -webkit-overflow-scrolling:touch }
+  img,video,canvas,table { max-width:100% }
+
+  /* Mobilný accordion – plynulé rozbaľovanie */
   .card{ border-radius:1rem; border:1px solid var(--glass-b); background:var(--glass); }
   .acc-btn{ width:100%; padding:.9rem .95rem; display:flex; align-items:center; justify-content:space-between; gap:.75rem }
   .acc-head{ display:flex; align-items:center; gap:.8rem; text-align:left }
   .acc-right{ display:flex; align-items:center; gap:.5rem; margin-left:auto }
+  .chip{ font-size:.9rem; opacity:.95 }
   .chev{ transition:transform .22s ease }
   .acc-btn[aria-expanded="true"] .chev{ transform:rotate(180deg) }
+
   .panel-wrap{ overflow:hidden; height:0; transition:height .22s ease }
   .panel{ padding:0 .95rem .95rem .95rem; opacity:0; transform:translateY(-4px); transition:opacity .22s ease, transform .22s ease }
   .panel.open{ opacity:1; transform:none }
@@ -53,6 +62,8 @@
 </header>
 
 <main class="w-full px-2 md:px-4 lg:px-6 py-4 space-y-4">
+
+  <!-- Aktuálne -->
   <section id="current" class="hidden glass p-4">
     <div class="text-sm text-white/80">📍 <span id="placeName">—</span></div>
     <div class="mt-2 flex flex-wrap items-center gap-4">
@@ -73,145 +84,378 @@
     </div>
   </section>
 
+  <!-- Layout -->
   <section class="grid grid-cols-1 lg:grid-cols-12 gap-4">
+    <!-- 24 h predpoveď -->
     <div class="lg:col-span-7 glass overflow-hidden">
       <div class="flex items-center justify-between px-4 py-3 border-b border-white/20">
         <h2 class="text-lg font-semibold">24-hodinová predpoveď</h2>
         <div id="tzInfo" class="text-white/70 text-sm"></div>
       </div>
+
+      <!-- Desktop tabuľka -->
       <div class="hidden lg:block overflow-x-auto">
         <table class="tbl w-full min-w-[600px] text-sm">
           <thead>
             <tr class="text-white/90">
-              <th>Čas</th><th>Počasie</th><th>Teplota</th><th>Zrážky</th><th>Vietor</th><th>Oblačnosť</th>
+              <th class="text-left">Čas</th>
+              <th class="text-left">Počasie</th>
+              <th class="text-left">Teplota</th>
+              <th class="text-left">Zrážky</th>
+              <th class="text-left">Vietor</th>
+              <th class="text-left">Oblačnosť</th>
             </tr>
           </thead>
           <tbody id="hourRows" class="divide-y divide-white/10"></tbody>
         </table>
       </div>
+
+      <!-- Mobil – rozbaľovacie karty -->
       <div id="hourList" class="block lg:hidden p-2 space-y-2"></div>
     </div>
 
+    <!-- Pravý stĺpec -->
     <div class="lg:col-span-5 space-y-4">
-      <div class="glass"><div class="px-4 py-3 border-b border-white/20"><h2 class="text-lg font-semibold">10-dňová predpoveď</h2></div><div id="dailyList" class="p-3 space-y-2"></div></div>
-      <div class="glass"><div class="px-4 py-3 border-b border-white/20"><h2 class="text-lg font-semibold">Presne pred rokom</h2></div><div id="historyExact" class="p-4"></div></div>
-      <div class="glass"><div class="px-4 py-3 border-b border-white/20"><h2 class="text-lg font-semibold">UV index</h2></div>
+      <div class="glass">
+        <div class="px-4 py-3 border-b border-white/20"><h2 class="text-lg font-semibold">10-dňová predpoveď</h2></div>
+        <div id="dailyList" class="p-3 space-y-2"></div>
+      </div>
+
+      <div class="glass">
+        <div class="px-4 py-3 border-b border-white/20"><h2 class="text-lg font-semibold">Presne pred rokom</h2></div>
+        <div id="historyExact" class="p-4"></div>
+      </div>
+
+      <div class="glass">
+        <div class="px-4 py-3 border-b border-white/20"><h2 class="text-lg font-semibold">UV index</h2></div>
         <div id="uvPanel" class="p-4 space-y-3">
           <div class="grid grid-cols-2 gap-3">
             <div class="metric"><div class="label">Aktuálne</div><div id="uvNow" class="val mono">—</div></div>
-            <div class="metric"><div class="label">Maximálne</div><div id="uvMax" class="val mono">—</div></div>
+            <div class="metric"><div class="label">Dnešné maximum</div><div id="uvMax" class="val mono">—</div></div>
           </div>
-          <div><div class="uv-bar"><div id="uvFill" class="uv-fill" style="width:0%"></div></div></div>
+          <div>
+            <div class="flex items-center justify-between mb-1">
+              <div class="text-white/80 text-sm">Úroveň: <span id="uvCat" class="font-semibold text-white"></span></div>
+              <div class="text-white/70 text-sm mono">0–11+</div>
+            </div>
+            <div class="uv-bar"><div id="uvFill" class="uv-fill" style="width:0%"></div></div>
+          </div>
         </div>
       </div>
     </div>
   </section>
+
+  <div id="loading" class="hidden text-center py-10">
+    <div class="inline-block w-8 h-8 border-4 border-white/30 border-t-white rounded-full animate-spin"></div>
+    <p class="mt-2">Načítavam…</p>
+  </div>
+  <div id="err" class="hidden glass p-4">
+    <div class="text-center text-red-200">Nepodarilo sa načítať údaje. Skús iné mesto.</div>
+  </div>
 </main>
 
 <script>
 const API='https://api.open-meteo.com/v1';
 const GEO='https://geocoding-api.open-meteo.com/v1';
+const ARCH='https://archive-api.open-meteo.com/v1/era5';
 
 const el={
-  input:cityInput, btn:searchBtn, tzInfo, hourRows, hourList, dailyList,
-  historyExact, uvNow, uvMax, uvFill, place:placeName, curTemp, curDesc,
-  curIcon, curWind, curGust, curHum, curFeels, sunInfo
+  input:document.getElementById('cityInput'),
+  btn:document.getElementById('searchBtn'),
+  loading:document.getElementById('loading'),
+  err:document.getElementById('err'),
+  current:document.getElementById('current'),
+  tzInfo:document.getElementById('tzInfo'),
+  hourRows:document.getElementById('hourRows'),
+  hourList:document.getElementById('hourList'),
+  dailyList:document.getElementById('dailyList'),
+  historyExact:document.getElementById('historyExact'),
+  uvNow:document.getElementById('uvNow'),
+  uvMax:document.getElementById('uvMax'),
+  uvFill:document.getElementById('uvFill'),
+  uvCat:document.getElementById('uvCat'),
+  place:document.getElementById('placeName'),
+  curTemp:document.getElementById('curTemp'),
+  curDesc:document.getElementById('curDesc'),
+  curIcon:document.getElementById('curIcon'),
+  curWind:document.getElementById('curWind'),
+  curGust:document.getElementById('curGust'),
+  curHum:document.getElementById('curHum'),
+  curFeels:document.getElementById('curFeels'),
+  sunInfo:document.getElementById('sunInfo')
 };
 
+function show(n,yes=true){ n.classList[yes?'remove':'add']('hidden'); }
 function sanitizeCode(c){ c=Number(c); return (c===45||c===48)?3:c; }
 function iconFor(c,day=true){
   c=sanitizeCode(c);
-  const m={0:'☀️',1:'🌤️',2:'⛅',3:'☁️',61:'🌧️',63:'🌧️',65:'🌧️',80:'🌦️',81:'🌧️',82:'⛈️',95:'⛈️'};
-  return m[c]||'☁️';
+  const m={0:day?'☀️':'🌙',1:day?'🌤️':'🌙',2:'⛅',3:'☁️',
+           51:'🌦️',53:'🌦️',55:'🌧️',56:'🌧️',57:'🌧️',
+           61:'🌦️',63:'🌧️',65:'🌧️',66:'🌧️',67:'🌧️',
+           71:'🌨️',73:'❄️',75:'❄️',77:'❄️',
+           80:'🌦️',81:'🌧️',82:'⛈️',85:'🌨️',86:'❄️',
+           95:'⛈️',96:'⛈️',99:'⛈️'};
+  if(m[c]) return m[c];
+  if(c<=1) return day?'☀️':'🌙';
+  if(c<=3) return c===2?'⛅':'☁️';
+  if(c<=67) return '🌧️';
+  if(c<=86) return '❄️';
+  return '⛈️';
 }
 function descFor(c){
-  const d={0:'Jasno',1:'Prevažne jasno',2:'Oblačno',3:'Zamračené',61:'Slabý dážď',63:'Dážď',65:'Silný dážď',80:'Prehánky',81:'Mierne prehánky',82:'Silné prehánky',95:'Búrka'};
-  return d[sanitizeCode(c)]||'—';
+  c=sanitizeCode(c);
+  const d={0:'Jasno',1:'Prevažne jasno',2:'Čiastočne oblačno',3:'Zamračené',
+           51:'Mrholenie',61:'Slabý dážď',63:'Mierny dážď',65:'Silný dážď',
+           71:'Slabé sneženie',73:'Mierne sneženie',75:'Silné sneženie',
+           80:'Prehánky',81:'Mierne prehánky',82:'Silné prehánky',
+           95:'Búrka',96:'Búrka s krúpami',99:'Silná búrka s krúpami'};
+  return d[c] || '—';
 }
-function fmtTime(t){return new Date(t).getHours().toString().padStart(2,'0')+':00';}
+
+/* --- SLOVENSKÉ 8-smerné skratky vetra --- */
 function dd2dir(dd){
-  if(dd==null||isNaN(dd))return '—';
-  const k=['S','SV','V','JV','J','JZ','Z','SZ'];
-  const i=Math.round(dd/45)%8;
-  return k[i];
+  if(dd==null||isNaN(dd)) return '—';
+  const deg = ((dd % 360) + 360) % 360;
+  const dirs = ['S','SV','V','JV','J','JZ','Z','SZ']; // sever...západ
+  const idx = Math.floor((deg + 22.5) / 45) % 8;
+  return dirs[idx];
+}
+
+function fmtTime(iso){ const d=new Date(iso); return d.getHours().toString().padStart(2,'0')+':00'; }
+function ymd(d){ return d.toISOString().slice(0,10); }
+
+function uvCategory(u){
+  if(u==null||isNaN(u)) return {name:'—',color:'background:rgba(255,255,255,.35);'};
+  if(u<=2) return {name:'Nízky',color:'background:#9AE6B4;'}; if(u<=5) return {name:'Stredný',color:'background:#F6E05E;'};
+  if(u<=7) return {name:'Vysoký',color:'background:#F6AD55;'}; if(u<=10) return {name:'Veľmi vysoký',color:'background:#F56565;'};
+  return {name:'Extrémny',color:'background:#B83280;'};
 }
 
 async function geocode(q){
   const r=await fetch(`${GEO}/search?name=${encodeURIComponent(q)}&count=1&language=sk`);
-  const j=await r.json();return j.results[0];
+  const j=await r.json(); if(!j.results||j.results.length===0) throw new Error('notfound'); return j.results[0];
 }
 async function fetchWx(lat,lon){
   const url=`${API}/forecast?latitude=${lat}&longitude=${lon}`
-  +`&current=temperature_2m,relative_humidity_2m,apparent_temperature,is_day,weather_code,wind_speed_10m,wind_direction_10m`
-  +`&hourly=temperature_2m,dew_point_2m,surface_pressure,weather_code,precipitation_probability,precipitation,wind_speed_10m,wind_direction_10m,cloud_cover`
-  +`&daily=temperature_2m_max,temperature_2m_min,weather_code,sunrise,sunset&timezone=auto&forecast_days=10`;
-  const r=await fetch(url);return r.json();
+    +`&current=temperature_2m,relative_humidity_2m,apparent_temperature,is_day,weather_code,wind_speed_10m,wind_gusts_10m,wind_direction_10m`
+    +`&hourly=temperature_2m,dew_point_2m,surface_pressure,weather_code,precipitation_probability,precipitation,wind_speed_10m,wind_gusts_10m,wind_direction_10m,cloud_cover,uv_index`
+    +`&daily=weather_code,temperature_2m_max,temperature_2m_min,sunrise,sunset,uv_index_max`
+    +`&timezone=auto&forecast_days=16`;
+  const r=await fetch(url); if(!r.ok) throw new Error('api'); return await r.json();
+}
+async function fetchHistoryExact(lat,lon){
+  const d=new Date(); d.setFullYear(d.getFullYear()-1);
+  const date=ymd(d);
+  const url=`${ARCH}?latitude=${lat}&longitude=${lon}`
+    +`&start_date=${date}&end_date=${date}`
+    +`&daily=temperature_2m_max,temperature_2m_min,precipitation_sum,weathercode`
+    +`&timezone=auto`;
+  const r=await fetch(url); if(!r.ok) throw new Error('arch1'); return await r.json();
 }
 
 function renderCurrent(city,wx){
-  const c=wx.current;
-  placeName.textContent=`${city.name}, ${city.country}`;
-  curTemp.textContent=Math.round(c.temperature_2m)+'°';
-  curDesc.textContent=descFor(c.weather_code);
-  curIcon.textContent=iconFor(c.weather_code,!!c.is_day);
-  curWind.textContent=`${Math.round(c.wind_speed_10m)} km/h ${dd2dir(c.wind_direction_10m)}`;
-  curHum.textContent=c.relative_humidity_2m+' %';
-  curFeels.textContent=Math.round(c.apparent_temperature)+'°';
+  el.place.textContent=`${city.name}${city.country?`, ${city.country}`:''}`;
+  const c=wx.current, code=sanitizeCode(c.weather_code);
+  el.curTemp.textContent=Math.round(c.temperature_2m)+'°';
+  el.curDesc.textContent=descFor(code);
+  el.curIcon.textContent=iconFor(code,!!c.is_day);
+  el.curWind.textContent=`${Math.round(c.wind_speed_10m)} km/h ${dd2dir(c.wind_direction_10m)}`;
+  el.curGust.textContent=`${Math.round(c.wind_gusts_10m)} km/h`;
+  el.curHum.textContent=c.relative_humidity_2m+' %';
+  el.curFeels.textContent=Math.round(c.apparent_temperature)+'°';
+  const sr=wx.daily.sunrise?.[0], ss=wx.daily.sunset?.[0];
+  const t=s=>s?new Date(s).toLocaleTimeString([],{hour:'2-digit',minute:'2-digit'}):'—';
+  el.sunInfo.textContent=`Východ ${t(sr)} · Západ ${t(ss)}`;
+  show(el.current,true);
 }
 
 function renderHourly(wx){
   const H=wx.hourly;
-  hourRows.innerHTML=''; hourList.innerHTML='';
+  el.tzInfo.textContent=wx.timezone;
+  el.hourRows.innerHTML='';
+  el.hourList.innerHTML='';
+
   const now=new Date(); let start=0;
-  for(let i=0;i<H.time.length;i++){ if(new Date(H.time[i])>=now){start=i;break;} }
+  for(let i=0;i<H.time.length;i++){ if(new Date(H.time[i])>=now){ start=i; break; } }
   const end=Math.min(start+24,H.time.length);
 
   for(let i=start;i<end;i++){
     const code=sanitizeCode(H.weather_code[i]);
     const temp=Math.round(H.temperature_2m[i]);
+    const dew=H.dew_point_2m?.[i];
+    const pres=H.surface_pressure?.[i];
     const pop=H.precipitation_probability?.[i];
     const pmm=H.precipitation?.[i];
-    const wind=H.wind_speed_10m?.[i],wdir=H.wind_direction_10m?.[i];
-    const pres=H.surface_pressure?.[i];
-    const dew=H.dew_point_2m?.[i];
+    const wind=H.wind_speed_10m?.[i], wdir=H.wind_direction_10m?.[i];
     const cld=H.cloud_cover?.[i];
-    const time=fmtTime(H.time[i]);
+    const timeStr=fmtTime(H.time[i]);
 
-    // PC
-    const tr=document.createElement('tr');
-    tr.innerHTML=`<td>${time}</td><td>${iconFor(code,true)} ${descFor(code)}</td><td>${temp}°</td>
-    <td>${pop??0}% · ${(pmm??0).toFixed(1)} mm</td><td>${Math.round(wind)} km/h ${dd2dir(wdir)}</td><td>${cld??0}%</td>`;
-    hourRows.appendChild(tr);
+    /* Desktop riadok */
+    const tr=document.createElement('tr'); tr.className='hover:bg-white/10';
+    tr.innerHTML=`
+      <td class="mono">${timeStr}</td>
+      <td class="flex items-center gap-2"><span class="text-xl">${iconFor(code,true)}</span><span class="text-white/85 font-medium">${descFor(code)}</span></td>
+      <td class="val-bold mono">${temp}°</td>
+      <td class="val-bold mono">${pop!=null?`${pop}%`:'—'} · ${pmm!=null?pmm.toFixed(1):'0.0'} mm</td>
+      <td class="val-bold mono">${wind!=null?`${Math.round(wind)} km/h`:'—'} (${dd2dir(wdir)})</td>
+      <td class="val-bold mono">${cld!=null?`${cld}%`:'—'}</td>`;
+    el.hourRows.appendChild(tr);
 
-    // Mobil
-    const card=document.createElement('div');card.className='card';
-    const btn=document.createElement('button');btn.className='acc-btn';btn.innerHTML=`
-      <div class="acc-head"><div class="text-2xl">${iconFor(code,true)}</div>
-      <div><div class="mono font-semibold">${time} · ${temp}°</div><div class="text-white/80 text-sm">${descFor(code)}</div></div></div>
-      <div class="acc-right text-sm">${pop??0}% · ${(pmm??0).toFixed(1)} mm
-      <svg class="chev" width="18" height="18" viewBox="0 0 24 24" stroke="currentColor" fill="none" stroke-width="2"><polyline points="6 9 12 15 18 9"/></svg></div>`;
-    const wrap=document.createElement('div');wrap.className='panel-wrap';
-    const panel=document.createElement('div');panel.className='panel';
-    panel.innerHTML=`<div class="grid grid-cols-2 gap-2 mt-3 text-sm">
-      <div class="metric"><div class="label">Tlak</div><div class="val mono">${pres?Math.round(pres):'—'} hPa</div></div>
-      <div class="metric"><div class="label">Rosný bod</div><div class="val mono">${dew?Math.round(dew):'—'}°</div></div>
-      <div class="metric"><div class="label">Oblačnosť</div><div class="val mono">${cld??0}%</div></div>
-      <div class="metric"><div class="label">Vietor</div><div class="val mono">${Math.round(wind)} km/h ${dd2dir(wdir)}</div></div>
-    </div>`;
-    wrap.appendChild(panel);card.appendChild(btn);card.appendChild(wrap);hourList.appendChild(card);
-    let open=false;const toggle=()=>{wrap.style.height=open?panel.scrollHeight+'px':'0';panel.classList.toggle('open',open)};
-    btn.onclick=()=>{open=!open;toggle();};wrap.addEventListener('transitionend',()=>{if(open)wrap.style.height='auto';});
+    /* Mobil karta */
+    const card=document.createElement('div'); card.className='card';
+    const btn=document.createElement('button'); btn.className='acc-btn'; btn.type='button'; btn.setAttribute('aria-expanded','false');
+    btn.innerHTML=`
+      <div class="acc-head">
+        <div class="text-2xl">${iconFor(code,true)}</div>
+        <div>
+          <div class="mono font-semibold">${timeStr} · ${temp}°</div>
+          <div class="text-white/80 text-sm">${descFor(code)}</div>
+        </div>
+      </div>
+      <div class="acc-right">
+        <span class="chip mono">${pop!=null?`${pop}%`:'—'} · ${pmm!=null?pmm.toFixed(1):'0.0'} mm</span>
+        <svg class="chev" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="6 9 12 15 18 9"></polyline></svg>
+      </div>`;
+
+    const wrap=document.createElement('div'); wrap.className='panel-wrap';
+    const panel=document.createElement('div'); panel.className='panel';
+    panel.innerHTML=`
+      <div class="grid grid-cols-2 gap-2 mt-3 text-sm">
+        <div class="metric"><div class="label">Tlak</div><div class="val mono">${pres!=null?Math.round(pres):'—'} hPa</div></div>
+        <div class="metric"><div class="label">Rosný bod</div><div class="val mono">${dew!=null?Math.round(dew):'—'}°</div></div>
+        <div class="metric"><div class="label">Oblačnosť</div><div class="val mono">${cld!=null?`${cld}%`:'—'}</div></div>
+        <div class="metric"><div class="label">Vietor</div><div class="val mono">${wind!=null?`${Math.round(wind)} km/h`:'—'} (${dd2dir(wdir)})</div></div>
+      </div>`;
+
+    wrap.appendChild(panel);
+    card.appendChild(btn);
+    card.appendChild(wrap);
+    el.hourList.appendChild(card);
+
+    // plynulé rozbaľovanie
+    let open=false;
+    const adjust = () => { wrap.style.height = open ? panel.scrollHeight+'px' : '0px'; panel.classList.toggle('open', open); };
+    btn.addEventListener('click', ()=>{
+      const wasAuto = wrap.style.height==='auto';
+      if(wasAuto){ wrap.style.height = panel.scrollHeight+'px'; }
+      open=!open; btn.setAttribute('aria-expanded', String(open)); requestAnimationFrame(adjust);
+    });
+    wrap.addEventListener('transitionend', (e)=>{
+      if(e.propertyName!=='height') return;
+      if(open){ wrap.style.height='auto'; }
+    });
   }
 }
 
-async function run(q){
-  const city=await geocode(q);
-  const wx=await fetchWx(city.latitude,city.longitude);
-  renderCurrent(city,wx);
-  renderHourly(wx);
+function renderDaily(wx){
+  const D=wx.daily; el.dailyList.innerHTML='';
+  const n=Math.min(10,D.time.length);
+  for(let i=0;i<n;i++){
+    const d=new Date(D.time[i]);
+    const dn=['Ne','Po','Ut','St','Št','Pi','So'][d.getDay()];
+    const tmin=Math.round(D.temperature_2m_min[i]);
+    const tmax=Math.round(D.temperature_2m_max[i]);
+    const code=sanitizeCode(D.weather_code[i]);
+
+    const card=document.createElement('div'); card.className='glass p-3 rounded-xl';
+    card.innerHTML=`
+      <div class="flex items-center justify-between">
+        <div class="flex items-center gap-3">
+          <div class="text-2xl">${iconFor(code,true)}</div>
+          <div>
+            <div class="font-medium">${dn} ${d.getDate()}</div>
+            <div class="text-white/70 text-sm">${descFor(code)}</div>
+          </div>
+        </div>
+        <div class="mono text-lg font-semibold">${tmax}° / <span class="text-white/80">${tmin}°</span></div>
+      </div>`;
+    el.dailyList.appendChild(card);
+  }
 }
-searchBtn.onclick=()=>{if(cityInput.value.trim())run(cityInput.value.trim())};
-cityInput.value='Hlohovec';run('Hlohovec');
+
+function renderHistoryExact(hist, todayTmax, todayTmin){
+  const H=hist.daily;
+  const dateStr=H.time?.[0];
+  if(!dateStr){ el.historyExact.innerHTML='<div class="text-white/80">Dáta nie sú dostupné.</div>'; return; }
+  const d=new Date(dateStr);
+  const dn=['Ne','Po','Ut','St','Št','Pi','So'][d.getDay()];
+  const tmin=Math.round(H.temperature_2m_min?.[0]);
+  const tmax=Math.round(H.temperature_2m_max?.[0]);
+  const pr=(H.precipitation_sum?.[0] ?? 0).toFixed(1);
+  const code=(H.weathercode?.[0] ?? 3);
+  const icon=iconFor(code,true);
+  const desc=descFor(code);
+
+  const dMax = typeof todayTmax==='number' ? Math.round(todayTmax) : null;
+  const dMin = typeof todayTmin==='number' ? Math.round(todayTmin) : null;
+  const deltaMax = dMax!=null ? (tmax - dMax) : null;
+  const deltaMin = dMin!=null ? (tmin - dMin) : null;
+  const sign = v => (v>0?`+${v}`:`${v}`);
+
+  el.historyExact.innerHTML=`
+    <div class="glass p-4 rounded-xl">
+      <div class="flex items-center gap-4">
+        <div class="text-5xl">${icon}</div>
+        <div>
+          <div class="font-semibold text-lg">${dn} ${d.getDate()}.${(d.getMonth()+1).toString().padStart(2,'0')}.${d.getFullYear()}</div>
+          <div class="text-white/80">${desc}</div>
+        </div>
+      </div>
+      <div class="grid grid-cols-2 sm:grid-cols-4 gap-3 mt-4">
+        <div class="metric"><div class="label">Max</div><div class="val mono">${tmax}°</div></div>
+        <div class="metric"><div class="label">Min</div><div class="val mono">${tmin}°</div></div>
+        <div class="metric"><div class="label">Zrážky</div><div class="val mono">${pr} mm</div></div>
+        <div class="metric"><div class="label">Rozdiel vs. dnes</div>
+          <div class="val mono">${(dMax!=null&&dMin!=null)?`${sign(tmax-dMax)}° / ${sign(tmin-dMin)}°`:'—'}</div>
+        </div>
+      </div>
+    </div>`;
+}
+
+function renderUV(wx){
+  const H=wx.hourly;
+  let uvNow = null;
+  const now = new Date();
+  for(let i=0;i<H.time.length;i++){
+    if(new Date(H.time[i])>=now){ uvNow = H.uv_index?.[i] ?? null; break; }
+  }
+  const uvMax = wx.daily.uv_index_max?.[0] ?? null;
+  const cat = uvCategory(uvMax ?? uvNow);
+
+  el.uvNow.textContent = uvNow!=null ? uvNow.toFixed(1) : '—';
+  el.uvMax.textContent = uvMax!=null ? uvMax.toFixed(1) : '—';
+  el.uvCat.textContent = cat.name;
+
+  const u = Math.max(0, Math.min(11, (uvMax!=null?uvMax:uvNow)||0));
+  el.uvFill.style.width = (u/11*100).toFixed(0)+'%';
+  el.uvFill.style.cssText += ';'+cat.color;
+}
+
+async function run(q){
+  el.loading.classList.remove('hidden'); el.err.classList.add('hidden');
+  try{
+    const city=await geocode(q);
+    const wx=await fetchWx(city.latitude,city.longitude);
+    const histExact=await fetchHistoryExact(city.latitude,city.longitude);
+
+    renderCurrent(city,wx);
+    renderHourly(wx);
+    renderDaily(wx);
+
+    const todayTmax = wx.daily.temperature_2m_max?.[0];
+    const todayTmin = wx.daily.temperature_2m_min?.[0];
+    renderHistoryExact(histExact, todayTmax, todayTmin);
+
+    renderUV(wx);
+  }catch(e){ el.err.classList.remove('hidden'); }
+  finally{ el.loading.classList.add('hidden'); }
+}
+
+el.btn.addEventListener('click', ()=>{ const q=el.input.value.trim(); if(q) run(q); });
+el.input.addEventListener('keypress', (e)=>{ if(e.key==='Enter'){ e.preventDefault(); const q=el.input.value.trim(); if(q) run(q); }});
+
+el.input.value='Hlohovec';
+run('Hlohovec');
 </script>
 </body>
 </html>
