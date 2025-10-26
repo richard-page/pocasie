@@ -29,11 +29,11 @@
   main, header, section, .glass, .grid, .flex { min-width:0 }
   img,video,canvas,table { max-width:100% }
 
-  /* Layout: mobil grid 1 stĺpec, ≥lg flex s rovnakou výškou stĺpcov */
+  /* Layout: mobil = 1 stĺpec; desktop = dva stĺpce bez natiahnutia výšky */
   .cols { display:grid; grid-template-columns:1fr; gap:1rem; }
   @media (min-width:1024px){
-    .cols { display:flex; align-items:stretch; gap:1rem; }
-    .col-left, .col-right { align-self:stretch; }
+    .cols { display:flex; align-items:flex-start; gap:1rem; }  /* <- KĽÚČOVÉ: žiadne stretch */
+    .col-left, .col-right { align-self:flex-start; }
   }
 
   /* Accordion (mobil) */
@@ -93,8 +93,8 @@
 
   <!-- Hlavný layout -->
   <section class="cols">
-    <!-- ĽAVÝ PANEL: kľúčový fix -> overflow-visible na mobile -->
-    <div class="col-left glass overflow-visible lg:overflow-hidden lg:basis-7/12 flex flex-col min-h-0">
+    <!-- ĽAVÝ PANEL: mobil scroll OK (overflow-visible), desktop sa NENAŤAHUJE -->
+    <div class="col-left glass overflow-visible lg:overflow-hidden lg:basis-7/12">
       <div class="flex items-center justify-between px-4 py-3 border-b border-white/20">
         <h2 class="text-lg font-semibold">24-hodinová predpoveď</h2>
       </div>
@@ -116,7 +116,7 @@
         </table>
       </div>
 
-      <!-- Mobil – rozbaľovacie karty (musia normálne scrollovať stránkou) -->
+      <!-- Mobil – rozbaľovacie karty -->
       <div id="hourList" class="block lg:hidden p-2 space-y-2"></div>
     </div>
 
@@ -202,7 +202,6 @@ function descFor(c){
            95:'Búrka',96:'Búrka s krúpami',99:'Silná búrka s krúpami'};
   return d[c] || '—';
 }
-
 function dd2dir(dd){
   if(dd==null||isNaN(dd)) return '—';
   const deg=((dd%360)+360)%360;
@@ -210,10 +209,8 @@ function dd2dir(dd){
   const idx=Math.floor((deg+22.5)/45)%8;
   return dirs[idx];
 }
-
 function fmtTime(iso){ const d=new Date(iso); return d.getHours().toString().padStart(2,'0')+':00'; }
 function ymd(d){ return d.toISOString().slice(0,10); }
-
 function uvCategory(u){
   if(u==null||isNaN(u)) return {name:'—',color:'background:rgba(255,255,255,.35);'};
   if(u<=2) return {name:'Nízky',color:'background:#9AE6B4;'}; if(u<=5) return {name:'Stredný',color:'background:#F6E05E;'};
@@ -288,7 +285,7 @@ function renderHourly(wx){
       <td class="val-bold mono">${cld!=null?`${cld}%`:'—'}</td>`;
     el.hourRows.appendChild(tr);
 
-    // MOBIL karta
+    // Mobilná karta
     const card=document.createElement('div'); card.className='card';
     const btn=document.createElement('button'); btn.className='acc-btn'; btn.type='button'; btn.setAttribute('aria-expanded','false');
     btn.innerHTML=`
@@ -415,8 +412,11 @@ async function run(q){
     renderHistoryExact(histExact, todayTmax, todayTmin);
 
     renderUV(wx);
-  }catch(e){ el.err.classList.remove('hidden'); }
-  finally{ el.loading.classList.add('hidden'); }
+  }catch(e){
+    el.err.classList.remove('hidden');
+  }finally{
+    el.loading.classList.add('hidden');
+  }
 }
 
 el.form.addEventListener('submit', (ev)=>{
