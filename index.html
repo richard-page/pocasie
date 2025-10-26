@@ -12,7 +12,7 @@
   html, body {
     width: 100%;
     max-width: 100%;
-    overflow-x: hidden;          /* bez horizontálneho posunu tela */
+    overflow-x: hidden;
     overscroll-behavior-x: none;
     touch-action: pan-y;
   }
@@ -21,7 +21,7 @@
     margin: 0;
     background: linear-gradient(to bottom right, #0284c7, #06b6d4, #10b981);
     color: #fff;
-    font-family: system-ui, sans-serif;
+    font-family: system-ui, -apple-system, Segoe UI, Roboto, sans-serif;
   }
 
   .glass { background: var(--glass); border: 1px solid var(--glass-b); backdrop-filter: blur(10px); border-radius: .75rem; }
@@ -44,6 +44,12 @@
   main, header, section, .glass, .grid, .flex { min-width: 0; }
   .overflow-x-auto { max-width: 100%; overflow-x: auto; -webkit-overflow-scrolling: touch }
   img, video, canvas, table { max-width: 100%; }
+
+  /* rozbaľovanie na mobile */
+  .collapsible { max-height: 0; overflow: hidden; transition: max-height .25s ease; }
+  .collapsible.open { max-height: 520px; }
+  .chev { transition: transform .2s ease; }
+  .toggle[data-open="true"] .chev { transform: rotate(180deg); }
 </style>
 </head>
 <body class="min-h-screen text-white">
@@ -109,7 +115,7 @@
         </table>
       </div>
 
-      <!-- MOBILE: karty (všetko viditeľné bez bočného posuvu) -->
+      <!-- MOBILE: rozbaľovacie karty -->
       <div id="hourList" class="block lg:hidden p-2 space-y-2"></div>
     </div>
 
@@ -309,39 +315,57 @@ function renderHourly(wx){
       <td class="val-bold mono">${cld!=null?`${cld}%`:'—'}</td>`;
     el.hourRows.appendChild(tr);
 
-    /* MOBILE karta – 2 riadky mriežky, všetko viditeľné */
-    const card=document.createElement('div'); 
-    card.className='glass rounded-lg p-3';
-    card.innerHTML=`
-      <div class="flex items-center justify-between">
-        <div class="flex items-center gap-3">
-          <div class="text-2xl">${iconFor(code,true)}</div>
-          <div>
-            <div class="mono font-semibold">${timeStr}</div>
-            <div class="text-white/80 text-sm">${descFor(code)}</div>
-          </div>
-        </div>
-        <div class="mono text-lg font-semibold">${temp}°</div>
-      </div>
+    /* MOBILE rozbaľovacia karta */
+    const card=document.createElement('div');
+    const detailsId=`hour-${i}-details`;
+    card.className='glass rounded-lg';
 
-      <div class="grid grid-cols-2 gap-2 mt-3 text-sm">
-        <div class="metric">
-          <div class="label">Zrážky</div>
-          <div class="val mono">${pop!=null?`${pop}%`:'—'} · ${pmm!=null?pmm.toFixed(1):'0.0'} mm</div>
+    // hlavička = tlačidlo
+    const btn=document.createElement('button');
+    btn.className='toggle w-full px-3 py-3 flex items-center justify-between gap-3';
+    btn.setAttribute('aria-expanded','false');
+    btn.setAttribute('aria-controls',detailsId);
+    btn.setAttribute('type','button');
+    btn.dataset.open='false';
+    btn.innerHTML=`
+      <div class="flex items-center gap-3 text-left">
+        <div class="text-2xl">${iconFor(code,true)}</div>
+        <div>
+          <div class="mono font-semibold">${timeStr} · ${temp}°</div>
+          <div class="text-white/80 text-sm">${descFor(code)}</div>
         </div>
-        <div class="metric">
-          <div class="label">Vietor</div>
-          <div class="val mono">${wind!=null?`${Math.round(wind)} km/h`:'—'} (${dd2dir(wdir)})</div>
-        </div>
-        <div class="metric">
-          <div class="label">Nárazy</div>
-          <div class="val mono">${gust!=null?Math.round(gust)+' km/h':'—'}</div>
-        </div>
-        <div class="metric">
-          <div class="label">Oblačnosť</div>
-          <div class="val mono">${cld!=null?`${cld}%`:'—'}</div>
-        </div>
-      </div>`;
+      </div>
+      <div class="text-sm mono text-white/90 flex items-center gap-2">
+        <span>${pop!=null?`${pop}%`:'—'} · ${pmm!=null?pmm.toFixed(1):'0.0'} mm</span>
+        <svg class="chev" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+          <polyline points="6 9 12 15 18 9"></polyline>
+        </svg>
+      </div>
+    `;
+
+    // detaily
+    const det=document.createElement('div');
+    det.id=detailsId;
+    det.className='collapsible px-3 pb-3';
+    det.innerHTML=`
+      <div class="grid grid-cols-2 gap-2 text-sm mt-1">
+        <div class="metric"><div class="label">Zrážky</div><div class="val mono">${pop!=null?`${pop}%`:'—'} · ${pmm!=null?pmm.toFixed(1):'0.0'} mm</div></div>
+        <div class="metric"><div class="label">Oblačnosť</div><div class="val mono">${cld!=null?`${cld}%`:'—'}</div></div>
+        <div class="metric"><div class="label">Vietor</div><div class="val mono">${wind!=null?`${Math.round(wind)} km/h`:'—'} (${dd2dir(wdir)})</div></div>
+        <div class="metric"><div class="label">Nárazy</div><div class="val mono">${gust!=null?Math.round(gust)+' km/h':'—'}</div></div>
+      </div>
+    `;
+
+    // toggle
+    btn.addEventListener('click', ()=>{
+      const open = btn.dataset.open === 'true';
+      btn.dataset.open = (!open).toString();
+      btn.setAttribute('aria-expanded', (!open).toString());
+      if(!open){ det.classList.add('open'); } else { det.classList.remove('open'); }
+    });
+
+    card.appendChild(btn);
+    card.appendChild(det);
     el.hourList.appendChild(card);
   }
 }
@@ -428,6 +452,28 @@ function renderUV(wx){
   const u = Math.max(0, Math.min(11, (uvMax!=null?uvMax:uvNow)||0));
   el.uvFill.style.width = (u/11*100).toFixed(0)+'%';
   el.uvFill.style.cssText += ';'+cat.color;
+}
+
+async function geocode(q){
+  const r=await fetch(`${GEO}/search?name=${encodeURIComponent(q)}&count=1&language=sk`);
+  const j=await r.json(); if(!j.results||j.results.length===0) throw new Error('notfound'); return j.results[0];
+}
+async function fetchWx(lat,lon){
+  const url=`${API}/forecast?latitude=${lat}&longitude=${lon}`
+    +`&current=temperature_2m,relative_humidity_2m,apparent_temperature,is_day,weather_code,wind_speed_10m,wind_gusts_10m,wind_direction_10m`
+    +`&hourly=temperature_2m,weather_code,precipitation_probability,precipitation,wind_speed_10m,wind_gusts_10m,wind_direction_10m,cloud_cover,uv_index`
+    +`&daily=weather_code,temperature_2m_max,temperature_2m_min,sunrise,sunset,uv_index_max`
+    +`&timezone=auto&forecast_days=16`;
+  const r=await fetch(url); if(!r.ok) throw new Error('api'); return await r.json();
+}
+async function fetchHistoryExact(lat,lon){
+  const d=new Date(); d.setFullYear(d.getFullYear()-1);
+  const date=ymd(d);
+  const url=`${ARCH}?latitude=${lat}&longitude=${lon}`
+    +`&start_date=${date}&end_date=${date}`
+    +`&daily=temperature_2m_max,temperature_2m_min,precipitation_sum,weathercode`
+    +`&timezone=auto`;
+  const r=await fetch(url); if(!r.ok) throw new Error('arch1'); return await r.json();
 }
 
 async function run(q){
