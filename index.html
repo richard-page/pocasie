@@ -2,73 +2,83 @@
 <html lang="sk">
 <head>
 <meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Predpoveď počasia – UV index + presne pred rokom</title>
 <script src="https://cdn.tailwindcss.com"></script>
 <style>
-  :root{--glass:rgba(255,255,255,.08);--glass-b:rgba(255,255,255,.18)}
-  *{box-sizing:border-box}
-  body{margin:0}
-  .glass{background:var(--glass);border:1px solid var(--glass-b);backdrop-filter:blur(10px)}
-  .mono{font-feature-settings:"tnum" 1,"lnum" 1}
-  .sticky-header{position:sticky;top:0;z-index:50;backdrop-filter:blur(10px)}
-  .tbl th,.tbl td{padding:.65rem .75rem;white-space:nowrap}
-  .tbl thead th{position:sticky;top:0;background:rgba(0,0,0,.15);backdrop-filter:blur(6px)}
-  .val-bold{font-weight:600;color:#fff}
-  .val-sub{color:rgba(255,255,255,.75);font-size:.9rem}
-  .metric{background:var(--glass);border:1px solid var(--glass-b);border-radius:.75rem;padding:.75rem .9rem}
-  .metric .label{color:rgba(255,255,255,.75);font-size:.9rem}
-  .metric .val{font-size:1.125rem;font-weight:600;color:#fff}
-  .uv-bar{height:10px;border-radius:9999px;background:rgba(255,255,255,.18);overflow:hidden}
-  .uv-fill{height:100%;border-radius:9999px}
+  :root { --glass: rgba(255,255,255,.08); --glass-b: rgba(255,255,255,.18); }
+  * { box-sizing: border-box; }
 
-  /* safe-area padding pre mobily s výrezom */
-  .safe-p {
-    padding-left: max(0.5rem, env(safe-area-inset-left));
-    padding-right: max(0.5rem, env(safe-area-inset-right));
-  }
-  .safe-pt {
-    padding-top: max(0.5rem, env(safe-area-inset-top));
+  html, body {
+    width: 100%;
+    max-width: 100%;
+    overflow-x: hidden;          /* zabráni horizontálnemu posunu tela stránky */
+    overscroll-behavior-x: none; /* žiadne „odskočenia“ do strany */
+    touch-action: pan-y;         /* povoľ len vertikálny scroll */
   }
 
-  /* Na malých displejoch sprístupni horizontálny scroll tabuľky a zabráň rozbíjaniu */
-  .table-wrap{overflow-x:auto;-webkit-overflow-scrolling:touch}
-  .min-600{min-width:600px}
+  body {
+    margin: 0;
+    background: linear-gradient(to bottom right, #0284c7, #06b6d4, #10b981);
+    color: #fff;
+    font-family: system-ui, sans-serif;
+  }
 
-  /* Vylepšenie tap targetov na mobile */
-  button, input { touch-action: manipulation }
+  .glass { background: var(--glass); border: 1px solid var(--glass-b); backdrop-filter: blur(10px); border-radius: .75rem; }
+  .mono  { font-feature-settings: "tnum" 1, "lnum" 1 }
+  .sticky-header { position: sticky; top: 0; z-index: 50; backdrop-filter: blur(10px) }
+
+  .tbl th,.tbl td { padding: .65rem .75rem; white-space: nowrap }
+  .tbl thead th { position: sticky; top: 0; background: rgba(0,0,0,.15); backdrop-filter: blur(6px) }
+
+  .val-bold{ font-weight: 600; color:#fff }
+  .val-sub { color: rgba(255,255,255,.75); font-size:.9rem }
+
+  .metric{ background: var(--glass); border: 1px solid var(--glass-b); border-radius:.75rem; padding:.75rem .9rem }
+  .metric .label{ color: rgba(255,255,255,.75); font-size:.9rem }
+  .metric .val{ font-size:1.125rem; font-weight:600; color:#fff }
+
+  .uv-bar{ height:10px; border-radius:9999px; background:rgba(255,255,255,.18); overflow:hidden }
+  .uv-fill{ height:100%; border-radius:9999px }
+
+  /* dôležité pre grid/flex – nič nesmie rozťahovať kontajnery do šírky */
+  main, header, section, .glass, .grid, .flex { min-width: 0; }
+
+  /* lokálny horizontálny scroll pre tabuľku (nie celé <body>) */
+  .overflow-x-auto { max-width: 100%; overflow-x: auto; -webkit-overflow-scrolling: touch }
+  img, video, canvas, table { max-width: 100%; }
 </style>
 </head>
-<body class="min-h-screen bg-gradient-to-br from-sky-600 via-cyan-600 to-emerald-600 text-white">
+<body class="min-h-screen text-white">
 
 <header class="sticky-header w-full glass">
-  <div class="safe-p safe-pt w-full px-2 sm:px-4 py-2.5 sm:py-3 flex items-center gap-2 sm:gap-3">
-    <h1 class="text-base sm:text-lg md:text-xl font-semibold">🌤️ Predpoveď</h1>
+  <div class="w-full px-3 md:px-6 py-3 flex items-center gap-3">
+    <h1 class="text-lg md:text-xl font-semibold">🌤️ Predpoveď</h1>
     <div class="flex-1"></div>
-    <div class="flex w-full max-w-[520px] gap-2">
+    <div class="flex w-full sm:w-[520px] max-w-full gap-2">
       <input id="cityInput" placeholder="Zadaj mesto (napr. Hlohovec)"
-             class="flex-1 px-3 sm:px-4 py-2.5 rounded-lg bg-white/20 border border-white/20 placeholder-white/70 focus:outline-none focus:ring-2 focus:ring-white/50">
-      <button id="searchBtn" class="px-3 sm:px-4 py-2.5 rounded-lg bg-white/30 hover:bg-white/40">Hľadať</button>
+             class="flex-1 px-4 py-2.5 rounded-lg bg-white/20 border border-white/20 placeholder-white/70 focus:outline-none focus:ring-2 focus:ring-white/50">
+      <button id="searchBtn" class="px-4 md:px-5 py-2.5 rounded-lg bg-white/30 hover:bg-white/40">Hľadať</button>
     </div>
   </div>
 </header>
 
-<main class="safe-p w-full max-w-screen-xl mx-auto px-2 sm:px-4 lg:px-6 py-4 space-y-4">
+<main class="w-full px-2 md:px-4 lg:px-6 py-4 space-y-4">
 
   <!-- Aktuálne -->
-  <section id="current" class="hidden glass rounded-xl p-3 sm:p-4">
-    <div class="text-xs sm:text-sm text-white/80">📍 <span id="placeName">—</span></div>
-    <div class="mt-2 flex flex-wrap items-center gap-3 sm:gap-4">
-      <div class="flex items-end gap-2 sm:gap-3">
-        <div class="text-5xl sm:text-6xl font-bold mono" id="curTemp">--°</div>
-        <div class="text-5xl sm:text-6xl leading-none" id="curIcon">⛅</div>
+  <section id="current" class="hidden glass rounded-xl p-4">
+    <div class="text-sm text-white/80">📍 <span id="placeName">—</span></div>
+    <div class="mt-2 flex flex-wrap items-center gap-4">
+      <div class="flex items-end gap-3">
+        <div class="text-6xl font-bold mono" id="curTemp">--°</div>
+        <div class="text-6xl leading-none" id="curIcon">⛅</div>
       </div>
       <div>
-        <div id="curDesc" class="text-white/90 text-base sm:text-lg font-semibold">—</div>
-        <div id="sunInfo" class="text-white/70 text-xs sm:text-sm">—</div>
+        <div id="curDesc" class="text-white/90 text-lg font-semibold">—</div>
+        <div id="sunInfo" class="text-white/70 text-sm">—</div>
       </div>
     </div>
-    <div class="grid gap-2 mt-3 text-white/90 grid-cols-2 md:grid-cols-4">
+    <div class="grid gap-2 mt-3 text-white/90 md:grid-cols-4 sm:grid-cols-2">
       <div class="metric"><div class="label">Vietor</div><div id="curWind" class="val mono">—</div></div>
       <div class="metric"><div class="label">Nárazy</div><div id="curGust" class="val mono">—</div></div>
       <div class="metric"><div class="label">Vlhkosť</div><div id="curHum" class="val mono">—</div></div>
@@ -76,16 +86,16 @@
     </div>
   </section>
 
-  <!-- Layout: mobil = 1 stĺpec, veľké = 12 stĺpcov -->
+  <!-- Layout: mobil 1 stĺpec, >=lg dva stĺpce -->
   <section class="grid grid-cols-1 lg:grid-cols-12 gap-4">
     <!-- 24 h tabuľka -->
     <div class="lg:col-span-7 glass rounded-xl overflow-hidden">
-      <div class="flex items-center justify-between px-3 sm:px-4 py-3 border-b border-white/20">
-        <h2 class="text-base sm:text-lg font-semibold">24-hodinová predpoveď</h2>
-        <div id="tzInfo" class="text-white/70 text-xs sm:text-sm"></div>
+      <div class="flex items-center justify-between px-4 py-3 border-b border-white/20">
+        <h2 class="text-lg font-semibold">24-hodinová predpoveď</h2>
+        <div id="tzInfo" class="text-white/70 text-sm"></div>
       </div>
-      <div class="table-wrap">
-        <table class="tbl w-full text-xs sm:text-sm min-600">
+      <div class="overflow-x-auto">
+        <table class="tbl w-full min-w-[600px] text-sm">
           <thead>
             <tr class="text-white/90">
               <th class="text-left">Čas</th>
@@ -93,7 +103,7 @@
               <th class="text-left">Teplota</th>
               <th class="text-left">Zrážky</th>
               <th class="text-left">Vietor</th>
-              <th class="text-left">Oblač.</th>
+              <th class="text-left">Oblačnosť</th>
             </tr>
           </thead>
           <tbody id="hourRows" class="divide-y divide-white/10"></tbody>
@@ -105,35 +115,29 @@
     <div class="lg:col-span-5 space-y-4">
       <!-- 10 dní -->
       <div class="glass rounded-xl">
-        <div class="px-3 sm:px-4 py-3 border-b border-white/20">
-          <h2 class="text-base sm:text-lg font-semibold">10-dňová predpoveď</h2>
+        <div class="px-4 py-3 border-b border-white/20">
+          <h2 class="text-lg font-semibold">10-dňová predpoveď</h2>
         </div>
         <div id="dailyList" class="p-3 space-y-2"></div>
       </div>
 
       <!-- Presne pred rokom -->
       <div class="glass rounded-xl">
-        <div class="px-3 sm:px-4 py-3 border-b border-white/20">
-          <h2 class="text-base sm:text-lg font-semibold">Presne pred rokom</h2>
+        <div class="px-4 py-3 border-b border-white/20">
+          <h2 class="text-lg font-semibold">Presne pred rokom</h2>
         </div>
-        <div id="historyExact" class="p-3 sm:p-4"></div>
+        <div id="historyExact" class="p-4"></div>
       </div>
 
       <!-- UV index -->
       <div class="glass rounded-xl">
-        <div class="px-3 sm:px-4 py-3 border-b border-white/20">
-          <h2 class="text-base sm:text-lg font-semibold">UV index</h2>
+        <div class="px-4 py-3 border-b border-white/20">
+          <h2 class="text-lg font-semibold">UV index</h2>
         </div>
-        <div id="uvPanel" class="p-3 sm:p-4 space-y-3">
+        <div id="uvPanel" class="p-4 space-y-3">
           <div class="grid grid-cols-2 gap-3">
-            <div class="metric">
-              <div class="label">Aktuálne</div>
-              <div id="uvNow" class="val mono">—</div>
-            </div>
-            <div class="metric">
-              <div class="label">Dnešné maximum</div>
-              <div id="uvMax" class="val mono">—</div>
-            </div>
+            <div class="metric"><div class="label">Aktuálne</div><div id="uvNow" class="val mono">—</div></div>
+            <div class="metric"><div class="label">Dnešné maximum</div><div id="uvMax" class="val mono">—</div></div>
           </div>
           <div>
             <div class="flex items-center justify-between mb-1">
@@ -206,20 +210,11 @@ function iconFor(c,day=true){
 function descFor(c){
   c=sanitizeCode(c);
   const d={0:'Jasno',1:'Prevažne jasno',2:'Čiastočne oblačno',3:'Zamračené',
-           51:'Slabé mrholenie',53:'Mierne mrholenie',55:'Husté mrholenie',
-           56:'Slabé mrznúce mrholenie',57:'Husté mrznúce mrholenie',
-           61:'Slabý dážď',63:'Mierny dážď',65:'Silný dážď',
-           66:'Slabý mrznúci dážď',67:'Silný mrznúci dážď',
-           71:'Slabé sneženie',73:'Mierne sneženie',75:'Silné sneženie',77:'Snehové zrnká',
-           80:'Slabé prehánky',81:'Mierne prehánky',82:'Silné prehánky',
-           85:'Slabé snehové prehánky',86:'Silné snehové prehánky',
+           51:'Mrholenie',61:'Slabý dážď',63:'Mierny dážď',65:'Silný dážď',
+           71:'Slabé sneženie',73:'Mierne sneženie',75:'Silné sneženie',
+           80:'Prehánky',81:'Mierne prehánky',82:'Silné prehánky',
            95:'Búrka',96:'Búrka s krúpami',99:'Silná búrka s krúpami'};
-  if(d[c]) return d[c];
-  if(c<=1) return c===0?'Jasno':'Prevažne jasno';
-  if(c<=3) return c===2?'Čiastočne oblačno':'Zamračené';
-  if(c<=67) return 'Dážď';
-  if(c<=86) return 'Sneženie';
-  return 'Búrka';
+  return d[c] || '—';
 }
 function dd2dir(dd){ if(dd==null||isNaN(dd)) return '—';
   const k=['N','NNE','NE','ENE','E','ESE','SE','SSE','S','SSW','SW','WSW','W','WNW','NW','NNW'];
@@ -230,10 +225,10 @@ function ymd(d){ return d.toISOString().slice(0,10); }
 
 function uvCategory(u){
   if(u==null||isNaN(u)) return {name:'—',color:'background:rgba(255,255,255,.35);'};
-  if(u<=2) return {name:'Nízky',     color:'background:#9AE6B4;'}; 
-  if(u<=5) return {name:'Stredný',   color:'background:#F6E05E;'}; 
-  if(u<=7) return {name:'Vysoký',    color:'background:#F6AD55;'}; 
-  if(u<=10) return {name:'Veľmi vysoký', color:'background:#F56565;'}; 
+  if(u<=2) return {name:'Nízky',     color:'background:#9AE6B4;'};
+  if(u<=5) return {name:'Stredný',   color:'background:#F6E05E;'};
+  if(u<=7) return {name:'Vysoký',    color:'background:#F6AD55;'};
+  if(u<=10) return {name:'Veľmi vysoký', color:'background:#F56565;'};
   return {name:'Extrémny', color:'background:#B83280;'};
 }
 
@@ -245,7 +240,7 @@ async function fetchWx(lat,lon){
   const url=`${API}/forecast?latitude=${lat}&longitude=${lon}`
     +`&current=temperature_2m,relative_humidity_2m,apparent_temperature,is_day,weather_code,wind_speed_10m,wind_gusts_10m,wind_direction_10m`
     +`&hourly=temperature_2m,weather_code,precipitation_probability,precipitation,wind_speed_10m,wind_gusts_10m,wind_direction_10m,cloud_cover,uv_index`
-    +`&daily=weather_code,temperature_2m_max,temperature_2m_min,sunrise,sunset,uv_index_max,uv_index_clear_sky_max`
+    +`&daily=weather_code,temperature_2m_max,temperature_2m_min,sunrise,sunset,uv_index_max`
     +`&timezone=auto&forecast_days=16`;
   const r=await fetch(url); if(!r.ok) throw new Error('api'); return await r.json();
 }
