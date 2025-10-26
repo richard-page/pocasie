@@ -130,7 +130,7 @@
             <div class="glass p-2 rounded-lg"><div class="text-white/70 text-sm">Aktuálne</div><div id="uvNow" class="mono font-semibold">—</div></div>
             <div class="glass p-2 rounded-lg"><div class="text-white/70 text-sm">Dnešné maximum</div><div id="uvMax" class="mono font-semibold">—</div></div>
           </div>
-          <!-- ŽIADNA „Úroveň“ ani progress bar -->
+          <!-- žiadna „Úroveň“ ani progress bar -->
         </div>
       </div>
     </div>
@@ -150,7 +150,7 @@ const API='https://api.open-meteo.com/v1';
 const GEO='https://geocoding-api.open-meteo.com/v1';
 const ARCH='https://archive-api.open-meteo.com/v1/era5';
 
-/* inline SVG – bez hostingu */
+/* inline SVG */
 const svgSun=`<svg viewBox="0 0 128 128" xmlns="http://www.w3.org/2000/svg"><defs><radialGradient id="g" cx="50%" cy="50%" r="50%"><stop offset="0%" stop-color="#ffe27a"/><stop offset="70%" stop-color="#ffd057"/><stop offset="100%" stop-color="#f7b538"/></radialGradient></defs><circle cx="64" cy="64" r="28" fill="url(#g)"/><g stroke="#ffd36a" stroke-width="6" stroke-linecap="round"><line x1="64" y1="8"  x2="64" y2="28"/><line x1="64" y1="100" x2="64" y2="120"/><line x1="8"  y1="64" x2="28" y2="64"/><line x1="100" y1="64" x2="120" y2="64"/><line x1="20" y1="20" x2="34" y2="34"/><line x1="94" y1="94" x2="108" y2="108"/><line x1="20" y1="108" x2="34" y2="94"/><line x1="94" y1="34" x2="108" y2="20"/></g></svg>`;
 const svgMoon=`<svg viewBox="0 0 128 128" xmlns="http://www.w3.org/2000/svg"><defs><radialGradient id="m" cx="40%" cy="35%" r="60%"><stop offset="0%" stop-color="#f4f4f6"/><stop offset="100%" stop-color="#cfd4da"/></radialGradient></defs><path d="M90 82c-29 0-52-23-52-52 0-7 1-14 4-20C25 16 16 32 16 50c0 30 24 54 54 54 18 0 34-9 40-26-6 3-13 4-20 4z" fill="url(#m)"/></svg>`;
 
@@ -196,10 +196,24 @@ function withIcon(code){ return `${iconFor(code)} ${descFor(code)}`; }
 function dd2dir(dd){ if(dd==null||isNaN(dd)) return '—'; const deg=((dd%360)+360)%360; const dirs=['S','SV','V','JV','J','JZ','Z','SZ']; return dirs[Math.floor((deg+22.5)/45)%8]; }
 function fmtTime(iso){ const d=new Date(iso); return d.getHours().toString().padStart(2,'0')+':00'; }
 
+/* vzdialenosť (Haversine) – pre rozumný refresh pri watchPosition */
+function distMeters(a,b){
+  const R=6371000, toRad=deg=>deg*Math.PI/180;
+  const dLat=toRad(b.lat-a.lat), dLon=toRad(b.lon-a.lon);
+  const lat1=toRad(a.lat), lat2=toRad(b.lat);
+  const s=Math.sin(dLat/2)**2 + Math.cos(lat1)*Math.cos(lat2)*Math.sin(dLon/2)**2;
+  return 2*R*Math.asin(Math.sqrt(s));
+}
+
 /* API */
 async function geocode(q){
   const r=await fetch(`${GEO}/search?name=${encodeURIComponent(q)}&count=1&language=sk`);
   const j=await r.json(); if(!j.results||j.results.length===0) throw new Error('notfound'); return j.results[0];
+}
+async function reverseGeocode(lat,lon){
+  const r=await fetch(`${GEO}/reverse?latitude=${lat}&longitude=${lon}&count=1&language=sk`);
+  const j=await r.json(); if(!j.results||!j.results.length) return {name:`${lat.toFixed(3)}, ${lon.toFixed(3)}`, country:''};
+  return j.results[0];
 }
 async function fetchWx(lat,lon){
   const url=`${API}/forecast?latitude=${lat}&longitude=${lon}`
@@ -327,25 +341,95 @@ function renderUV(wx){
   el.uvMax.textContent = uvMax!=null ? uvMax.toFixed(1) : '—';
 }
 
-async function run(q){
+/* orchestrácia */
+async function runByCityName(name){
   el.loading.classList.remove('hidden'); el.err.classList.add('hidden');
   try{
-    const city=await geocode(q);
-    const wx=await fetchWx(city.latitude,city.longitude);
-    const hist=await fetchHistoryExact(city.latitude,city.longitude);
-
+    const city=await geocode(name);
+    await runByCoords(city.latitude, city.longitude, city);
+  }catch(e){ el.err.classList.remove('hidden'); }
+  finally{ el.loading.classList.add('hidden'); }
+}
+async function runByCoords(lat,lon, cityMeta=null){
+  el.loading.classList.remove('hidden'); el.err.classList.add('hidden');
+  try{
+    const city = cityMeta || await reverseGeocode(lat,lon);
+    const wx   = await fetchWx(lat,lon);
+    const hist = await fetchHistoryExact(lat,lon);
     renderHero(city,wx);
     renderHourly(wx);
     renderDaily(wx);
     renderHistoryExact(hist);
     renderUV(wx);
+    el.input.value = city.name || '';
+    lastPosition = {lat,lon};
   }catch(e){ el.err.classList.remove('hidden'); }
   finally{ el.loading.classList.add('hidden'); }
 }
 
-document.getElementById('searchForm').addEventListener('submit', (ev)=>{ ev.preventDefault(); const q=el.input.value.trim(); if(q) run(q); });
-el.input.value='Hlohovec';
-run('Hlohovec');
+/* Geolokácia: povolenie + sledovanie */
+let watchId=null;
+let lastPosition=null;
+const MIN_MOVE_METERS = 500;           // kedy refreshnúť (≈ pol kilometra)
+const MIN_REFRESH_MS  = 60_000;        // aspoň minúta medzi requestmi
+let lastRefreshTs = 0;
+
+async function requestLocationOnce(){
+  return new Promise((resolve,reject)=>{
+    if(!('geolocation' in navigator)) return reject(new Error('no-geo'));
+    navigator.geolocation.getCurrentPosition(
+      pos=>resolve(pos),
+      err=>reject(err),
+      { enableHighAccuracy:true, timeout:10000, maximumAge:0 }
+    );
+  });
+}
+function startWatching(){
+  if(!('geolocation' in navigator)) return;
+  if(watchId!=null) return;
+  watchId = navigator.geolocation.watchPosition(
+    pos=>{
+      const now = Date.now();
+      const cur = {lat:pos.coords.latitude, lon:pos.coords.longitude};
+      const movedEnough = !lastPosition || distMeters(lastPosition, cur) > MIN_MOVE_METERS;
+      const spacedOut   = (now - lastRefreshTs) > MIN_REFRESH_MS;
+      if(movedEnough && spacedOut){
+        lastRefreshTs = now;
+        runByCoords(cur.lat, cur.lon).catch(()=>{});
+      }
+    },
+    err=>{ /* ignoruj – používateľ mohol zakázať */ },
+    { enableHighAccuracy:true, timeout:15000, maximumAge:15000 }
+  );
+}
+async function initGeolocationFlow(){
+  try{
+    // Permissions API (ak je k dispozícii)
+    const perm = await (navigator.permissions?.query({name:'geolocation'}) ?? Promise.resolve({state:'prompt'}));
+    if(perm.state === 'granted' || perm.state === 'prompt'){
+      // vyvolá systémové okno (Android/iOS)
+      const pos = await requestLocationOnce();
+      await runByCoords(pos.coords.latitude, pos.coords.longitude);
+      startWatching();
+    }else{
+      // denied -> nič, necháme ručné vyhľadávanie
+      await runByCityName('Hlohovec');
+    }
+  }catch{
+    // chyba alebo odmietnuté -> fallback
+    await runByCityName('Hlohovec');
+  }
+}
+
+/* UI */
+document.getElementById('searchForm').addEventListener('submit', (ev)=>{
+  ev.preventDefault();
+  const q=el.input.value.trim();
+  if(q) runByCityName(q);
+});
+
+/* štart: najprv sa spýtaj polohu */
+initGeolocationFlow();
 </script>
 </body>
 </html>
