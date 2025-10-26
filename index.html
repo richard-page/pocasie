@@ -29,14 +29,13 @@
   main, header, section, .glass, .grid, .flex { min-width:0 }
   img,video,canvas,table { max-width:100% }
 
-  /* Layout */
   .cols { display:grid; grid-template-columns:1fr; gap:1rem; }
   @media (min-width:1024px){
     .cols { display:flex; align-items:stretch; gap:1rem; }
     .col-left, .col-right { align-self:stretch; }
   }
 
-  /* ---- Mobilné rozbaľovanie (accordion) – FIX ---- */
+  /* Mobilné rozbaľovanie */
   .card{ border-radius:1rem; border:1px solid var(--glass-b); background:var(--glass); }
   .acc-btn{
     width:100%; background:none; border:0; cursor:pointer;
@@ -48,7 +47,6 @@
   .chip{ font-size:.9rem; opacity:.95 }
   .chev{ transition:transform .22s ease }
   .acc-btn[aria-expanded="true"] .chev{ transform:rotate(180deg) }
-
   .panel-wrap{ height:0; overflow:hidden; transition:height .22s ease; }
   .panel{ padding:0 .95rem .95rem .95rem; }
 </style>
@@ -76,7 +74,6 @@
 
 <main class="w-full px-2 md:px-4 lg:px-6 py-4 space-y-4">
 
-  <!-- Aktuálne -->
   <section id="current" class="hidden glass p-4">
     <div class="text-sm text-white/80"><span id="placeName">—</span></div>
     <div class="mt-2 flex flex-wrap items-center gap-4">
@@ -96,25 +93,25 @@
     </div>
   </section>
 
-  <!-- Layout -->
   <section class="cols">
-    <!-- 24 h predpoveď -->
     <div id="colLeft" class="col-left glass overflow-visible lg:overflow-hidden lg:basis-7/12 flex flex-col min-h-0">
       <div class="flex items-center justify-between px-4 py-3 border-b border-white/20">
         <h2 class="text-lg font-semibold">24-hodinová predpoveď</h2>
       </div>
 
-      <!-- Desktop tabuľka -->
+      <!-- Desktop tabuľka – min width zväčšená kvôli novým stĺpcom -->
       <div class="hidden lg:block overflow-x-auto flex-1 min-h-0">
-        <table class="tbl w-full h-full min-w-[600px] text-sm">
+        <table class="tbl w-full h-full min-w-[900px] text-sm">
           <thead>
             <tr class="text-white/90">
               <th class="text-left">Čas</th>
               <th class="text-left">Počasie</th>
               <th class="text-left">Teplota</th>
+              <th class="text-left">Rosný bod</th>
               <th class="text-left">Zrážky</th>
               <th class="text-left">Vietor</th>
               <th class="text-left">Oblačnosť</th>
+              <th class="text-left">Tlak</th>
             </tr>
           </thead>
           <tbody id="hourRows" class="divide-y divide-white/10"></tbody>
@@ -125,7 +122,6 @@
       <div id="hourList" class="block lg:hidden p-2 space-y-2"></div>
     </div>
 
-    <!-- Pravý stĺpec -->
     <div id="colRight" class="col-right lg:basis-5/12 space-y-4">
       <div class="glass">
         <div class="px-4 py-3 border-b border-white/20"><h2 class="text-lg font-semibold">10-dňová predpoveď</h2></div>
@@ -207,8 +203,6 @@ function descFor(c){
            95:'Búrka',96:'Búrka s krúpami',99:'Silná búrka s krúpami'};
   return d[c] || '—';
 }
-
-/* slovenské 8-smerné skratky vetra */
 function dd2dir(dd){
   if(dd==null||isNaN(dd)) return '—';
   const deg=((dd%360)+360)%360;
@@ -216,7 +210,6 @@ function dd2dir(dd){
   const idx=Math.floor((deg+22.5)/45)%8;
   return dirs[idx];
 }
-
 function fmtTime(iso){ const d=new Date(iso); return d.getHours().toString().padStart(2,'0')+':00'; }
 function ymd(d){ return d.toISOString().slice(0,10); }
 
@@ -277,18 +270,20 @@ function renderHourly(wx){
     const cld=H.cloud_cover?.[i];
     const timeStr=fmtTime(H.time[i]);
 
-    /* Desktop riadok */
+    /* Desktop riadok so stĺpcami Rosný bod + Tlak */
     const tr=document.createElement('tr'); tr.className='hover:bg-white/10';
     tr.innerHTML=`
       <td class="mono">${timeStr}</td>
       <td class="text-white/85 font-medium">${descFor(code)}</td>
       <td class="val-bold mono">${temp}°</td>
+      <td class="val-bold mono">${dew!=null?Math.round(dew):'—'}°</td>
       <td class="val-bold mono">${pop!=null?`${pop}%`:'—'} · ${pmm!=null?pmm.toFixed(1):'0.0'} mm</td>
       <td class="val-bold mono">${wind!=null?`${Math.round(wind)} km/h`:'—'} (${dd2dir(wdir)})</td>
-      <td class="val-bold mono">${cld!=null?`${cld}%`:'—'}</td>`;
+      <td class="val-bold mono">${cld!=null?`${cld}%`:'—'}</td>
+      <td class="val-bold mono">${pres!=null?Math.round(pres):'—'} hPa</td>`;
     el.hourRows.appendChild(tr);
 
-    /* Mobil karta – default zatvorená */
+    /* Mobil karta (nezmenené) */
     const card=document.createElement('div'); card.className='card';
     const btn=document.createElement('button'); btn.className='acc-btn'; btn.type='button';
     btn.setAttribute('aria-expanded','false');
@@ -317,14 +312,13 @@ function renderHourly(wx){
     let open=false;
     const setHeight = () => { wrap.style.height = open ? panel.scrollHeight+'px' : '0px'; };
     btn.addEventListener('click',()=>{
-      // ak bolo 'auto', najprv nastav presnú výšku, aby animácia fungovala
       if (wrap.style.height === 'auto') wrap.style.height = panel.scrollHeight+'px';
       open=!open; btn.setAttribute('aria-expanded', String(open));
       requestAnimationFrame(setHeight);
     });
     wrap.addEventListener('transitionend',(e)=>{
       if(e.propertyName!=='height') return;
-      if(open){ wrap.style.height='auto'; } // nech sa otvorený panel prispôsobí obsahu
+      if(open){ wrap.style.height='auto'; }
     });
   }
 }
