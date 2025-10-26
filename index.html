@@ -9,14 +9,29 @@
   :root { --glass: rgba(255,255,255,.08); --glass-b: rgba(255,255,255,.18); }
   *{ box-sizing:border-box }
   html,body{ width:100%; max-width:100%; overflow-x:hidden }
-  body{ margin:0; color:#fff; font-family:system-ui,-apple-system,Segoe UI,Roboto,sans-serif; background:#0e4d73 }
+  body{
+    margin:0; color:#fff;
+    font-family:system-ui,-apple-system,Segoe UI,Roboto,sans-serif;
+    background:#0e4d73;
+  }
   .glass{ background:var(--glass); border:1px solid var(--glass-b); backdrop-filter:blur(12px); border-radius:1rem }
   .mono{ font-feature-settings:"tnum" 1,"lnum" 1 }
-  .hero{ position:relative; isolation:isolate; display:flex; flex-direction:column; align-items:center; justify-content:center; min-height:56vh; width:100%; padding:3.5rem 1rem 2rem; text-align:center; overflow:hidden }
-  body[data-mode="day"] .hero{ background:linear-gradient(180deg,#3aa7e0 0%, #1e87c9 55%, #176ea9 100%) }
-  body[data-mode="night"] .hero{ background:linear-gradient(180deg,#0b3550 0%, #0a2c44 60%, #08273b 100%) }
+
+  /* HERO deň/noc */
+  .hero{
+    position:relative; isolation:isolate;
+    display:flex; flex-direction:column; align-items:center; justify-content:center;
+    min-height:56vh; width:100%;
+    padding:3.5rem 1rem 2rem; text-align:center; overflow:hidden
+  }
+  body[data-mode="day"] .hero{
+    background:linear-gradient(180deg,#3aa7e0 0%, #1e87c9 55%, #176ea9 100%)
+  }
+  body[data-mode="night"] .hero{
+    background:linear-gradient(180deg,#0b3550 0%, #0a2c44 60%, #08273b 100%)
+  }
   body[data-mode="night"] .hero::after{
-    content:""; position:absolute; inset:0; z-index:-1; opacity:.45;
+    content:""; position:absolute; inset:0; z-index:-1; pointer-events:none; opacity:.45;
     background:
       radial-gradient(2px 2px at 12% 18%, #fff 40%, transparent 42%),
       radial-gradient(1.5px 1.5px at 35% 28%, #fff 45%, transparent 47%),
@@ -30,10 +45,13 @@
   #heroPlace{ font-size:1.25rem; font-weight:600; opacity:.95; letter-spacing:.2px }
   #heroIcon{ width:120px; height:120px; margin:1.2rem auto }
   #heroTemp{ font-size:6.5rem; line-height:1; font-weight:700; letter-spacing:2px }
+
   .sticky-header{ position:sticky; top:0; z-index:40 }
   .tbl th,.tbl td{ padding:.65rem .75rem; white-space:nowrap }
   .tbl thead th{ position:sticky; top:0; background:rgba(0,0,0,.15); backdrop-filter:blur(6px) }
   .val-bold{ font-weight:600; color:#fff }
+
+  /* Mobilný akordeón (24h) */
   .card{ border-radius:1rem; border:1px solid var(--glass-b); background:var(--glass) }
   .acc-btn{ width:100%; background:none; border:0; cursor:pointer; padding:.9rem .95rem; display:flex; align-items:center; gap:.75rem; text-align:left; color:#fff }
   .acc-head{ flex:1; min-width:0 }
@@ -42,12 +60,26 @@
   .acc-btn[aria-expanded="true"] .chev{ transform:rotate(180deg) }
   .panel-wrap{ height:0; overflow:hidden; transition:height .22s ease }
   .panel{ padding:0 .95rem .95rem .95rem }
+
   .cols{ display:grid; grid-template-columns:1fr; gap:1rem }
   @media (min-width:1024px){ .cols{ display:flex; gap:1rem } .col-left,.col-right{ align-self:stretch } }
+
+  /* Lokalizačné tlačidlo (len Android) */
+  #locBtn{ display:none }
+  .loc-btn{
+    padding:.55rem .8rem; border-radius:.6rem; background:rgba(255,255,255,.18);
+    border:1px solid rgba(255,255,255,.28); color:#fff; font-weight:600
+  }
+  .toast{
+    position:fixed; left:50%; transform:translateX(-50%);
+    bottom:14px; background:rgba(0,0,0,.6); color:#fff; padding:.6rem .8rem;
+    border-radius:.6rem; font-size:.9rem; z-index:60; backdrop-filter:blur(6px)
+  }
 </style>
 </head>
 <body data-mode="day">
 
+<!-- HERO -->
 <section class="hero">
   <div id="heroPlace">—</div>
   <div id="heroIcon" aria-hidden="true"></div>
@@ -58,7 +90,11 @@
   <div class="w-full px-3 md:px-6 py-3 flex items-center gap-3">
     <div class="font-semibold">Predpoveď počasia</div>
     <div class="flex-1"></div>
-    <form id="searchForm" class="grid grid-cols-1 sm:grid-cols-[1fr_auto] gap-2 w-full sm:w-[560px]" novalidate>
+
+    <!-- iba Android: Moja poloha -->
+    <button id="locBtn" type="button" class="loc-btn">📍 Moja poloha</button>
+
+    <form id="searchForm" class="grid grid-cols-1 sm:grid-cols-[1fr_auto] gap-2 w-full sm:w-[560px] max-w-full" novalidate>
       <input id="cityInput" placeholder="Zadaj mesto (napr. Hlohovec)"
              class="w-full px-4 py-2.5 rounded-lg bg-white/20 border border-white/20 placeholder-white/70 focus:outline-none focus:ring-2 focus:ring-white/50"
              autocomplete="off" inputmode="search" type="search" />
@@ -71,7 +107,9 @@
 </header>
 
 <main class="w-full px-2 md:px-4 lg:px-6 py-4 space-y-4">
+
   <section class="cols">
+    <!-- 24h -->
     <div class="col-left glass overflow-visible lg:overflow-hidden lg:basis-7/12 flex flex-col min-h-0">
       <div class="flex items-center justify-between px-4 py-3 border-b border-white/20">
         <h2 class="text-lg font-semibold">24-hodinová predpoveď</h2>
@@ -108,6 +146,7 @@
             <div class="glass p-2 rounded-lg"><div class="text-white/70 text-sm">Aktuálne</div><div id="uvNow" class="mono font-semibold">—</div></div>
             <div class="glass p-2 rounded-lg"><div class="text-white/70 text-sm">Dnešné maximum</div><div id="uvMax" class="mono font-semibold">—</div></div>
           </div>
+          <!-- žiadna „Úroveň“ ani progress bar -->
         </div>
       </div>
     </div>
@@ -127,7 +166,7 @@ const API='https://api.open-meteo.com/v1';
 const GEO='https://geocoding-api.open-meteo.com/v1';
 const ARCH='https://archive-api.open-meteo.com/v1/era5';
 
-/* inline SVG */
+/* inline SVG – bez hostingu */
 const svgSun=`<svg viewBox="0 0 128 128" xmlns="http://www.w3.org/2000/svg"><defs><radialGradient id="g" cx="50%" cy="50%" r="50%"><stop offset="0%" stop-color="#ffe27a"/><stop offset="70%" stop-color="#ffd057"/><stop offset="100%" stop-color="#f7b538"/></radialGradient></defs><circle cx="64" cy="64" r="28" fill="url(#g)"/><g stroke="#ffd36a" stroke-width="6" stroke-linecap="round"><line x1="64" y1="8"  x2="64" y2="28"/><line x1="64" y1="100" x2="64" y2="120"/><line x1="8"  y1="64" x2="28" y2="64"/><line x1="100" y1="64" x2="120" y2="64"/><line x1="20" y1="20" x2="34" y2="34"/><line x1="94" y1="94" x2="108" y2="108"/><line x1="20" y1="108" x2="34" y2="94"/><line x1="94" y1="34" x2="108" y2="20"/></g></svg>`;
 const svgMoon=`<svg viewBox="0 0 128 128" xmlns="http://www.w3.org/2000/svg"><defs><radialGradient id="m" cx="40%" cy="35%" r="60%"><stop offset="0%" stop-color="#f4f4f6"/><stop offset="100%" stop-color="#cfd4da"/></radialGradient></defs><path d="M90 82c-29 0-52-23-52-52 0-7 1-14 4-20C25 16 16 32 16 50c0 30 24 54 54 54 18 0 34-9 40-26-6 3-13 4-20 4z" fill="url(#m)"/></svg>`;
 
@@ -144,7 +183,8 @@ const el={
   heroIcon:document.getElementById('heroIcon'),
   heroTemp:document.getElementById('heroTemp'),
   loading:document.getElementById('loading'),
-  err:document.getElementById('err')
+  err:document.getElementById('err'),
+  locBtn:document.getElementById('locBtn')
 };
 
 /* helpers */
@@ -172,17 +212,36 @@ function descFor(c){
 function withIcon(code){ return `${iconFor(code)} ${descFor(code)}`; }
 function dd2dir(dd){ if(dd==null||isNaN(dd)) return '—'; const deg=((dd%360)+360)%360; const dirs=['S','SV','V','JV','J','JZ','Z','SZ']; return dirs[Math.floor((deg+22.5)/45)%8]; }
 function fmtTime(iso){ const d=new Date(iso); return d.getHours().toString().padStart(2,'0')+':00'; }
-function distMeters(a,b){ const R=6371000, toRad=deg=>deg*Math.PI/180; const dLat=toRad(b.lat-a.lat), dLon=toRad(b.lon-a.lon); const lat1=toRad(a.lat), lat2=toRad(b.lat); const s=Math.sin(dLat/2)**2 + Math.cos(lat1)*Math.cos(lat2)*Math.sin(dLon/2)**2; return 2*R*Math.asin(Math.sqrt(s)); }
+
+/* platform / geolokácia */
+const isAndroid = () => /Android/i.test(navigator.userAgent);
+const isSecure = () => location.protocol === 'https:' || location.hostname === 'localhost';
+
+function maybeShowLocateButton(){
+  if(isAndroid() && isSecure() && 'geolocation' in navigator){
+    el.locBtn.style.display='inline-flex';
+    // nenútený hint pre prvú návštevu
+    if(!sessionStorage.getItem('loc_hint')){
+      const t=document.createElement('div');
+      t.className='toast'; t.textContent='Tip: klikni na „Moja poloha“ a povol prístup.';
+      document.body.appendChild(t);
+      setTimeout(()=>{ t.remove(); }, 3200);
+      sessionStorage.setItem('loc_hint','1');
+    }
+  }
+}
+
+async function reverseGeocode(lat,lon){
+  const r=await fetch(`${GEO}/reverse?latitude=${lat}&longitude=${lon}&language=sk&format=json`);
+  const j=await r.json();
+  const res = j?.results?.[0] || {};
+  return { name: res.name || 'Moja poloha', country: res.country || '', latitude: lat, longitude: lon };
+}
 
 /* API */
 async function geocode(q){
   const r=await fetch(`${GEO}/search?name=${encodeURIComponent(q)}&count=1&language=sk`);
   const j=await r.json(); if(!j.results||j.results.length===0) throw new Error('notfound'); return j.results[0];
-}
-async function reverseGeocode(lat,lon){
-  const r=await fetch(`${GEO}/reverse?latitude=${lat}&longitude=${lon}&count=1&language=sk`);
-  const j=await r.json(); if(!j.results||!j.results.length) return {name:`${lat.toFixed(3)}, ${lon.toFixed(3)}`, country:''};
-  return j.results[0];
 }
 async function fetchWx(lat,lon){
   const url=`${API}/forecast?latitude=${lat}&longitude=${lon}`
@@ -237,6 +296,7 @@ function renderHourly(wx){
       <td class="val-bold mono">${pres!=null?Math.round(pres):'—'} hPa</td>`;
     el.hourRows.appendChild(tr);
 
+    /* mobil karta */
     const card=document.createElement('div'); card.className='card';
     const btn=document.createElement('button'); btn.className='acc-btn'; btn.type='button'; btn.setAttribute('aria-expanded','false');
     btn.innerHTML=`
@@ -309,81 +369,52 @@ function renderUV(wx){
   el.uvMax.textContent = uvMax!=null ? uvMax.toFixed(1) : '—';
 }
 
-/* orchestrácia */
-async function runByCityName(name){
+/* beh */
+async function runByCityName(q){
   el.loading.classList.remove('hidden'); el.err.classList.add('hidden');
   try{
-    const city=await geocode(name);
-    await runByCoords(city.latitude, city.longitude, city);
-  }catch(e){ el.err.classList.remove('hidden'); }
-  finally{ el.loading.classList.add('hidden'); }
-}
-async function runByCoords(lat,lon, cityMeta=null){
-  el.loading.classList.remove('hidden'); el.err.classList.add('hidden');
-  try{
-    const city = cityMeta || await reverseGeocode(lat,lon);
-    const wx   = await fetchWx(lat,lon);
-    const hist = await fetchHistoryExact(lat,lon);
+    const city=await geocode(q);
+    const wx=await fetchWx(city.latitude,city.longitude);
+    const hist=await fetchHistoryExact(city.latitude,city.longitude);
     renderHero(city,wx); renderHourly(wx); renderDaily(wx); renderHistoryExact(hist); renderUV(wx);
-    el.input.value = city.name || '';
-    lastPosition = {lat,lon};
-  }catch(e){ el.err.classList.remove('hidden'); }
+  }catch{ el.err.classList.remove('hidden'); }
+  finally{ el.loading.classList.add('hidden'); }
+}
+async function runByCoords(lat,lon){
+  el.loading.classList.remove('hidden'); el.err.classList.add('hidden');
+  try{
+    const city=await reverseGeocode(lat,lon);
+    const wx=await fetchWx(lat,lon);
+    const hist=await fetchHistoryExact(lat,lon);
+    renderHero(city,wx); renderHourly(wx); renderDaily(wx); renderHistoryExact(hist); renderUV(wx);
+  }catch{ el.err.classList.remove('hidden'); }
   finally{ el.loading.classList.add('hidden'); }
 }
 
-/* GEO – iba Android */
-const isAndroid = () => /Android/i.test(navigator.userAgent) && 'geolocation' in navigator;
-
-let watchId=null, lastPosition=null;
-const MIN_MOVE_METERS = 500;
-const MIN_REFRESH_MS  = 60_000;
-let lastRefreshTs = 0;
-
-function distOk(cur){
-  if(!lastPosition) return true;
-  return distMeters(lastPosition, cur) > MIN_MOVE_METERS;
-}
-function timeOk(){ return (Date.now() - lastRefreshTs) > MIN_REFRESH_MS; }
-
-function startWatching(){
-  if(!isAndroid() || watchId!=null) return;
-  watchId = navigator.geolocation.watchPosition(
-    pos=>{
-      const cur={lat:pos.coords.latitude, lon:pos.coords.longitude};
-      if(distOk(cur) && timeOk()){ lastRefreshTs=Date.now(); runByCoords(cur.lat,cur.lon).catch(()=>{}); }
-    },
-    _err=>{},
-    { enableHighAccuracy:true, timeout:15000, maximumAge:15000 }
-  );
-}
-
-async function initFlow(){
-  if(isAndroid()){
-    try{
-      // vyvolá natívne Android dialógové okno
-      const pos = await new Promise((res,rej)=>{
-        navigator.geolocation.getCurrentPosition(res,rej,{ enableHighAccuracy:true, timeout:10000, maximumAge:0 });
-      });
-      await runByCoords(pos.coords.latitude, pos.coords.longitude);
-      startWatching();
-      return;
-    }catch(_e){
-      // odmietnuté / chyba -> fallback
-    }
-  }
-  // PC a iné platformy: žiadne pýtanie polohy, rovno predvolené mesto
-  await runByCityName('Hlohovec');
-}
-
-/* UI */
+/* UI handlers */
 document.getElementById('searchForm').addEventListener('submit', (ev)=>{
-  ev.preventDefault();
-  const q=el.input.value.trim();
-  if(q) runByCityName(q);
+  ev.preventDefault(); const q=el.input.value.trim(); if(q) runByCityName(q);
 });
 
-/* štart */
-initFlow();
+/* Android-only „Moja poloha“ */
+el.locBtn.addEventListener('click', async ()=>{
+  if(!isSecure()){ alert('Geolokácia vyžaduje HTTPS.'); return; }
+  const opts={ enableHighAccuracy:true, timeout:12000, maximumAge:0 };
+  navigator.geolocation.getCurrentPosition(
+    pos => runByCoords(pos.coords.latitude, pos.coords.longitude),
+    err => {
+      const t=document.createElement('div'); t.className='toast';
+      t.textContent = err.code===1 ? 'Prístup k polohe bol zamietnutý.' : 'Polohu sa nepodarilo získať.';
+      document.body.appendChild(t); setTimeout(()=>t.remove(), 3000);
+    },
+    opts
+  );
+});
+
+/* init */
+maybeShowLocateButton();
+el.input.value='Hlohovec';
+runByCityName('Hlohovec');
 </script>
 </body>
 </html>
