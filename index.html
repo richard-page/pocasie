@@ -2,7 +2,7 @@
 <html lang="sk">
 <head>
 <meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta name="viewport" content="width=device-width, initial-scale=1">
 <title>Predpoveď počasia – UV index + presne pred rokom</title>
 <script src="https://cdn.tailwindcss.com"></script>
 <style>
@@ -16,7 +16,6 @@
   .mono  { font-feature-settings:"tnum" 1,"lnum" 1 }
   .sticky-header{ position:sticky; top:0; z-index:50; backdrop-filter:blur(10px) }
 
-  /* Desktop tabuľka */
   .tbl th,.tbl td{ padding:.65rem .75rem; white-space:nowrap }
   .tbl thead th{ position:sticky; top:0; background:rgba(0,0,0,.15); backdrop-filter:blur(6px) }
   .val-bold{ font-weight:600; color:#fff }
@@ -33,7 +32,6 @@
   .overflow-x-auto { max-width:100%; overflow-x:auto; -webkit-overflow-scrolling:touch }
   img,video,canvas,table { max-width:100% }
 
-  /* Mobilný accordion – plynulé rozbaľovanie */
   .card{ border-radius:1rem; border:1px solid var(--glass-b); background:var(--glass); }
   .acc-btn{ width:100%; padding:.9rem .95rem; display:flex; align-items:center; justify-content:space-between; gap:.75rem }
   .acc-head{ display:flex; align-items:center; gap:.8rem; text-align:left }
@@ -53,11 +51,17 @@
   <div class="w-full px-3 md:px-6 py-3 flex items-center gap-3">
     <h1 class="text-lg md:text-xl font-semibold">🌤️ Predpoveď</h1>
     <div class="flex-1"></div>
-    <div class="flex w-full sm:w-[520px] max-w-full gap-2">
+
+    <!-- FORM: na mobile stĺpec (input nad tlačidlom), na ≥sm riadok -->
+    <form id="searchForm" class="flex flex-col sm:flex-row w-full sm:w-[520px] max-w-full gap-2 items-stretch sm:items-center" novalidate>
       <input id="cityInput" placeholder="Zadaj mesto (napr. Hlohovec)"
-             class="flex-1 px-4 py-2.5 rounded-lg bg-white/20 border border-white/20 placeholder-white/70 focus:outline-none focus:ring-2 focus:ring-white/50">
-      <button id="searchBtn" class="px-4 md:px-5 py-2.5 rounded-lg bg-white/30 hover:bg-white/40">Hľadať</button>
-    </div>
+             class="flex-1 px-4 py-2.5 rounded-lg bg-white/20 border border-white/20 placeholder-white/70 focus:outline-none focus:ring-2 focus:ring-white/50"
+             autocomplete="off" inputmode="search">
+      <button id="searchBtn" type="submit"
+              class="w-full sm:w-auto px-4 md:px-5 py-2.5 rounded-lg bg-white/30 hover:bg-white/40 shrink-0">
+        Hľadať
+      </button>
+    </form>
   </div>
 </header>
 
@@ -160,6 +164,7 @@ const GEO='https://geocoding-api.open-meteo.com/v1';
 const ARCH='https://archive-api.open-meteo.com/v1/era5';
 
 const el={
+  form:document.getElementById('searchForm'),
   input:document.getElementById('cityInput'),
   btn:document.getElementById('searchBtn'),
   loading:document.getElementById('loading'),
@@ -212,12 +217,12 @@ function descFor(c){
   return d[c] || '—';
 }
 
-/* --- SLOVENSKÉ 8-smerné skratky vetra --- */
+/* slovenské 8-smerné skratky vetra */
 function dd2dir(dd){
   if(dd==null||isNaN(dd)) return '—';
-  const deg = ((dd % 360) + 360) % 360;
-  const dirs = ['S','SV','V','JV','J','JZ','Z','SZ']; // sever...západ
-  const idx = Math.floor((deg + 22.5) / 45) % 8;
+  const deg=((dd%360)+360)%360;
+  const dirs=['S','SV','V','JV','J','JZ','Z','SZ'];
+  const idx=Math.floor((deg+22.5)/45)%8;
   return dirs[idx];
 }
 
@@ -451,8 +456,12 @@ async function run(q){
   finally{ el.loading.classList.add('hidden'); }
 }
 
-el.btn.addEventListener('click', ()=>{ const q=el.input.value.trim(); if(q) run(q); });
-el.input.addEventListener('keypress', (e)=>{ if(e.key==='Enter'){ e.preventDefault(); const q=el.input.value.trim(); if(q) run(q); }});
+/* Odošle sa kliknutím na tlačidlo aj stlačením Enter */
+el.form.addEventListener('submit', (ev)=>{
+  ev.preventDefault();
+  const q=el.input.value.trim();
+  if(q) run(q);
+});
 
 el.input.value='Hlohovec';
 run('Hlohovec');
