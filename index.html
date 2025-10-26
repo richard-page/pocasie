@@ -130,7 +130,7 @@
             <div class="glass p-2 rounded-lg"><div class="text-white/70 text-sm">Aktuálne</div><div id="uvNow" class="mono font-semibold">—</div></div>
             <div class="glass p-2 rounded-lg"><div class="text-white/70 text-sm">Dnešné maximum</div><div id="uvMax" class="mono font-semibold">—</div></div>
           </div>
-          <!-- ŽIADNA „Úroveň“ ani progress bar -->
+          <!-- žiadna "Úroveň" ani progress bar -->
         </div>
       </div>
     </div>
@@ -333,6 +333,7 @@ function renderUV(wx){
   el.uvMax.textContent = uvMax!=null ? uvMax.toFixed(1) : '—';
 }
 
+/* --------- FETCHERS --------- */
 async function runByCityName(q){
   el.loading.classList.remove('hidden'); el.err.classList.add('hidden');
   try{
@@ -354,30 +355,56 @@ async function runByCoords(lat,lon){
   finally{ el.loading.classList.add('hidden'); }
 }
 
-/* ======== BRIDGE INTEGRÁCIA PODĽA MEDIAN DOKU ======== */
-let geoInitTimer = null;   // ak app nikdy nezavolá median_geolocation_ready()
+/* ======== ANDROID / iOS BRIDGE ======== */
+let geoInitTimer = null;   // ak app NEzavolá median_geolocation_ready()
 let geoReplyTimer = null;  // ak po ready nepríde poloha
 
-// volá natívna app po inicializácii geolokačných služieb
-window.median_geolocation_ready = function(){
-  // požiadať natív o polohu – podpor niekoľko bežných bridge mien
+function requestNativeLocation(){
   try{
-    if (window.Median && typeof window.Median.requestLocation === 'function') {
-      window.Median.requestLocation();
-    } else if (window.Android && typeof window.Android.requestLocation === 'function') {
-      window.Android.requestLocation();
-    } else if (window.webkit?.messageHandlers?.median?.postMessage) {
-      window.webkit.messageHandlers.median.postMessage({ action:'requestLocation' });
+    if (window.Android && typeof window.Android.requestLocation === 'function') {
+      window.Android.requestLocation();                   // Android @JavascriptInterface
+      return true;
     }
-  }catch(_){/* ignor */}
+    if (window.Median && typeof window.Median.requestLocation === 'function') {
+      window.Median.requestLocation();                   // iný Android/iOS bridge
+      return true;
+    }
+    if (window.webkit?.messageHandlers?.median?.postMessage) {
+      window.webkit.messageHandlers.median.postMessage({ action:'requestLocation' }); // iOS WKWebView
+      return true;
+    }
+  }catch(_){}
+  return false;
+}
 
-  // počkaj max 8s na odpoveď, inak fallback
+// volá natív po inicializácii geolokácie (aby sme NEpýtali povolenie z webu)
+window.median_geolocation_ready = function(){
+  const ok = requestNativeLocation();
   clearTimeout(geoReplyTimer);
-  geoReplyTimer = setTimeout(()=> runByCityName(DEFAULT_CITY), 8000);
+  geoReplyTimer = setTimeout(()=> runByCityName(DEFAULT_CITY), 8000); // fallback ak nič nepríde
+  if(!ok){
+    // ak most neexistuje (spustené mimo app), nech to nesekne – fallback po 0 ms
+    clearTimeout(geoReplyTimer);
+    runByCityName(DEFAULT_CITY);
+  }
 };
 
-// volá natívna app, keď získa súradnice (ak je iný názov, uprav ho v appke)
-window.median_set_location = function(lat, lon){
+// aliasy, ktoré môže natív zavolať po získaní polohy
+window.median_set_location = function(lat, lon){ applyNativeLocation(lat, lon); };
+window.androidLocationReady  = function(lat, lon){ applyNativeLocation(lat, lon); };
+window.onLocation            = function(lat, lon){ applyNativeLocation(lat, lon); };
+
+// podpora WebMessage (Android 11+ addWebMessageListener → window.postMessage z natívu)
+window.addEventListener('message', (evt)=>{
+  try{
+    const d = typeof evt.data === 'string' ? JSON.parse(evt.data) : evt.data;
+    if(d && d.type==='location' && 'lat' in d && 'lon' in d){
+      applyNativeLocation(d.lat, d.lon);
+    }
+  }catch(_){}
+});
+
+function applyNativeLocation(lat, lon){
   clearTimeout(geoReplyTimer);
   clearTimeout(geoInitTimer);
   const la = Number(lat), lo = Number(lon);
@@ -386,9 +413,9 @@ window.median_set_location = function(lat, lon){
   } else {
     runByCityName(DEFAULT_CITY);
   }
-};
+}
 
-/* Ak appka NEzavolá median_geolocation_ready() (desktop/web) → fallback po 2s */
+/* Ak app NEzavolá median_geolocation_ready() (desktop/web) → fallback po 2s */
 geoInitTimer = setTimeout(()=> runByCityName(DEFAULT_CITY), 2000);
 
 /* UI handlers */
