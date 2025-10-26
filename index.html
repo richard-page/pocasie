@@ -49,7 +49,10 @@
 
 <header class="sticky-header w-full glass">
   <div class="w-full px-3 md:px-6 py-3 flex items-center gap-3">
-    <h1 class="text-lg md:text-xl font-semibold">Predpoveď počasia.</h1>
+    <!-- FIX: nadpis sa neláme, skráti sa s … -->
+    <h1 class="text-base sm:text-lg md:text-xl font-semibold whitespace-nowrap truncate flex-shrink-0 max-w-[60vw]">
+      Predpoveď počasia
+    </h1>
     <div class="flex-1"></div>
 
     <!-- FORM: mobil 2 riadky, ≥sm 1 riadok -->
@@ -88,12 +91,13 @@
   </section>
 
   <!-- Layout -->
-  <section class="grid grid-cols-1 lg:grid-cols-12 gap-4">
+  <!-- FIX: zabráň “stretch” – všetky grid položky sa zarovnajú hore -->
+  <section class="grid grid-cols-1 lg:grid-cols-12 gap-4 items-start">
     <!-- 24 h predpoveď -->
-    <div class="lg:col-span-7 glass overflow-hidden">
+    <!-- FIX: istota, že ľavý panel nebude naťahovaný – self-start -->
+    <div class="lg:col-span-7 glass overflow-hidden self-start">
       <div class="flex items-center justify-between px-4 py-3 border-b border-white/20">
         <h2 class="text-lg font-semibold">24-hodinová predpoveď</h2>
-        <!-- tzInfo odstránené -->
       </div>
 
       <!-- Desktop tabuľka -->
@@ -118,7 +122,7 @@
     </div>
 
     <!-- Pravý stĺpec -->
-    <div class="lg:col-span-5 space-y-4">
+    <div class="lg:col-span-5 space-y-4 self-start">
       <div class="glass">
         <div class="px-4 py-3 border-b border-white/20"><h2 class="text-lg font-semibold">10-dňová predpoveď</h2></div>
         <div id="dailyList" class="p-3 space-y-2"></div>
@@ -153,7 +157,7 @@
     <p class="mt-2">Načítavam…</p>
   </div>
   <div id="err" class="hidden glass p-4">
-    <div class="text-center text-red-200">Nepodarilo sa načítať údaje. Skús iné mesto.</div>
+    <div class="text-center text-red-2 00">Nepodarilo sa načítať údaje. Skús iné mesto.</div>
   </div>
 </main>
 
@@ -276,7 +280,7 @@ function renderHourly(wx){
     const cld=H.cloud_cover?.[i];
     const timeStr=fmtTime(H.time[i]);
 
-    /* Desktop riadok (bez emoji ikon) */
+    /* Desktop riadok */
     const tr=document.createElement('tr'); tr.className='hover:bg-white/10';
     tr.innerHTML=`
       <td class="mono">${timeStr}</td>
@@ -287,7 +291,7 @@ function renderHourly(wx){
       <td class="val-bold mono">${cld!=null?`${cld}%`:'—'}</td>`;
     el.hourRows.appendChild(tr);
 
-    /* Mobil karta (bez emoji) */
+    /* Mobil karta */
     const card=document.createElement('div'); card.className='card';
     const btn=document.createElement('button'); btn.className='acc-btn'; btn.type='button'; btn.setAttribute('aria-expanded','false');
     btn.innerHTML=`
@@ -317,7 +321,6 @@ function renderHourly(wx){
     card.appendChild(wrap);
     el.hourList.appendChild(card);
 
-    // plynulé rozbaľovanie
     let open=false;
     const adjust = () => { wrap.style.height = open ? panel.scrollHeight+'px' : '0px'; panel.classList.toggle('open', open); };
     btn.addEventListener('click', ()=>{
