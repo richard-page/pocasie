@@ -2,32 +2,33 @@
 <html lang="sk">
 <head>
 <meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, viewport-fit=cover">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no, viewport-fit=cover">
 <meta name="theme-color" content="#0891b2">
 <title>Predpoveď počasia – UV index + presne pred rokom</title>
 <script src="https://cdn.tailwindcss.com"></script>
 <style>
-  /* --- SAFE-AREA + FALLBACK OFFSET --- */
   :root{
+    --glass: rgba(255,255,255,.08);
+    --glass-b: rgba(255,255,255,.18);
+
+    /* safe-area + fallback keď WebView vracia 0 */
     --safe-top: env(safe-area-inset-top, 0px);
     --safe-right: env(safe-area-inset-right, 0px);
     --safe-bottom: env(safe-area-inset-bottom, 0px);
     --safe-left: env(safe-area-inset-left, 0px);
-    /* JS fallback nastaví sem 28px, ak WebView nevracia safe-area */
-    --status-offset: 0px;
-
-    --glass: rgba(255,255,255,.08);
-    --glass-b: rgba(255,255,255,.18);
+    --status-offset: 0px; /* JS nastaví 28px ak treba */
   }
 
-  html, body{height:100%}
+  html,body{height:100%}
   body{
     box-sizing:border-box;
-    /* k status baru sa pripočíta fallback offset */
     padding-top: calc(var(--safe-top) + var(--status-offset));
     padding-right: var(--safe-right);
     padding-bottom: var(--safe-bottom);
     padding-left: var(--safe-left);
+    /* zníži „poskakovanie“ pri overscrolle */
+    overscroll-behavior-y: contain;
+    -webkit-tap-highlight-color: transparent;
   }
 
   .glass{background:var(--glass);border:1px solid var(--glass-b);backdrop-filter:blur(10px)}
@@ -35,10 +36,6 @@
 
   .sticky-header{
     position:sticky; top:0; z-index:50; backdrop-filter:blur(10px);
-    /* aj vnútro musí rešpektovať safe-area + fallback */
-    padding-top: calc(0.5rem + var(--safe-top) + var(--status-offset));
-    padding-right: calc(0.75rem + var(--safe-right));
-    padding-left: calc(0.75rem + var(--safe-left));
   }
 
   .tbl th,.tbl td{padding:.65rem .75rem;white-space:nowrap}
@@ -132,7 +129,7 @@
         <div id="historyExact" class="p-4"></div>
       </div>
 
-      <!-- UV index (bez textových rád) -->
+      <!-- UV index -->
       <div class="glass rounded-xl">
         <div class="px-4 py-3 border-b border-white/20">
           <h2 class="text-lg font-semibold">UV index</h2>
@@ -184,12 +181,10 @@ const el={
   hourRows:document.getElementById('hourRows'),
   dailyList:document.getElementById('dailyList'),
   historyExact:document.getElementById('historyExact'),
-  // UV
   uvNow:document.getElementById('uvNow'),
   uvMax:document.getElementById('uvMax'),
   uvFill:document.getElementById('uvFill'),
   uvCat:document.getElementById('uvCat'),
-  // current block
   place:document.getElementById('placeName'),
   curTemp:document.getElementById('curTemp'),
   curDesc:document.getElementById('curDesc'),
@@ -202,7 +197,7 @@ const el={
 };
 
 function show(n,yes=true){ n.classList[yes?'remove':'add']('hidden'); }
-function sanitizeCode(c){ c=Number(c); return (c===45||c===48)?3:c; } // hmla -> oblačno
+function sanitizeCode(c){ c=Number(c); return (c===45||c===48)?3:c; }
 function iconFor(c,day=true){
   c=sanitizeCode(c);
   const m={0:day?'☀️':'🌙',1:day?'🌤️':'🌙',2:'⛅',3:'☁️',
@@ -429,11 +424,10 @@ el.input.addEventListener('keypress', (e)=>{ if(e.key==='Enter'){ e.preventDefau
 el.input.value='Hlohovec';
 run('Hlohovec');
 
-/* --------- FALLBACK: zmeraj prekrývanie status barom ---------- */
+/* ---- Fallback proti prekrytiu status barom (funguje aj po zoome/resize) ---- */
 (function statusBarFallback(){
   const header=document.querySelector('.sticky-header');
   function apply(){
-    // ak je horný okraj hlavičky < 8px, WebView kreslí pod status bar
     const top=header.getBoundingClientRect().top;
     if(top < 8){
       document.documentElement.style.setProperty('--status-offset','28px');
@@ -441,9 +435,9 @@ run('Hlohovec');
       document.documentElement.style.setProperty('--status-offset','0px');
     }
   }
-  // po načítaní a po zmene orientácie
   window.addEventListener('load', ()=>requestAnimationFrame(apply));
   window.addEventListener('orientationchange', ()=>setTimeout(apply, 300));
+  window.addEventListener('resize', ()=>setTimeout(apply, 150)); // zachytí aj zoom vo WebView
 })();
 </script>
 </body>
