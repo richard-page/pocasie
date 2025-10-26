@@ -87,10 +87,10 @@
       </div>
     </div>
     <div class="grid gap-2 mt-3 text-white/90 md:grid-cols-4 sm:grid-cols-2">
-      <div class="metric"><div class="label">Vietor</div><div id="curWind" class="val mono">—</div></div>
-      <div class="metric"><div class="label">Nárazy</div><div id="curGust" class="val mono">—</div></div>
-      <div class="metric"><div class="label">Vlhkosť</div><div id="curHum" class="val mono">—</div></div>
-      <div class="metric"><div class="label">Pocitovo</div><div id="curFeels" class="val mono">—</div></div>
+      <div class="metric"><div class="label">🌬️ Vietor</div><div id="curWind" class="val mono">—</div></div>
+      <div class="metric"><div class="label">💨 Nárazy</div><div id="curGust" class="val mono">—</div></div>
+      <div class="metric"><div class="label">💧 Vlhkosť</div><div id="curHum" class="val mono">—</div></div>
+      <div class="metric"><div class="label">🥶 Pocitovo</div><div id="curFeels" class="val mono">—</div></div>
     </div>
   </section>
 
@@ -198,6 +198,18 @@ const el={
 function show(n,yes=true){ n.classList[yes?'remove':'add']('hidden'); }
 function sanitizeCode(c){ c=Number(c); return (c===45||c===48)?3:c; }
 
+/* ================= Emoji + popisy ================= */
+function iconFor(code){
+  code = sanitizeCode(code);
+  if([0,1].includes(code)) return '☀️';
+  if(code===2) return '⛅';
+  if(code===3) return '☁️';
+  if([51].includes(code)) return '🌦️';
+  if([61,63,65,80,81,82].includes(code)) return '🌧️';
+  if([71,73,75].includes(code)) return '🌨️';
+  if([95,96,99].includes(code)) return '⛈️';
+  return '🌤️';
+}
 function descFor(c){
   c=sanitizeCode(c);
   const d={0:'Jasno',1:'Prevažne jasno',2:'Čiastočne oblačno',3:'Zamračené',
@@ -207,6 +219,7 @@ function descFor(c){
            95:'Búrka',96:'Búrka s krúpami',99:'Silná búrka s krúpami'};
   return d[c] || '—';
 }
+function withIcon(code){ return `${iconFor(code)} ${descFor(code)}`; }
 
 /* 8-smerný vietor */
 function dd2dir(dd){
@@ -223,11 +236,11 @@ function ymd(d){ return d.toISOString().slice(0,10); }
 /* UV kategórie – v ženskom rode */
 function uvCategory(u){
   if(u==null||isNaN(u)) return {name:'—',color:'background:rgba(255,255,255,.35);'};
-  if(u<=2)  return {name:'Nízka',         color:'background:#9AE6B4;'}; 
-  if(u<=5)  return {name:'Stredná',       color:'background:#F6E05E;'}; 
-  if(u<=7)  return {name:'Vysoká',        color:'background:#F6AD55;'}; 
-  if(u<=10) return {name:'Veľmi vysoká',  color:'background:#F56565;'}; 
-  return       {name:'Extrémna',       color:'background:#B83280;'};
+  if(u<=2)  return {name:'Nízka',        color:'background:#9AE6B4;'}; 
+  if(u<=5)  return {name:'Stredná',      color:'background:#F6E05E;'}; 
+  if(u<=7)  return {name:'Vysoká',       color:'background:#F6AD55;'}; 
+  if(u<=10) return {name:'Veľmi vysoká', color:'background:#F56565;'}; 
+  return       {name:'Extrémna',        color:'background:#B83280;'};
 }
 
 async function geocode(q){
@@ -255,12 +268,11 @@ async function fetchHistoryExact(lat,lon){
 function renderCurrent(city,wx){
   el.place.textContent=`${city.name}${city.country?`, ${city.country}`:''}`;
   const c=wx.current, code=sanitizeCode(c.weather_code);
+
   el.curTemp.textContent=Math.round(c.temperature_2m)+'°';
-  el.curDesc.textContent=descFor(code);
+  el.curDesc.textContent=withIcon(code);   /* emoji v popise aktuálneho počasia */
 
-  /* ZMENA: zobraz iba rýchlosť vetra (bez smeru) */
-  el.curWind.textContent=`${Math.round(c.wind_speed_10m)} km/h`;
-
+  el.curWind.textContent=`${Math.round(c.wind_speed_10m)} km/h`;   /* iba rýchlosť */
   el.curGust.textContent=`${Math.round(c.wind_gusts_10m)} km/h`;
   el.curHum.textContent=c.relative_humidity_2m+' %';
   el.curFeels.textContent=Math.round(c.apparent_temperature)+'°';
@@ -290,11 +302,11 @@ function renderHourly(wx){
     const cld=H.cloud_cover?.[i];
     const timeStr=fmtTime(H.time[i]);
 
-    /* Desktop riadok – obsahuje Rosný bod + Tlak */
+    /* Desktop riadok – Počasie s emoji + Rosný bod + Tlak */
     const tr=document.createElement('tr'); tr.className='hover:bg-white/10';
     tr.innerHTML=`
       <td class="mono">${timeStr}</td>
-      <td class="text-white/85 font-medium">${descFor(code)}</td>
+      <td class="text-white/85 font-medium">${withIcon(code)}</td>
       <td class="val-bold mono">${temp}°</td>
       <td class="val-bold mono">${dew!=null?Math.round(dew):'—'}°</td>
       <td class="val-bold mono">${pop!=null?`${pop}%`:'—'} · ${pmm!=null?pmm.toFixed(1):'0.0'} mm</td>
@@ -303,7 +315,7 @@ function renderHourly(wx){
       <td class="val-bold mono">${pres!=null?Math.round(pres):'—'} hPa</td>`;
     el.hourRows.appendChild(tr);
 
-    /* Mobil karta – default zatvorená */
+    /* Mobil karta – Počasie s emoji */
     const card=document.createElement('div'); card.className='card';
     const btn=document.createElement('button'); btn.className='acc-btn'; btn.type='button';
     btn.setAttribute('aria-expanded','false');
@@ -311,7 +323,7 @@ function renderHourly(wx){
       <div class="acc-head">
         <div>
           <div class="mono font-semibold">${timeStr} · ${temp}°</div>
-          <div class="text-white/80 text-sm">${descFor(code)}</div>
+          <div class="text-white/80 text-sm">${withIcon(code)}</div>
         </div>
       </div>
       <div class="acc-right">
@@ -358,7 +370,7 @@ function renderDaily(wx){
       <div class="flex items-center justify-between">
         <div>
           <div class="font-medium">${dn} ${d.getDate()}</div>
-          <div class="text-white/70 text-sm">${descFor(code)}</div>
+          <div class="text-white/70 text-sm">${withIcon(code)}</div>
         </div>
         <div class="mono text-lg font-semibold">${tmax}° / <span class="text-white/80">${tmin}°</span></div>
       </div>`;
@@ -376,9 +388,8 @@ function renderHistoryExact(hist){
   const tmax=Math.round(H.temperature_2m_max?.[0]);
   const pr=(H.precipitation_sum?.[0] ?? 0).toFixed(1);
   const code=(H.weathercode?.[0] ?? 3);
-  const desc=descFor(code);
+  const desc=withIcon(code); /* emoji aj tu */
 
-  /* ZMENA: odstránený box "Rozdiel vs. dnes" */
   el.historyExact.innerHTML=`
     <div class="glass p-4 rounded-xl">
       <div>
