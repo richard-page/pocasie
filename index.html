@@ -9,47 +9,45 @@
   :root { --glass: rgba(255,255,255,.08); --glass-b: rgba(255,255,255,.18); }
   * { box-sizing: border-box; }
 
-  html, body {
-    width: 100%;
-    max-width: 100%;
-    overflow-x: hidden;
-    overscroll-behavior-x: none;
-    touch-action: pan-y;
-  }
+  html, body { width:100%; max-width:100%; overflow-x:hidden; overscroll-behavior-x:none; touch-action:pan-y; }
+  body { margin:0; background:linear-gradient(135deg,#0284c7,#06b6d4 55%,#10b981); color:#fff; font-family:system-ui,-apple-system,Segoe UI,Roboto,sans-serif; }
 
-  body {
-    margin: 0;
-    background: linear-gradient(to bottom right, #0284c7, #06b6d4, #10b981);
-    color: #fff;
-    font-family: system-ui, -apple-system, Segoe UI, Roboto, sans-serif;
-  }
+  .glass { background:var(--glass); border:1px solid var(--glass-b); backdrop-filter:blur(12px); border-radius:1rem; }
+  .mono { font-feature-settings:"tnum" 1,"lnum" 1; }
+  .sticky-header{ position:sticky; top:0; z-index:50; backdrop-filter:blur(10px) }
 
-  .glass { background: var(--glass); border: 1px solid var(--glass-b); backdrop-filter: blur(10px); border-radius: .75rem; }
-  .mono  { font-feature-settings: "tnum" 1, "lnum" 1 }
-  .sticky-header { position: sticky; top: 0; z-index: 50; backdrop-filter: blur(10px) }
+  /* Desktop tabuľka */
+  .tbl th,.tbl td{ padding:.65rem .75rem; white-space:nowrap }
+  .tbl thead th{ position:sticky; top:0; background:rgba(0,0,0,.15); backdrop-filter:blur(6px) }
 
-  .tbl th,.tbl td { padding: .65rem .75rem; white-space: nowrap }
-  .tbl thead th { position: sticky; top: 0; background: rgba(0,0,0,.15); backdrop-filter: blur(6px) }
+  .metric{ background:var(--glass); border:1px solid var(--glass-b); border-radius:.75rem; padding:.6rem .8rem }
+  .metric .label{ color:rgba(255,255,255,.72); font-size:.8rem; line-height:1.2 }
+  .metric .val{ color:#fff; font-weight:600; font-size:1.05rem }
 
-  .val-bold{ font-weight: 600; color:#fff }
-  .val-sub { color: rgba(255,255,255,.75); font-size:.9rem }
-
-  .metric{ background: var(--glass); border: 1px solid var(--glass-b); border-radius:.65rem; padding:.55rem .7rem }
-  .metric .label{ color: rgba(255,255,255,.72); font-size:.8rem; line-height:1.15 }
-  .metric .val{ font-size:1.05rem; font-weight:600; color:#fff; line-height:1.25 }
+  .chip{ display:inline-flex; align-items:center; gap:.35rem; padding:.25rem .55rem; border-radius:9999px; border:1px solid var(--glass-b); background:rgba(255,255,255,.14); font-size:.85rem }
+  .dot{ width:.4rem; height:.4rem; border-radius:9999px; background:rgba(255,255,255,.7) }
 
   .uv-bar{ height:10px; border-radius:9999px; background:rgba(255,255,255,.18); overflow:hidden }
   .uv-fill{ height:100%; border-radius:9999px }
 
-  main, header, section, .glass, .grid, .flex { min-width: 0; }
-  .overflow-x-auto { max-width: 100%; overflow-x: auto; -webkit-overflow-scrolling: touch }
-  img, video, canvas, table { max-width: 100%; }
+  main, header, section, .glass, .grid, .flex { min-width:0 }
+  .overflow-x-auto { max-width:100%; overflow-x:auto; -webkit-overflow-scrolling:touch }
+  img,video,canvas,table { max-width:100% }
 
-  /* rozbaľovanie na mobile */
-  .collapsible { max-height: 0; overflow: hidden; transition: max-height .25s ease; }
-  .collapsible.open { max-height: 520px; }
-  .chev { transition: transform .2s ease; }
-  .toggle[data-open="true"] .chev { transform: rotate(180deg); }
+  /* Accordion (mobil) – plynulá animácia výšky, bez miznutia textu */
+  .acc-btn{ width:100%; padding: .9rem .95rem; display:flex; align-items:center; justify-content:space-between; gap:.75rem }
+  .acc-btn:active{ opacity:.9 }
+  .acc-head{ display:flex; align-items:center; gap:.8rem; text-align:left }
+  .acc-desc{ color:rgba(255,255,255,.8); font-size:.9rem }
+  .chev{ transition:transform .22s ease }
+  .acc[aria-expanded="true"] .chev{ transform:rotate(180deg) }
+
+  .panel-wrap{ overflow:hidden }
+  .panel{ padding:0 .95rem .95rem .95rem; opacity:0; transform:translateY(-4px); transition:opacity .22s ease, transform .22s ease }
+  .panel.open{ opacity:1; transform:none }
+
+  /* jemný tieň a ohraničenie kariet */
+  .card{ border-radius:1rem; border:1px solid var(--glass-b); background:var(--glass); box-shadow:0 4px 16px rgba(0,0,0,.18) inset, 0 8px 18px rgba(0,0,0,.12) }
 </style>
 </head>
 <body class="min-h-screen text-white">
@@ -69,7 +67,7 @@
 <main class="w-full px-2 md:px-4 lg:px-6 py-4 space-y-4">
 
   <!-- Aktuálne -->
-  <section id="current" class="hidden glass rounded-xl p-4">
+  <section id="current" class="hidden glass p-4">
     <div class="text-sm text-white/80">📍 <span id="placeName">—</span></div>
     <div class="mt-2 flex flex-wrap items-center gap-4">
       <div class="flex items-end gap-3">
@@ -89,16 +87,16 @@
     </div>
   </section>
 
-  <!-- Layout: mobil 1 stĺpec, ≥lg dva stĺpce -->
+  <!-- Layout -->
   <section class="grid grid-cols-1 lg:grid-cols-12 gap-4">
     <!-- 24 h predpoveď -->
-    <div class="lg:col-span-7 glass rounded-xl overflow-hidden">
+    <div class="lg:col-span-7 glass overflow-hidden">
       <div class="flex items-center justify-between px-4 py-3 border-b border-white/20">
         <h2 class="text-lg font-semibold">24-hodinová predpoveď</h2>
         <div id="tzInfo" class="text-white/70 text-sm"></div>
       </div>
 
-      <!-- DESKTOP: tabuľka -->
+      <!-- Desktop tabuľka -->
       <div class="hidden lg:block overflow-x-auto">
         <table class="tbl w-full min-w-[600px] text-sm">
           <thead>
@@ -115,33 +113,24 @@
         </table>
       </div>
 
-      <!-- MOBILE: rozbaľovacie karty -->
+      <!-- Mobil – rozbaľovacie karty -->
       <div id="hourList" class="block lg:hidden p-2 space-y-2"></div>
     </div>
 
     <!-- Pravý stĺpec -->
     <div class="lg:col-span-5 space-y-4">
-      <!-- 10 dní -->
-      <div class="glass rounded-xl">
-        <div class="px-4 py-3 border-b border-white/20">
-          <h2 class="text-lg font-semibold">10-dňová predpoveď</h2>
-        </div>
+      <div class="glass">
+        <div class="px-4 py-3 border-b border-white/20"><h2 class="text-lg font-semibold">10-dňová predpoveď</h2></div>
         <div id="dailyList" class="p-3 space-y-2"></div>
       </div>
 
-      <!-- Presne pred rokom -->
-      <div class="glass rounded-xl">
-        <div class="px-4 py-3 border-b border-white/20">
-          <h2 class="text-lg font-semibold">Presne pred rokom</h2>
-        </div>
+      <div class="glass">
+        <div class="px-4 py-3 border-b border-white/20"><h2 class="text-lg font-semibold">Presne pred rokom</h2></div>
         <div id="historyExact" class="p-4"></div>
       </div>
 
-      <!-- UV index -->
-      <div class="glass rounded-xl">
-        <div class="px-4 py-3 border-b border-white/20">
-          <h2 class="text-lg font-semibold">UV index</h2>
-        </div>
+      <div class="glass">
+        <div class="px-4 py-3 border-b border-white/20"><h2 class="text-lg font-semibold">UV index</h2></div>
         <div id="uvPanel" class="p-4 space-y-3">
           <div class="grid grid-cols-2 gap-3">
             <div class="metric"><div class="label">Aktuálne</div><div id="uvNow" class="val mono">—</div></div>
@@ -163,7 +152,7 @@
     <div class="inline-block w-8 h-8 border-4 border-white/30 border-t-white rounded-full animate-spin"></div>
     <p class="mt-2">Načítavam…</p>
   </div>
-  <div id="err" class="hidden glass rounded-xl p-4">
+  <div id="err" class="hidden glass p-4">
     <div class="text-center text-red-200">Nepodarilo sa načítať údaje. Skús iné mesto.</div>
   </div>
 </main>
@@ -200,7 +189,7 @@ const el={
 };
 
 function show(n,yes=true){ n.classList[yes?'remove':'add']('hidden'); }
-function sanitizeCode(c){ c=Number(c); return (c===45||c===48)?3:c; } // hmla -> oblačno
+function sanitizeCode(c){ c=Number(c); return (c===45||c===48)?3:c; }
 function iconFor(c,day=true){
   c=sanitizeCode(c);
   const m={0:day?'☀️':'🌙',1:day?'🌤️':'🌙',2:'⛅',3:'☁️',
@@ -234,11 +223,11 @@ function ymd(d){ return d.toISOString().slice(0,10); }
 
 function uvCategory(u){
   if(u==null||isNaN(u)) return {name:'—',color:'background:rgba(255,255,255,.35);'};
-  if(u<=2) return {name:'Nízky',     color:'background:#9AE6B4;'};
-  if(u<=5) return {name:'Stredný',   color:'background:#F6E05E;'};
-  if(u<=7) return {name:'Vysoký',    color:'background:#F6AD55;'};
-  if(u<=10) return {name:'Veľmi vysoký', color:'background:#F56565;'};
-  return {name:'Extrémny', color:'background:#B83280;'};
+  if(u<=2) return {name:'Nízky',color:'background:#9AE6B4;'};
+  if(u<=5) return {name:'Stredný',color:'background:#F6E05E;'};
+  if(u<=7) return {name:'Vysoký',color:'background:#F6AD55;'};
+  if(u<=10) return {name:'Veľmi vysoký',color:'background:#F56565;'};
+  return {name:'Extrémny',color:'background:#B83280;'};
 }
 
 async function geocode(q){
@@ -281,12 +270,11 @@ function renderCurrent(city,wx){
 
 function renderHourly(wx){
   const H=wx.hourly; 
-  el.tzInfo.textContent=wx.timezone; 
+  el.tzInfo.textContent=wx.timezone;
   el.hourRows.innerHTML=''; 
   el.hourList.innerHTML='';
 
-  const now=new Date(); 
-  let start=0; 
+  const now=new Date(); let start=0; 
   for(let i=0;i<H.time.length;i++){ if(new Date(H.time[i])>=now){ start=i; break; } }
   const end=Math.min(start+24,H.time.length);
 
@@ -299,74 +287,82 @@ function renderHourly(wx){
     const cld=H.cloud_cover?.[i];
     const timeStr=fmtTime(H.time[i]);
 
-    /* DESKTOP riadok */
+    /* Desktop riadok */
     const tr=document.createElement('tr'); tr.className='hover:bg-white/10';
     tr.innerHTML=`
       <td class="mono">${timeStr}</td>
-      <td class="flex items-center gap-2">
-        <span class="text-xl">${iconFor(code,true)}</span>
-        <span class="text-white/85 font-medium">${descFor(code)}</span>
-      </td>
+      <td class="flex items-center gap-2"><span class="text-xl">${iconFor(code,true)}</span><span class="text-white/85 font-medium">${descFor(code)}</span></td>
       <td class="val-bold mono">${temp}°</td>
       <td class="val-bold mono">${pop!=null?`${pop}%`:'—'} · ${pmm!=null?pmm.toFixed(1):'0.0'} mm</td>
-      <td class="val-bold mono">${wind!=null?`${Math.round(wind)} km/h`:'—'} (${dd2dir(wdir)})
-        <div class="val-sub">nárazy ${gust!=null?Math.round(gust)+' km/h':'—'}</div>
-      </td>
+      <td class="val-bold mono">${wind!=null?`${Math.round(wind)} km/h`:'—'} (${dd2dir(wdir)})<div class="val-sub">nárazy ${gust!=null?Math.round(gust)+' km/h':'—'}</div></td>
       <td class="val-bold mono">${cld!=null?`${cld}%`:'—'}</td>`;
     el.hourRows.appendChild(tr);
 
-    /* MOBILE rozbaľovacia karta */
-    const card=document.createElement('div');
-    const detailsId=`hour-${i}-details`;
-    card.className='glass rounded-lg';
+    /* Mobil karta */
+    const card=document.createElement('div'); card.className='card';
+    const btn=document.createElement('button'); btn.className='acc acc-btn'; btn.type='button'; btn.setAttribute('aria-expanded','false');
 
-    // hlavička = tlačidlo
-    const btn=document.createElement('button');
-    btn.className='toggle w-full px-3 py-3 flex items-center justify-between gap-3';
-    btn.setAttribute('aria-expanded','false');
-    btn.setAttribute('aria-controls',detailsId);
-    btn.setAttribute('type','button');
-    btn.dataset.open='false';
     btn.innerHTML=`
-      <div class="flex items-center gap-3 text-left">
+      <div class="acc-head">
         <div class="text-2xl">${iconFor(code,true)}</div>
         <div>
           <div class="mono font-semibold">${timeStr} · ${temp}°</div>
-          <div class="text-white/80 text-sm">${descFor(code)}</div>
+          <div class="acc-desc">${descFor(code)}</div>
         </div>
       </div>
-      <div class="text-sm mono text-white/90 flex items-center gap-2">
-        <span>${pop!=null?`${pop}%`:'—'} · ${pmm!=null?pmm.toFixed(1):'0.0'} mm</span>
-        <svg class="chev" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-          <polyline points="6 9 12 15 18 9"></polyline>
-        </svg>
-      </div>
-    `;
+      <div class="flex items-center gap-2">
+        <span class="chip"><span class="dot"></span>${pop!=null?`${pop}%`:'—'} · ${pmm!=null?pmm.toFixed(1):'0.0'} mm</span>
+        <svg class="chev" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="6 9 12 15 18 9"></polyline></svg>
+      </div>`;
 
-    // detaily
-    const det=document.createElement('div');
-    det.id=detailsId;
-    det.className='collapsible px-3 pb-3';
-    det.innerHTML=`
-      <div class="grid grid-cols-2 gap-2 text-sm mt-1">
+    const wrap=document.createElement('div'); wrap.className='panel-wrap';
+    const panel=document.createElement('div'); panel.className='panel';
+    panel.innerHTML=`
+      <div class="grid grid-cols-2 gap-2 mt-3 text-sm">
         <div class="metric"><div class="label">Zrážky</div><div class="val mono">${pop!=null?`${pop}%`:'—'} · ${pmm!=null?pmm.toFixed(1):'0.0'} mm</div></div>
         <div class="metric"><div class="label">Oblačnosť</div><div class="val mono">${cld!=null?`${cld}%`:'—'}</div></div>
         <div class="metric"><div class="label">Vietor</div><div class="val mono">${wind!=null?`${Math.round(wind)} km/h`:'—'} (${dd2dir(wdir)})</div></div>
         <div class="metric"><div class="label">Nárazy</div><div class="val mono">${gust!=null?Math.round(gust)+' km/h':'—'}</div></div>
-      </div>
-    `;
+      </div>`;
 
-    // toggle
+    wrap.appendChild(panel);
+    card.appendChild(btn);
+    card.appendChild(wrap);
+    el.hourList.appendChild(card);
+
+    // plynulá animácia výšky (auto height -> JS)
+    let open=false;
+    const setHeight = (el, open) => {
+      if(open){
+        const h = panel.scrollHeight;
+        wrap.style.height = h+'px';
+        panel.classList.add('open');
+      }else{
+        wrap.style.height = '0px';
+        panel.classList.remove('open');
+      }
+    };
+    wrap.style.height='0px'; wrap.style.transition='height .22s ease';
+
     btn.addEventListener('click', ()=>{
-      const open = btn.dataset.open === 'true';
-      btn.dataset.open = (!open).toString();
-      btn.setAttribute('aria-expanded', (!open).toString());
-      if(!open){ det.classList.add('open'); } else { det.classList.remove('open'); }
+      open = !open;
+      btn.setAttribute('aria-expanded', String(open));
+      setHeight(panel, open);
     });
 
-    card.appendChild(btn);
-    card.appendChild(det);
-    el.hourList.appendChild(card);
+    // po skončení animácie udržiavaj auto height pre obsah meniacich sa radov
+    wrap.addEventListener('transitionend', (e)=>{
+      if(e.propertyName!=='height') return;
+      if(open){ wrap.style.height='auto'; } // umožní prirodzený rast
+    });
+    // pri ďalšom otvorení potrebujeme reštartovať z aktuálnej výšky
+    btn.addEventListener('click', ()=>{
+      if(open){ // bude sa otvárať -> zresetuj z 'auto' na aktuálnu px výšku
+        const current = panel.scrollHeight;
+        wrap.style.height = current+'px';
+        // v ďalšom ticku sa nastaví na scrollHeight (už spravuje setHeight)
+      }
+    });
   }
 }
 
@@ -380,7 +376,7 @@ function renderDaily(wx){
     const tmax=Math.round(D.temperature_2m_max[i]);
     const code=sanitizeCode(D.weather_code[i]);
 
-    const card=document.createElement('div'); card.className='glass rounded-lg p-3';
+    const card=document.createElement('div'); card.className='card p-3';
     card.innerHTML=`
       <div class="flex items-center justify-between">
         <div class="flex items-center gap-3">
@@ -416,7 +412,7 @@ function renderHistoryExact(hist, todayTmax, todayTmin){
   const sign = v => (v>0?`+${v}`:`${v}`);
 
   el.historyExact.innerHTML=`
-    <div class="glass rounded-lg p-4">
+    <div class="card p-4">
       <div class="flex items-center gap-4">
         <div class="text-5xl">${icon}</div>
         <div>
@@ -452,28 +448,6 @@ function renderUV(wx){
   const u = Math.max(0, Math.min(11, (uvMax!=null?uvMax:uvNow)||0));
   el.uvFill.style.width = (u/11*100).toFixed(0)+'%';
   el.uvFill.style.cssText += ';'+cat.color;
-}
-
-async function geocode(q){
-  const r=await fetch(`${GEO}/search?name=${encodeURIComponent(q)}&count=1&language=sk`);
-  const j=await r.json(); if(!j.results||j.results.length===0) throw new Error('notfound'); return j.results[0];
-}
-async function fetchWx(lat,lon){
-  const url=`${API}/forecast?latitude=${lat}&longitude=${lon}`
-    +`&current=temperature_2m,relative_humidity_2m,apparent_temperature,is_day,weather_code,wind_speed_10m,wind_gusts_10m,wind_direction_10m`
-    +`&hourly=temperature_2m,weather_code,precipitation_probability,precipitation,wind_speed_10m,wind_gusts_10m,wind_direction_10m,cloud_cover,uv_index`
-    +`&daily=weather_code,temperature_2m_max,temperature_2m_min,sunrise,sunset,uv_index_max`
-    +`&timezone=auto&forecast_days=16`;
-  const r=await fetch(url); if(!r.ok) throw new Error('api'); return await r.json();
-}
-async function fetchHistoryExact(lat,lon){
-  const d=new Date(); d.setFullYear(d.getFullYear()-1);
-  const date=ymd(d);
-  const url=`${ARCH}?latitude=${lat}&longitude=${lon}`
-    +`&start_date=${date}&end_date=${date}`
-    +`&daily=temperature_2m_max,temperature_2m_min,precipitation_sum,weathercode`
-    +`&timezone=auto`;
-  const r=await fetch(url); if(!r.ok) throw new Error('arch1'); return await r.json();
 }
 
 async function run(q){
