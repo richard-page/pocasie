@@ -19,28 +19,33 @@
     .card { background:rgba(255,255,255,.12); border:none; }
   }
 
-  /* AGRESÍVNE CSS PRE SKRYTIE SCROLL BAR */
-  /* Skryje scrollbar pre WebKit (Chrome, Safari, nové Edge) */
+  /* RADIKÁLNE CSS PRE SKRYTIE SCROLL BAR */
+  /* 1. Pre WebKit (Chrome, Safari, Android WebView) */
   body::-webkit-scrollbar, html::-webkit-scrollbar {
-    display: none;             
-    width: 0;                  
-    background: transparent;
+    display: none !important;             
+    width: 0 !important;                  
+    background: transparent !important;
   }
-  /* Skryje scrollbar pre IE a Firefox */
+  
+  /* 2. Pre IE a Firefox */
   body, html {
-    -ms-overflow-style: none;  /* IE and Edge */
-    scrollbar-width: none;     /* Firefox */
-    /* Zabezpečí, že sa zobrazenie nescrolluje horizontálne */
-    overflow-x: hidden;
+    -ms-overflow-style: none !important;  /* IE and Edge */
+    scrollbar-width: none !important;     /* Firefox */
+    overflow-x: hidden !important;        /* Agresívne skrytie horizontálneho */
   }
-  /* Pre zabezpečenie skrytia vertikálneho scrollbaru v niektorých prehliadačoch */
-  body {
-    overflow-y: scroll; 
+  
+  /* 3. Aplikovanie skrytia aj na vnútorný kontajner, ak by sa scrolloval on */
+  #refreshContainer {
+    -ms-overflow-style: none !important;
+    scrollbar-width: none !important;
+  }
+  #refreshContainer::-webkit-scrollbar {
+    display: none !important;
   }
 
   /* Zabezpečenie, že žiadne elementy nespôsobujú horizontálny scroll */
   *{ box-sizing:border-box }
-  html,body{ width:100%; max-width:100%; } /* Odstránil som overflow-x:hidden z týchto riadkov, pretože to už riešime globálne vyššie */
+  html,body{ width:100%; max-width:100%; }
   
   body{
     margin:0; color:#fff;
@@ -52,7 +57,6 @@
   
   .hero{
     position:relative; isolation:isolate;
-    /* Explicitné centrovánie pre Flexbox */
     display:flex; flex-direction:column; align-items:center; justify-content:center;
     width:100%;
     padding:0.75rem 1rem 0.5rem; 
@@ -216,7 +220,7 @@
     </div>
   </div>
   
-  <div class="text-center pt-2 pb-0 text-white/50 text-xs flex justify-center items-center w-full">
+  <div class="text-center pt-2 pb-0 text-white/50 text-xs w-full" style="text-align: center;">
     Údaje poskytuje <a href="https://open-meteo.com/" target="_blank" rel="noopener noreferrer" class="hover:text-white/80 underline">Open-Meteo</a>.
   </div>
   
