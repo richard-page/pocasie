@@ -9,17 +9,24 @@
   :root{
     --glass: rgba(255,255,255,.08);
     --glass-b: rgba(255,255,255,.18);
-    --hero-h: 34vh;
+    /* Zníženie minimálnej výšky pre menšie medzery */
+    --hero-h: 24vh; 
     --hero-icon: 76px;
     --hero-temp: 5.6rem;
     --hero-pad-t: 1.6rem;
     --hero-pad-b: 1.2rem;
   }
   @media (min-width:480px){
-    :root{ --hero-h: 36vh; --hero-icon: 86px; --hero-temp: 6rem; }
+    --hero-h: 26vh; --hero-icon: 86px; --hero-temp: 6rem;
   }
   @media (min-width:768px){
-    :root{ --hero-h: 38vh; --hero-icon: 96px; --hero-temp: 6.2rem; }
+    --hero-h: 28vh; --hero-icon: 96px; --hero-temp: 6.2rem;
+  }
+  
+  /* Nastavenie farby pozadia pre mobil */
+  @media (max-width: 640px) {
+    .glass { background:rgba(255,255,255,.12); border:none; }
+    .card { background:rgba(255,255,255,.12); border:none; }
   }
 
   *{ box-sizing:border-box }
@@ -180,8 +187,11 @@
     <div class="inline-block w-8 h-8 border-4 border-white/30 border-t-white rounded-full animate-spin"></div>
     <p class="mt-2">Načítavam…</p>
   </div>
-  <div id="err" class="hidden glass p-4">
-    <div class="text-center text-red-200">Nepodarilo sa načítať údaje. Skús iné mesto.</div>
+  <div id="err" class="hidden glass p-4 border-red-500 border-2 bg-red-800/20">
+    <div class="text-center text-red-100 font-medium flex items-center justify-center gap-2">
+      <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="w-5 h-5"><circle cx="12" cy="12" r="10"></circle><line x1="12" y1="8" x2="12" y2="12"></line><line x1="12" y1="16" x2="12.01" y2="16"></line></svg>
+      Nepodarilo sa načítať údaje. Skús iné mesto.
+    </div>
   </div>
   
   <div class="text-center pt-8 pb-4 text-white/50 text-xs">
@@ -259,11 +269,25 @@ async function reverseGeocode(lat, lon) {
         const j = await r.json();
         const addr = j.address;
         if (!addr) return null;
+        // Primárne sa pokúsime získať mesto (city, town, village)
         const name = addr.city || addr.town || addr.village || addr.municipality || addr.county;
+        
+        // Ak máme nejaké meno, vrátime objekt
         if (name) {
             return { name: name, latitude: lat, longitude: lon, country_code: addr.country_code ? addr.country_code.toUpperCase() : 'SK', admin1: addr.state || '' };
         }
-        return null;
+        
+        // Inak skúsime aspoň okres/štát
+        const fallbackName = addr.county || addr.state || 'Aktuálna poloha';
+
+        return { 
+            name: fallbackName, 
+            latitude: lat, 
+            longitude: lon, 
+            country_code: addr.country_code ? addr.country_code.toUpperCase() : 'SK', 
+            admin1: addr.state || ''
+        };
+
     } catch (e) {
         console.error("Chyba pri volaní Nominatim reverseGeocode:", e);
         return null;
@@ -573,18 +597,23 @@ function getCurrentLocation() {
   navigator.geolocation.getCurrentPosition(locationSuccess, locationError, locationOptions);
 }
 
+// ZJEDNODUŠENÁ logická časť, ktorá eliminuje chybné volania Open-Meteo reverse geocoding
 async function locationSuccess(position) {
   const latitude = position.coords.latitude;
   const longitude = position.coords.longitude;
   
   let locatedCity = null;
   try {
+      // Používame VÝHRADNE Nominatim (reverseGeocode)
       locatedCity = await reverseGeocode(latitude, longitude);
   } catch (e) {
+      // Ak zlyhá aj Nominatim, použijeme len súradnice
       locatedCity = null;
   }
 
   const cityToUse = {
+    // Ak sa nepodarilo nájsť mesto, necháme názov prázdny. 
+    // Na HERO sekcii sa potom zobrazí len "—"
     name: locatedCity?.name || "", 
     latitude: latitude,
     longitude: longitude,
@@ -593,6 +622,7 @@ async function locationSuccess(position) {
   };
   
   if(el.input) {
+    // Ak je názov mesta prázdny, nezobrazujeme v inpute nič, aby to vyzeralo čisto
     el.input.value = cityToUse.name;
   }
 
