@@ -17,16 +17,14 @@
   .glass{ background:var(--glass); border:1px solid var(--glass-b); backdrop-filter:blur(12px); border-radius:1rem }
   .mono{ font-feature-settings:"tnum" 1,"lnum" 1 }
 
-  /* HERO – jednotná farba (žiadny prechod) */
+  /* HERO – jednotná farba (nie gradient) */
   .hero{
     position:relative; isolation:isolate;
     display:flex; flex-direction:column; align-items:center; justify-content:center;
     min-height:56vh; width:100%;
     padding:3.5rem 1rem 2rem; text-align:center; overflow:hidden
   }
-  /* Deň – použijeme spodnú farbu z pôvodného gradientu (#176ea9) */
   body[data-mode="day"] .hero{ background:#176ea9 }
-  /* Noc – použijeme spodnú farbu z pôvodného gradientu (#08273b) */
   body[data-mode="night"] .hero{ background:#08273b }
   body[data-mode="night"] .hero::after{
     content:""; position:absolute; inset:0; z-index:-1; pointer-events:none; opacity:.45;
@@ -104,7 +102,7 @@
     <!-- vyhľadávanie + návrhy -->
     <div class="suggest-wrap w-full sm:w-[560px] max-w-full">
       <form id="searchForm" class="grid grid-cols-1 sm:grid-cols-[1fr_auto] gap-2" novalidate>
-        <input id="cityInput" placeholder="Zadaj mesto (napr. Hlohovec)"
+        <input id="cityInput" placeholder="Zadaj mesto (napr. Bratislava)"
                class="w-full px-4 py-2.5 rounded-lg bg-white/20 border border-white/20 placeholder-white/70 focus:outline-none focus:ring-2 focus:ring-white/50"
                autocomplete="off" inputmode="search" type="search" />
         <button id="searchBtn" type="submit"
@@ -226,13 +224,7 @@ function withIcon(code){ return `${iconFor(code)} ${descFor(code)}`; }
 function dd2dir(dd){ if(dd==null||isNaN(dd)) return '—'; const deg=((dd%360)+360)%360; const dirs=['S','SV','V','JV','J','JZ','Z','SZ']; return dirs[Math.floor((deg+22.5)/45)%8]; }
 function fmtTime(iso){ const d=new Date(iso); return d.getHours().toString().padStart(2,'0')+':00'; }
 const flag=(cc)=> String.fromCodePoint(...[...cc.toUpperCase()].map(c=>127397+c.charCodeAt(0)));
-
-/* iba mesto */
-function cityLabel(cityOrString){
-  if (typeof cityOrString === 'string') return cityOrString.split(',')[0].trim();
-  const n = (cityOrString?.name || '').split(',')[0].trim();
-  return n || '—';
-}
+function cityLabel(x){ return (typeof x==='string'?(x.split(',')[0]):(x?.name||'')).trim()||'—'; }
 
 /* ====== API ====== */
 async function geocodeAll(q,count=8){
@@ -477,14 +469,16 @@ el.refreshContainer.addEventListener('touchmove',(e)=>{
 el.refreshContainer.addEventListener('touchend', async ()=>{
   if(pulling && activated){
     const last=localStorage.getItem('lastCity');
-    if(last){ try{ await run(JSON.parse(last)); }catch{} }
+    // ak nič v storage, padneme späť na Bratislavu
+    const cityObj = last ? JSON.parse(last) : { name:'Bratislava', latitude:48.1486, longitude:17.1077 };
+    try{ await run(cityObj); }catch{}
   }
   ptrReset();
 });
 
-/* ====== Štart ====== */
-el.input.value='Hlohovec';
-run('Hlohovec');
+/* ====== Štart – predvolená BRATISLAVA ====== */
+el.input.value='Bratislava';
+run('Bratislava');
 </script>
 </body>
 </html>
