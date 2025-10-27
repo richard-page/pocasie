@@ -245,12 +245,17 @@ async function geocodeAll(q,count=8){
   const j=await r.json();
   return j.results||[];
 }
-// NOVÁ FUNKCIA pre reverznú geolokáciu
+// OPRAVA: Pôvodne '/v1/reverse' (čo viedlo k 404). Zmenené na správne '/v1/reverse-geocode'.
 async function reverseGeocode(lat, lon) {
     const url = `${GEO}/reverse-geocode?latitude=${lat}&longitude=${lon}&language=sk&limit=1`;
     const r = await fetch(url);
+    if (!r.ok) {
+        // Pri 404 a iných chybách API sa vráti null, aby sa použila záložná hodnota "Vaša poloha"
+        console.warn(`Reverse Geocode API volanie zlyhalo s HTTP statusom ${r.status}`);
+        return null;
+    }
     const j = await r.json();
-    return j.results?.[0] || null; // Vráti prvé nájdené mesto, alebo null
+    return j.results?.[0] || null;
 }
 async function fetchWx(lat,lon){
   const url=`${API}/forecast?latitude=${lat}&longitude=${lon}`
@@ -568,8 +573,14 @@ async function locationSuccess(position) {
   
   console.log(`Aktuálna poloha získaná: Lat = ${latitude}, Lon = ${longitude}`);
 
-  // NOVÝ KROK: Reverzná geolokácia
-  const locatedCity = await reverseGeocode(latitude, longitude);
+  // NOVÝ KROK: Reverzná geolokácia so SPRÁVNYM ENDPOINTOM
+  let locatedCity;
+  try {
+      locatedCity = await reverseGeocode(latitude, longitude);
+  } catch (e) {
+      console.error("Chyba pri volaní reverseGeocode:", e);
+      locatedCity = null;
+  }
 
   let cityToUse;
   if(locatedCity) {
