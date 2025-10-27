@@ -5,52 +5,6 @@
 <meta name="viewport" content="width=device-width, initial-scale=1" />
 <title>Predpoveď počasia</title>
 <script src="https://cdn.tailwindcss.com"></script>
-  <script>
-// Funkcia na požiadanie o povolenie na geolokáciu
-function requestAndroidLocationPermission() {
-  // Požiadame o povolenie na geolokáciu
-  median.android.geoLocation.promptLocationServices();
-}
-
-// Funkcia na kontrolu, či sú služby polohy povolené
-function checkAndroidLocationEnabled() {
-  median.android.geoLocation.isLocationServicesEnabled({
-    callback: function(result) {
-      if (result.enabled) {
-        console.log("Geolokačné služby sú povolené.");
-        // Ak sú služby povolené, môžeme získať polohu
-        getCurrentLocation();
-      } else {
-        console.log("Geolokačné služby nie sú povolené.");
-        // Tu môžeme pridať logiku, aby sme upozornili užívateľa, že musí povoliť geolokáciu
-      }
-    }
-  });
-}
-
-// Funkcia na získanie aktuálnej polohy
-function getCurrentLocation() {
-  navigator.geolocation.getCurrentPosition(locationSuccess, locationError, locationOptions);
-}
-
-// Callback pri úspešnom získaní polohy
-function locationSuccess(position) {
-  const latitude = position.coords.latitude;
-  const longitude = position.coords.longitude;
-  console.log(`Aktuálna poloha: Latitude = ${latitude}, Longitude = ${longitude}`);
-}
-
-// Callback pri chybe pri získavaní polohy
-function locationError(error) {
-  console.error(`Chyba pri získavaní polohy: ${error.message}`);
-}
-
-// Možnosť vyvolania požiadania o povolenie na geolokáciu pri načítaní stránky
-window.onload = function() {
-  checkAndroidLocationEnabled();
-};
-</script>
-
 <style>
   :root{
     --glass: rgba(255,255,255,.08);
@@ -542,5 +496,52 @@ el.refreshContainer.addEventListener('touchend', async ()=>{
 el.input.value='Bratislava';
 run('Bratislava');
 </script>
+
+<script>
+// Funkcia na požiadanie o povolenie na geolokáciu
+function requestAndroidLocationPermission() {
+  // Požiadame o povolenie na geolokáciu
+  median.android.geoLocation.promptLocationServices();
+}
+
+// Funkcia na kontrolu, či sú služby polohy povolené
+function checkAndroidLocationEnabled() {
+  median.android.geoLocation.isLocationServicesEnabled({
+    callback: function(result) {
+      if (result.enabled) {
+        console.log("Geolokačné služby sú povolené.");
+        // Ak sú služby povolené, môžeme získať polohu
+        getCurrentLocation();
+      } else {
+        console.log("Geolokačné služby nie sú povolené.");
+        // Tu môžeme pridať logiku, aby sme upozornili užívateľa, že musí povoliť geolokáciu
+      }
+    }
+  });
+}
+
+// Funkcia na získanie aktuálnej polohy
+function getCurrentLocation() {
+  navigator.geolocation.getCurrentPosition(locationSuccess, locationError, locationOptions);
+}
+
+// Callback pri úspešnom získaní polohy
+function locationSuccess(position) {
+  const latitude = position.coords.latitude;
+  const longitude = position.coords.longitude;
+  console.log(`Aktuálna poloha: Latitude = ${latitude}, Longitude = ${longitude}`);
+}
+
+// Callback pri chybe pri získavaní polohy
+function locationError(error) {
+  console.error(`Chyba pri získavaní polohy: ${error.message}`);
+}
+
+// Možnosť vyvolania požiadania o povolenie na geolokáciu pri načítaní stránky
+window.onload = function() {
+  checkAndroidLocationEnabled();
+};
+</script>
+  
 </body>
 </html>
