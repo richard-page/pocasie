@@ -568,13 +568,6 @@ function locationError(error) {
   loadDefaultCity();
 }
 
-// Pomocná funkcia na načítanie predvoleného mesta (Bratislava)
-function loadDefaultCity() {
-  console.log("Načítavam predvolené mesto: Bratislava");
-  el.input.value = 'Bratislava';
-  run('Bratislava');
-}
-
 /* ====== Štart – Geolokácia alebo predvolená Bratislava ====== */
 // Namiesto priameho načítania Bratislavy skúsime získať polohu
 checkAndroidLocationEnabled();
