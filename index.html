@@ -492,9 +492,9 @@ el.refreshContainer.addEventListener('touchend', async ()=>{
   ptrReset();
 });
 
-  // Funkcia na požiadanie o povolenie na geolokáciu
+<script>
+// Funkcia na požiadanie o povolenie na geolokáciu
 function requestAndroidLocationPermission() {
-  // Požiadame o povolenie na geolokáciu
   median.android.geoLocation.promptLocationServices();
 }
 
@@ -504,11 +504,9 @@ function checkAndroidLocationEnabled() {
     callback: function(result) {
       if (result.enabled) {
         console.log("Geolokačné služby sú povolené.");
-        // Ak sú služby povolené, môžeme získať polohu
         getCurrentLocation();
       } else {
         console.log("Geolokačné služby nie sú povolené.");
-        // Tu môžeme pridať logiku, aby sme upozornili užívateľa, že musí povoliť geolokáciu
       }
     }
   });
@@ -531,11 +529,13 @@ function locationError(error) {
   console.error(`Chyba pri získavaní polohy: ${error.message}`);
 }
 
-// Možnosť vyvolania požiadania o povolenie na geolokáciu pri načítaní stránky
+// Zavolanie funkcie pri načítaní stránky
 window.onload = function() {
   checkAndroidLocationEnabled();
 };
+</script>
 
+  
 /* ====== Štart – predvolená Bratislava ====== */
 el.input.value='Bratislava';
 run('Bratislava');
