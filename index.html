@@ -539,14 +539,15 @@ function getCityFromStorage() {
 
 function checkAndroidLocationEnabled(forceFetch=false) {
   const cityObj = getCityFromStorage();
-  const isCurrentLocation = cityObj?.__isCurrentLocation;
 
-  if (!forceFetch && cityObj && !isCurrentLocation) {
+  // NOVÁ LOGIKA: Ak máme uložené akékoľvek mesto a nejde o force refresh, okamžite ho načítame
+  if (cityObj && !forceFetch) {
     el.input.value = cityLabel(cityObj);
     run(cityObj);
     return;
   }
   
+  // OSTATNÉ: Pokus o GPS zistenie (pri prvom štarte alebo po force refresh)
   if (typeof median !== 'undefined' && median.android && median.android.geoLocation) {
     median.android.geoLocation.isLocationServicesEnabled({
       callback: function(result) {
@@ -609,9 +610,11 @@ function handleLocationFailure() {
     const cityObj = getCityFromStorage();
 
     if (cityObj) {
+        // Ak zlyhá GPS, ale máme uložené posledné mesto (akékoľvek), použijeme ho
         el.input.value = cityLabel(cityObj);
         run(cityObj);
     } else {
+        // Iba ak nebolo NIKDY uložené žiadne mesto, ideme na default (Bratislava)
         loadDefaultCity();
     }
 }
