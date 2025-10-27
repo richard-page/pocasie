@@ -64,6 +64,8 @@
 
   .emo{ font-size:1.5em; line-height:1; display:inline-block; transform:translateY(1px) }
   @media (min-width:1024px){ .emo{ font-size:1.65em } }
+
+  .perm-tip{ font-size:.9rem }
 </style>
 </head>
 <body data-mode="day">
@@ -75,16 +77,23 @@
 </section>
 
 <header class="sticky-header w-full glass">
-  <div class="w-full px-3 md:px-6 py-3 flex items-center justify-center">
+  <div class="w-full px-3 md:px-6 py-3 flex flex-col gap-2 items-center justify-center">
     <form id="searchForm" class="grid grid-cols-1 gap-2 w-full sm:w-[560px] max-w-full place-items-center" novalidate>
       <input id="cityInput" placeholder="Zadajte mesto"
              class="w-full px-4 py-2.5 rounded-lg bg-white/20 border border-white/20 placeholder-white/70 focus:outline-none focus:ring-2 focus:ring-white/50"
              autocomplete="off" inputmode="search" type="search" />
-      <button id="searchBtn" type="submit"
-              class="inline-flex items-center justify-center px-4 md:px-5 py-2.5 rounded-lg bg-white/30 hover:bg-white/40 text-white font-medium place-self-center">
-        Hľadať
-      </button>
+      <div class="flex gap-2">
+        <button id="searchBtn" type="submit"
+                class="inline-flex items-center justify-center px-4 md:px-5 py-2.5 rounded-lg bg-white/30 hover:bg-white/40 text-white font-medium">
+          Hľadať
+        </button>
+        <button id="geoBtn" type="button"
+                class="inline-flex items-center justify-center px-3 md:px-4 py-2.5 rounded-lg bg-white/20 hover:bg-white/30 text-white font-medium">
+          Použiť moju polohu
+        </button>
+      </div>
     </form>
+    <div id="permMsg" class="perm-tip text-white/80"></div>
   </div>
 </header>
 
@@ -158,7 +167,9 @@ const el={
   heroIcon:document.getElementById('heroIcon'),
   heroTemp:document.getElementById('heroTemp'),
   loading:document.getElementById('loading'),
-  err:document.getElementById('err')
+  err:document.getElementById('err'),
+  geoBtn:document.getElementById('geoBtn'),
+  permMsg:document.getElementById('permMsg'),
 };
 
 const svgSun=`<svg viewBox="0 0 128 128" xmlns="http://www.w3.org/2000/svg"><defs><radialGradient id="g" cx="50%" cy="50%" r="50%"><stop offset="0%" stop-color="#ffe27a"/><stop offset="70%" stop-color="#ffd057"/><stop offset="100%" stop-color="#f7b538"/></radialGradient></defs><circle cx="64" cy="64" r="28" fill="url(#g)"/><g stroke="#ffd36a" stroke-width="6" stroke-linecap="round"><line x1="64" y1="8"  x2="64" y2="28"/><line x1="64" y1="100" x2="64" y2="120"/><line x1="8"  y1="64" x2="28" y2="64"/><line x1="100" y1="64" x2="120" y2="64"/><line x1="20" y1="20" x2="34" y2="34"/><line x1="94" y1="94" x2="108" y2="108"/><line x1="20" y1="108" x2="34" y2="94"/><line x1="94" y1="34" x2="108" y2="20"/></g></svg>`;
@@ -193,10 +204,18 @@ async function geocode(q){
   const r=await fetch(`${GEO}/search?name=${encodeURIComponent(q)}&count=1&language=sk`);
   const j=await r.json(); if(!j.results||j.results.length===0) throw new Error('notfound'); return j.results[0];
 }
-async function geocodeByLatLon(lat,lon){
+async function reverseGeocodeLabel(lat,lon){
   const r=await fetch(`${GEO}/reverse?latitude=${lat}&longitude=${lon}&language=sk`);
-  const j=await r.json(); if(!j.results||j.results.length===0) throw new Error('notfound'); return j.results[0];
+  const j=await r.json();
+  const res=j.results && j.results[0];
+  if(!res) return {name:'Vaša poloha', country:''};
+  // Preferuj mesto; inak adminy; nikdy čísla
+  const name = res.name && res.name.trim()
+    ? res.name
+    : [res.admin2, res.admin1, res.country].filter(Boolean).join(', ') || 'Vaša poloha';
+  return {name, country: res.country || ''};
 }
+
 async function fetchWx(lat,lon){
   const url=`${API}/forecast?latitude=${lat}&longitude=${lon}`
     +`&current=temperature_2m,is_day,weather_code`
@@ -219,9 +238,10 @@ async function fetchHistoryExact(lat,lon){
 function renderHero(city, wx){
   const isDay=!!wx.current.is_day;
   document.body.setAttribute('data-mode',isDay?'day':'night');
-  el.heroPlace.textContent=`${city.name}${city.country?`, ${city.country}`:''}`;
-  el.heroTemp.textContent=Math.round(wx.current.temperature_2m)+'°';
-  el.heroIcon.innerHTML=isDay?svgSun:svgMoon;
+  const label = city.country ? `${city.name}, ${city.country}` : city.name;
+  el.heroPlace.textContent = label || 'Vaša poloha';
+  el.heroTemp.textContent = Math.round(wx.current.temperature_2m)+'°';
+  el.heroIcon.innerHTML = isDay ? svgSun : svgMoon;
 }
 
 function renderHourly(wx){
@@ -326,9 +346,12 @@ function renderUV(wx){
 }
 
 async function renderAllFor(lat,lon){
-  const [wx,hist]=await Promise.all([fetchWx(lat,lon), fetchHistoryExact(lat,lon)]);
-  const city=await geocodeByLatLon(lat,lon).catch(()=>({name:`${lat.toFixed(3)}, ${lon.toFixed(3)}`, country:''}));
-  renderHero(city,wx);
+  const [wx,hist,cityLabel] = await Promise.all([
+    fetchWx(lat,lon),
+    fetchHistoryExact(lat,lon),
+    reverseGeocodeLabel(lat,lon)
+  ]);
+  renderHero(cityLabel,wx);
   renderHourly(wx);
   renderDaily(wx);
   renderHistoryExact(hist);
@@ -344,75 +367,89 @@ async function run(q){
   finally{ el.loading.classList.add('hidden'); }
 }
 
-/* ===== Geolokácia: auto-init + watch + WebView hook ===== */
-let geoWatchId=null, geoReady=false, firstFixDone=false, geoTimeoutId=null;
+/* ===== Geolokácia: tlačidlo + permissions + watch ===== */
+let firstFixDone=false, geoWatchId=null;
+
+function updatePermMsg(txt){ el.permMsg.textContent = txt || ''; }
+
+async function checkPermission(){
+  if(!('permissions' in navigator)) return null;
+  try{
+    const st = await navigator.permissions.query({name:'geolocation'});
+    return st.state; // 'granted' | 'denied' | 'prompt'
+  }catch{return null;}
+}
+
+function requestOneShot(){
+  if(!('geolocation' in navigator)) { updatePermMsg('Prehliadač nepodporuje geolokáciu.'); return; }
+  navigator.geolocation.getCurrentPosition(
+    pos=>{
+      const {latitude:lat, longitude:lon}=pos.coords;
+      if(!firstFixDone){ firstFixDone=true; el.loading.classList.remove('hidden'); }
+      renderAllFor(lat,lon).catch(()=>el.err.classList.remove('hidden')).finally(()=>el.loading.classList.add('hidden'));
+      updatePermMsg('');
+    },
+    err=>{
+      if(!firstFixDone){ firstFixDone=true; run('Bratislava'); }
+      if(err && err.code===1) updatePermMsg('Prístup k polohe je zamietnutý. Povoliť ho môžete v nastaveniach aplikácie/prehliadača.');
+    },
+    {enableHighAccuracy:true, timeout:10000, maximumAge:0}
+  );
+}
 
 function startGeoWatch(){
   if(!('geolocation' in navigator)) return;
   try{
-    geoWatchId = navigator.geolocation.watchPosition(onGeoSuccess, onGeoError, {
-      enableHighAccuracy:true, maximumAge:15000, timeout:10000
-    });
+    geoWatchId = navigator.geolocation.watchPosition(
+      pos=>{ const {latitude:lat, longitude:lon}=pos.coords; renderAllFor(lat,lon); },
+      ()=>{}, {enableHighAccuracy:true, maximumAge:15000, timeout:10000}
+    );
   }catch{}
 }
 
-function onGeoSuccess(pos){
-  const {latitude:lat, longitude:lon} = pos.coords;
-  geoReady=true;
-  if(!firstFixDone){
-    firstFixDone=true;
-    el.loading.classList.remove('hidden'); el.err.classList.add('hidden');
-    renderAllFor(lat,lon).catch(()=>el.err.classList.remove('hidden')).finally(()=>el.loading.classList.add('hidden'));
-  }
-}
-
-function onGeoError(err){
-  // ak prvý fix nevyšiel do 4s, padni na Bratislavu
-  if(!firstFixDone) fallbackToBratislava();
-  console.warn('Geolocation error:', err?.code, err?.message);
-}
-
-function requestOneShot(){
-  if(!('geolocation' in navigator)) { fallbackToBratislava(); return; }
-  navigator.geolocation.getCurrentPosition(onGeoSuccess, onGeoError, {
-    enableHighAccuracy:true, timeout:8000, maximumAge:0
-  });
-}
-
-function fallbackToBratislava(){
-  if(firstFixDone) return;
-  firstFixDone=true;
-  run('Bratislava');
-}
-
-/* Hook pre tvoju WebView appku: zavolá to natív, keď sú služby lokácie pripravené */
+/* WebView hook – zavolá natív, keď je pripravená geolokácia */
 window.median_geolocation_ready = function(){
-  // ak WebView najprv inicializuje služby, skús hneď získať polohu
+  updatePermMsg('Pokus o zistenie polohy…');
   requestOneShot();
   startGeoWatch();
 };
 
-/* Ak sa median_geolocation_ready nikdy nezavolá (čistý prehliadač), skús sám */
-function bootGeolocation(){
-  // malý timeout: ak do 4s nepríde fix, pustíme fallback
-  geoTimeoutId = setTimeout(()=>{ if(!firstFixDone) fallbackToBratislava(); }, 4000);
+/* UI bindingy */
+el.geoBtn.addEventListener('click', ()=>{
+  updatePermMsg('Pokus o zistenie polohy…');
   requestOneShot();
-  startGeoWatch();
-}
+});
 
-/* ===== UI bindingy a štart ===== */
 document.getElementById('searchForm').addEventListener('submit',(ev)=>{
   ev.preventDefault();
   const q=el.input.value.trim();
-  if(q){ firstFixDone=true; run(q); } // manuálny výber mesta prepíše auto geo
+  if(q){ firstFixDone=true; run(q); }
 });
 
 el.input.value='';
 setTimeout(()=>el.input.focus(),0);
 
-// štart
-el.loading.classList.remove('hidden');
-bootGeolocation();
+/* Boot: skús zistiť stav povolenia a podľa toho ukáž správu */
+(async ()=>{
+  el.loading.classList.remove('hidden');
+  const perm = await checkPermission();
+  if(perm==='granted'){
+    updatePermMsg('');
+    requestOneShot();
+    startGeoWatch();
+  }else if(perm==='prompt'){
+    updatePermMsg('Pre presnú predpoveď kliknite na „Použiť moju polohu“.');
+    // fallback na Bratislavu, kým používateľ nepotvrdí
+    if(!firstFixDone){ firstFixDone=true; run('Bratislava'); }
+  }else if(perm==='denied'){
+    updatePermMsg('Prístup k polohe je zamietnutý. Povoľte ho v nastaveniach alebo zadajte mesto ručne.');
+    if(!firstFixDone){ firstFixDone=true; run('Bratislava'); }
+  }else{
+    // permissions API nie je k dispozícii – ponúkni tlačidlo a fallback
+    updatePermMsg('Kliknite na „Použiť moju polohu“ pre zistenie polohy.');
+    if(!firstFixDone){ firstFixDone=true; run('Bratislava'); }
+  }
+})();
 </script>
 </body>
 </html>
