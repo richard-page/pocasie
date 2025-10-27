@@ -191,30 +191,47 @@
 
   <script>
     // Funkcia na požiadanie o povolenie na geolokáciu
-function requestLocationPermission() {
-  if ("geolocation" in navigator) {
-    navigator.geolocation.getCurrentPosition(locationSuccess, locationError);
-  } else {
-    console.error("Geolokačné služby nie sú podporované v tomto prehliadači.");
-  }
-}
+    function requestAndroidLocationPermission() {
+      median.android.geoLocation.promptLocationServices();
+    }
 
-// Callback pri úspešnom získaní polohy
-function locationSuccess(position) {
-  const latitude = position.coords.latitude;
-  const longitude = position.coords.longitude;
-  console.log(`Aktuálna poloha: Latitude = ${latitude}, Longitude = ${longitude}`);
-}
+    // Funkcia na kontrolu, či sú služby polohy povolené
+    function checkAndroidLocationEnabled() {
+      median.android.geoLocation.isLocationServicesEnabled({
+        callback: function(result) {
+          if (result.enabled) {
+            console.log("Geolokačné služby sú povolené.");
+            // Ak sú služby povolené, môžeme získať polohu
+            getCurrentLocation();
+          } else {
+            console.log("Geolokačné služby nie sú povolené.");
+            // Tu môžeme pridať logiku, aby sme upozornili užívateľa, že musí povoliť geolokáciu
+          }
+        }
+      });
+    }
 
-// Callback pri chybe pri získavaní polohy
-function locationError(error) {
-  console.error(`Chyba pri získavaní polohy: ${error.message}`);
-}
+    // Funkcia na získanie aktuálnej polohy
+    function getCurrentLocation() {
+      navigator.geolocation.getCurrentPosition(locationSuccess, locationError, locationOptions);
+    }
 
-// Možnosť vyvolania požiadania o povolenie na geolokáciu pri načítaní stránky
-window.onload = function() {
-  requestLocationPermission();
-};
+    // Callback pri úspešnom získaní polohy
+    function locationSuccess(position) {
+      const latitude = position.coords.latitude;
+      const longitude = position.coords.longitude;
+      console.log(`Aktuálna poloha: Latitude = ${latitude}, Longitude = ${longitude}`);
+    }
+
+    // Callback pri chybe pri získavaní polohy
+    function locationError(error) {
+      console.error(`Chyba pri získavaní polohy: ${error.message}`);
+    }
+
+    // Možnosť vyvolania požiadania o povolenie na geolokáciu pri načítaní stránky
+    window.onload = function() {
+      checkAndroidLocationEnabled();
+    };
   </script>
 
 <script>
@@ -514,11 +531,15 @@ el.refreshContainer.addEventListener('touchmove',(e)=>{
 el.refreshContainer.addEventListener('touchend', async ()=>{
   if(pulling && activated){
     const last=localStorage.getItem('lastCity');
-   const cityObj = last ? JSON.parse(last) : null;  // Ak neexistuje uložené mesto, nastavíme to na null
+    const cityObj = last ? JSON.parse(last) : { name:'null', latitude:48.1486, longitude:17.1077 };
     try{ await run(cityObj); }catch{}
   }
   ptrReset();
 });
+
+/* ====== Štart – predvolená Bratislava ====== */
+el.input.value='null';
+run('null');
 </script>
 </body>
 </html>
