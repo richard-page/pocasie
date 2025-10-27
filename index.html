@@ -43,7 +43,7 @@
       radial-gradient(1.6px 1.6px at 44% 86%, #fff 45%, transparent 47%)
   }
   #heroPlace{ font-size:1.25rem; font-weight:600; opacity:.95; letter-spacing:.2px }
-  #heroIcon{ width:120px; height:120px; margin:1.2rem auto }
+  #heroIcon{ width:120px; height:120px; margin:1.2rem auto; font-size:92px; line-height:120px }
   #heroTemp{ font-size:6.5rem; line-height:1; font-weight:700; letter-spacing:2px }
 
   .sticky-header{ position:sticky; top:0; z-index:40 }
@@ -79,9 +79,7 @@
   .s-name{ font-weight:600 }
 
   /* Pull-to-refresh */
-  #ptr{
-    position:sticky; top:0; height:0; overflow:visible; z-index:45;
-  }
+  #ptr{ position:sticky; top:0; height:0; overflow:visible; z-index:45; }
   #ptr .spinner{
     margin:.35rem auto 0; width:34px; height:34px; border-radius:9999px;
     border:4px solid rgba(255,255,255,.28); border-top-color:#fff;
@@ -184,10 +182,6 @@ const API='https://api.open-meteo.com/v1';
 const GEO='https://geocoding-api.open-meteo.com/v1';
 const ARCH='https://archive-api.open-meteo.com/v1/era5';
 
-/* ====== Inline SVG slnko/mesiac ====== */
-const svgSun=`<svg viewBox="0 0 128 128" xmlns="http://www.w3.org/2000/svg"><defs><radialGradient id="g" cx="50%" cy="50%" r="50%"><stop offset="0%" stop-color="#ffe27a"/><stop offset="70%" stop-color="#ffd057"/><stop offset="100%" stop-color="#f7b538"/></radialGradient></defs><circle cx="64" cy="64" r="28" fill="url(#g)"/><g stroke="#ffd36a" stroke-width="6" stroke-linecap="round"><line x1="64" y1="8"  x2="64" y2="28"/><line x1="64" y1="100" x2="64" y2="120"/><line x1="8"  y1="64" x2="28" y2="64"/><line x1="100" y1="64" x2="120" y2="64"/><line x1="20" y1="20" x2="34" y2="34"/><line x1="94" y1="94" x2="108" y2="108"/><line x1="20" y1="108" x2="34" y2="94"/><line x1="94" y1="34" x2="108" y2="20"/></g></svg>`;
-const svgMoon=`<svg viewBox="0 0 128 128" xmlns="http://www.w3.org/2000/svg"><defs><radialGradient id="m" cx="40%" cy="35%" r="60%"><stop offset="0%" stop-color="#f4f4f6"/><stop offset="100%" stop-color="#cfd4da"/></radialGradient></defs><path d="M90 82c-29 0-52-23-52-52 0-7 1-14 4-20C25 16 16 32 16 50c0 30 24 54 54 54 18 0 34-9 40-26-6 3-13 4-20 4z" fill="url(#m)"/></svg>`;
-
 /* ====== DOM refs ====== */
 const el={
   form:document.getElementById('searchForm'),
@@ -235,6 +229,23 @@ function dd2dir(dd){ if(dd==null||isNaN(dd)) return '—'; const deg=((dd%360)+3
 function fmtTime(iso){ const d=new Date(iso); return d.getHours().toString().padStart(2,'0')+':00'; }
 const flag=(cc)=> String.fromCodePoint(...[...cc.toUpperCase()].map(c=>127397+c.charCodeAt(0)));
 
+// krajší názov regiónu (hlavne pre SK)
+function niceRegion(city){
+  const a = (city.admin1 || '').toLowerCase().trim();
+  const skMap = {
+    'bratislavský kraj':'Bratislava',
+    'trnavský kraj':'Trnava',
+    'trenčiansky kraj':'Trenčín',
+    'nitriansky kraj':'Nitra',
+    'žilinský kraj':'Žilina',
+    'banskobystrický kraj':'Banská Bystrica',
+    'prešovský kraj':'Prešov',
+    'košický kraj':'Košice'
+  };
+  if (skMap[a]) return skMap[a];
+  return (city.admin1 || '').replace(/\s*(kraj|region|county)$/i,'').trim();
+}
+
 /* ====== API ====== */
 async function geocodeAll(q,count=8){
   const r=await fetch(`${GEO}/search?name=${encodeURIComponent(q)}&count=${count}&language=sk&format=json`);
@@ -263,11 +274,17 @@ async function fetchHistoryExact(lat,lon){
 /* ====== Vykreslenie ====== */
 function renderHero(city, wx){
   const isDay = !!wx.current.is_day;
+  const code = sanitizeCode(wx.current.weather_code);
   document.body.setAttribute('data-mode', isDay ? 'day' : 'night');
-  const where = [city.name, city.admin1, city.country].filter(Boolean).join(', ');
-  el.heroPlace.textContent = where;
+
+  const region = niceRegion(city);
+  const parts = [city.name, region].filter(Boolean);
+  if (parts[0] && parts[1] && parts[0].toLowerCase() === parts[1].toLowerCase()) parts.pop();
+
+  el.heroPlace.textContent = parts.join(', ');
   el.heroTemp.textContent = Math.round(wx.current.temperature_2m)+'°';
-  el.heroIcon.innerHTML = isDay ? svgSun : svgMoon;
+  // Ikona podľa počasia (emoji)
+  el.heroIcon.textContent = iconFor(code);
 }
 function renderHourly(wx){
   const H=wx.hourly; el.hourRows.innerHTML=''; el.hourList.innerHTML='';
@@ -387,14 +404,13 @@ async function run(queryOrCityObj){
     renderHistoryExact(hist);
     renderUV(wx);
 
-    // ulož posledné mesto (pre pull-to-refresh)
     localStorage.setItem('lastCity', JSON.stringify(city));
   }catch(e){ el.err.classList.remove('hidden'); }
   finally{ el.loading.classList.add('hidden'); }
 }
 
 /* ====== Návrhy miest počas písania ====== */
-let selIndex=-1; // index vybranej položky v dropdown-e
+let selIndex=-1;
 let lastSuggest=[];
 
 function hideSuggest(){ el.suggest.classList.add('hidden'); el.suggest.innerHTML=''; selIndex=-1; lastSuggest=[]; }
@@ -408,7 +424,6 @@ function cityRow(c){
     <div class="s-meta">${[admin,country].filter(Boolean).join(' · ')}</div>
   `;
 }
-
 function renderSuggest(items){
   el.suggest.innerHTML='';
   items.forEach((c,idx)=>{
@@ -427,7 +442,6 @@ function renderSuggest(items){
   }
   showSuggest();
 }
-
 async function suggest(q){
   if(!q){ hideSuggest(); return; }
   try{
@@ -436,14 +450,14 @@ async function suggest(q){
     renderSuggest(res);
   }catch{ hideSuggest(); }
 }
-
 function choose(i){
   const c=lastSuggest[i]; if(!c) return;
-  el.input.value=[c.name,c.admin1,c.country].filter(Boolean).join(', ');
+  const pretty=[c.name, niceRegion(c)].filter(Boolean);
+  if (pretty[0] && pretty[1] && pretty[0].toLowerCase()===pretty[1].toLowerCase()) pretty.pop();
+  el.input.value=pretty.join(', ');
   hideSuggest();
   run(c);
 }
-
 el.input.addEventListener('input', (e)=>{ suggest(e.target.value.trim()); });
 el.input.addEventListener('keydown',(e)=>{
   const items=[...el.suggest.querySelectorAll('.suggest-item')];
@@ -468,25 +482,19 @@ el.form.addEventListener('submit', (ev)=>{
 /* ====== Pull-to-refresh (mobil) ====== */
 let startY=0, pulling=false, activated=false;
 const THRESH=72; // px
-
-function ptrReset(){
-  pulling=false; activated=false; startY=0; el.ptr.classList.remove('active');
-}
+function ptrReset(){ pulling=false; activated=false; startY=0; el.ptr.classList.remove('active'); }
 
 el.refreshContainer.addEventListener('touchstart',(e)=>{
   if(window.scrollY===0){ startY=e.touches[0].clientY; pulling=true; }
 },{passive:true});
-
 el.refreshContainer.addEventListener('touchmove',(e)=>{
   if(!pulling) return;
   const dy=e.touches[0].clientY-startY;
-  if(dy>10){ e.preventDefault(); } // jemné potiahnutie
+  if(dy>10){ e.preventDefault(); }
   if(dy>THRESH && !activated){ activated=true; el.ptr.classList.add('active'); }
 },{passive:false});
-
 el.refreshContainer.addEventListener('touchend', async ()=>{
   if(pulling && activated){
-    // znovu načítaj posledné mesto, bez reloadu
     const last=localStorage.getItem('lastCity');
     if(last){ try{ await run(JSON.parse(last)); }catch{} }
   }
@@ -494,8 +502,15 @@ el.refreshContainer.addEventListener('touchend', async ()=>{
 });
 
 /* ====== Štart – predvyplň Hlohovec ====== */
-el.input.value='Bratislava';
-run('Bratislava');
+el.input.value='Hlohovec';
+run('Hlohovec');
+
+/* ====== Geocoding ====== */
+async function geocodeAll(q,count=8){
+  const r=await fetch(`${GEO}/search?name=${encodeURIComponent(q)}&count=${count}&language=sk&format=json`);
+  const j=await r.json();
+  return j.results||[];
+}
 </script>
 </body>
 </html>
