@@ -61,7 +61,14 @@
   .tbl thead th{ position:sticky; top:0; background:rgba(0,0,0,.15); backdrop-filter:blur(6px) }
   .val-bold{ font-weight:600; color:#fff }
 
-  /* Mobil akordeón (nezmenené) */
+  /* Taby */
+  .tabs-nav{ display:grid; grid-template-columns:1fr 1fr; background:rgba(0,0,0,.2); padding:.25rem; border-radius:1rem; }
+  .tab-btn{ padding:.65rem 1rem; border-radius:.75rem; font-weight:600; text-align:center; background:none; border:0; color:#fff; cursor:pointer; transition:background .2s ease }
+  .tab-btn[aria-selected="true"]{ background:#fff; color:#0b1720; box-shadow:0 2px 8px rgba(0,0,0,.2) }
+  .tab-content{ padding-top:1rem }
+  .tab-content.hidden{ display:none }
+
+  /* Mobil akordeón */
   .card{ border-radius:1rem; border:1px solid var(--glass-b); background:var(--glass) }
   .acc-btn{ width:100%; background:none; border:0; cursor:pointer; padding:.9rem .95rem; display:flex; align-items:center; gap:.75rem; text-align:left; color:#fff }
   .acc-head{ flex:1; min-width:0 }
@@ -70,10 +77,7 @@
   .acc-btn[aria-expanded="true"] .chev{ transform:rotate(180deg) }
   .panel-wrap{ height:0; overflow:hidden; transition:height .22s ease }
   .panel{ padding:0 .95rem .95rem .95rem }
-
-  .cols{ display:grid; grid-template-columns:1fr; gap:1rem }
-  @media (min-width:1024px){ .cols{ display:flex; gap:1rem } .col-left,.col-right{ align-self:stretch } }
-
+  
   /* Návrhy miest (nezmenené) */
   .suggest-wrap{ position:relative; }
   .suggest{
@@ -129,47 +133,52 @@
 
 <main id="refreshContainer" class="w-full px-2 md:px-4 lg:px-6 py-4 space-y-4">
 
-  <section class="cols">
-    <div class="col-left glass overflow-visible lg:overflow-hidden lg:basis-7/12 flex flex-col min-h-0">
-      <div class="flex items-center justify-between px-4 py-3 border-b border-white/20">
-        <h2 class="text-lg font-semibold">24-hodinová predpoveď</h2>
-      </div>
-      <div class="hidden lg:block overflow-x-auto flex-1 min-h-0">
-        <table class="tbl w-full h-full min-w-[900px] text-sm">
-          <thead>
-            <tr class="text-white/90">
-              <th>Čas</th><th>Počasie</th><th>Teplota</th><th>Rosný bod</th>
-              <th>Zrážky</th><th>Vietor</th><th>Oblačnosť</th><th>Tlak</th>
-            </tr>
-          </thead>
-          <tbody id="hourRows" class="divide-y divide-white/10"></tbody>
-        </table>
-      </div>
-      <div id="hourList" class="block lg:hidden p-2 space-y-2"></div>
+  <section class="glass p-3 lg:p-4">
+    
+    <div class="tabs-nav mb-4">
+        <button id="tab24hBtn" class="tab-btn" aria-selected="true" data-tab="hourly">24 hodín</button>
+        <button id="tab10dBtn" class="tab-btn" aria-selected="false" data-tab="daily">10 dní</button>
     </div>
 
-    <div class="col-right lg:basis-5/12 space-y-4">
-      <div class="glass">
-        <div class="px-4 py-3 border-b border-white/20"><h2 class="text-lg font-semibold">10-dňová predpoveď</h2></div>
-        <div id="dailyList" class="p-3 space-y-2"></div>
-      </div>
+    <div id="hourlyContent" class="tab-content" data-tab-content="hourly">
+        <div class="hidden lg:block overflow-x-auto min-h-0">
+            <table class="tbl w-full h-full min-w-[900px] text-sm">
+                <thead>
+                    <tr class="text-white/90">
+                        <th>Čas</th><th>Počasie</th><th>Teplota</th><th>Rosný bod</th>
+                        <th>Zrážky</th><th>Vietor</th><th>Oblačnosť</th><th>Tlak</th>
+                    </tr>
+                </thead>
+                <tbody id="hourRows" class="divide-y divide-white/10"></tbody>
+            </table>
+        </div>
+        <div id="hourList" class="block lg:hidden p-1 space-y-2"></div>
+    </div>
+    
+    <div id="dailyContent" class="tab-content hidden" data-tab-content="daily">
+        <div id="dailyList" class="p-1 space-y-2"></div>
+    </div>
 
-      <div class="glass">
-        <div class="px-4 py-3 border-b border-white/20"><h2 class="text-lg font-semibold">Presne pred rokom</h2></div>
-        <div id="historyExact" class="p-4"></div>
-      </div>
+  </section>
 
-      <div class="glass">
-        <div class="px-4 py-3 border-b border-white/20"><h2 class="text-lg font-semibold">UV index</h2></div>
-        <div id="uvPanel" class="p-4">
-          <div class="grid grid-cols-2 gap-3">
-            <div class="glass p-2 rounded-lg"><div class="text-white/70 text-sm">Aktuálne</div><div id="uvNow" class="mono font-semibold">—</div></div>
-            <div class="glass p-2 rounded-lg"><div class="text-white/70 text-sm">Dnešné maximum</div><div id="uvMax" class="mono font-semibold">—</div></div>
-          </div>
+  <section class="grid grid-cols-1 lg:grid-cols-2 gap-4">
+    
+    <div class="glass">
+      <div class="px-4 py-3 border-b border-white/20"><h2 class="text-lg font-semibold">Presne pred rokom</h2></div>
+      <div id="historyExact" class="p-4"></div>
+    </div>
+
+    <div class="glass">
+      <div class="px-4 py-3 border-b border-white/20"><h2 class="text-lg font-semibold">UV index</h2></div>
+      <div id="uvPanel" class="p-4">
+        <div class="grid grid-cols-2 gap-3">
+          <div class="glass p-2 rounded-lg"><div class="text-white/70 text-sm">Aktuálne</div><div id="uvNow" class="mono font-semibold">—</div></div>
+          <div class="glass p-2 rounded-lg"><div class="text-white/70 text-sm">Dnešné maximum</div><div id="uvMax" class="mono font-semibold">—</div></div>
         </div>
       </div>
     </div>
   </section>
+
 
   <div id="loading" class="hidden text-center py-10">
     <div class="inline-block w-8 h-8 border-4 border-white/30 border-t-white rounded-full animate-spin"></div>
@@ -181,13 +190,13 @@
 </main>
 
 <script>
-/* ====== API endpointy (nezmenené) ====== */
+/* ====== API endpointy (bez zmien) ====== */
 const API='https://api.open-meteo.com/v1';
-const GEO='https://geocoding-api.open-meteo.com/v1';
+const GEO='https://geocoding-api.open-meteo.com/v1'; // Ponechané len pre geokódovanie mien, NIE reverzné!
 const ARCH='https://archive-api.open-meteo.com/v1/era5';
 const NOMINATIM_API = 'https://nominatim.openstreetmap.org/reverse?format=json&extratags=1&addressdetails=1&zoom=14&accept-language=sk';
 
-/* ====== DOM refs (nezmenené) ====== */
+/* ====== DOM refs ====== */
 const el={
   form:document.getElementById('searchForm'),
   input:document.getElementById('cityInput'),
@@ -205,6 +214,11 @@ const el={
   err:document.getElementById('err'),
   ptr:document.getElementById('ptr'),
   refreshContainer:document.getElementById('refreshContainer'),
+  // NOVÉ: Taby
+  tab24hBtn: document.getElementById('tab24hBtn'),
+  tab10dBtn: document.getElementById('tab10dBtn'),
+  hourlyContent: document.getElementById('hourlyContent'),
+  dailyContent: document.getElementById('dailyContent'),
 };
 
 /* ====== Pomocné funkcie (nezmenené) ====== */
@@ -235,7 +249,7 @@ function fmtTime(iso){ const d=new Date(iso); return d.getHours().toString().pad
 const flag=(cc)=> String.fromCodePoint(...[...cc.toUpperCase()].map(c=>127397+c.charCodeAt(0)));
 function cityLabel(x){ return (typeof x==='string'?(x.split(',')[0]):(x?.name||'')).trim()||'—'; }
 
-/* ====== API funkcie (nezmenené) ====== */
+/* ====== API funkcie (bez zmien) ====== */
 async function geocodeAll(q,count=8){
   const r=await fetch(`${GEO}/search?name=${encodeURIComponent(q)}&count=${count}&language=sk&format=json`);
   const j=await r.json();
@@ -385,7 +399,7 @@ function renderUV(wx){ /* ... (kód) ... */
   el.uvMax.textContent = uvMax!=null ? uvMax.toFixed(1) : '—';
 }
 
-/* ====== Beh appky (zmenené len ukladanie) ====== */
+/* ====== Beh appky (bez zmien) ====== */
 async function run(queryOrCityObj){
   el.loading.classList.remove('hidden'); el.err.classList.add('hidden');
   try{
@@ -403,20 +417,38 @@ async function run(queryOrCityObj){
     renderHistoryExact(hist);
     renderUV(wx);
 
-    // ZMENA: Ukladáme iba VÝSLEDNÉ mesto. Ak bolo úspešne zistené, stane sa novým "posledným mestom"
     localStorage.setItem('lastCity', JSON.stringify({
         name: city.name, 
         latitude: city.latitude,
         longitude: city.longitude,
         country_code: city.country_code,
-        // Tento flag nastavíme iba, ak je to skutočne aktuálna poloha (a má názov, alebo nemá)
         __isCurrentLocation: !!city.__isCurrentLocation 
     }));
   }catch(e){ console.error(e); el.err.classList.remove('hidden'); }
   finally{ el.loading.classList.add('hidden'); }
 }
 
-/* ====== Ostatné funkcie (nezmenené) ====== */
+/* ====== Tabs logika (NOVÉ) ====== */
+function switchTab(tabName) {
+    const allBtns = [el.tab24hBtn, el.tab10dBtn];
+    const allContents = [el.hourlyContent, el.dailyContent];
+
+    allBtns.forEach(btn => {
+        const isActive = btn.getAttribute('data-tab') === tabName;
+        btn.setAttribute('aria-selected', isActive ? 'true' : 'false');
+    });
+
+    allContents.forEach(content => {
+        const isActive = content.getAttribute('data-tab-content') === tabName;
+        content.classList.toggle('hidden', !isActive);
+    });
+}
+
+// Event Listeners pre taby
+el.tab24hBtn.addEventListener('click', () => switchTab('hourly'));
+el.tab10dBtn.addEventListener('click', () => switchTab('daily'));
+
+/* ====== Ostatné funkcie (bez zmien) ====== */
 let selIndex=-1;
 let lastSuggest=[];
 function hideSuggest(){ el.suggest.classList.add('hidden'); el.suggest.innerHTML=''; selIndex=-1; lastSuggest=[]; }
@@ -507,10 +539,10 @@ el.refreshContainer.addEventListener('touchend', async ()=>{
   ptrReset();
 });
 
-/* ====== Geolokácia + Spracovanie Chýb (DÔLEŽITÉ ZMENY) ====== */
+/* ====== Geolokácia + Spracovanie Chýb (OPÄŤ RÝCHLEJŠIA POLOHA) ====== */
 
-// ZMENA 1: Zvýšenie timeoutu pre stabilnejšie zistenie polohy
-const locationOptions = { enableHighAccuracy: true, timeout: 7000, maximumAge: 0 }; 
+// ZMENA 1: Zníženie timeoutu na 5s pre rýchlejšiu reakciu
+const locationOptions = { enableHighAccuracy: true, timeout: 5000, maximumAge: 0 }; 
 
 function getCityFromStorage() {
     const last = localStorage.getItem('lastCity');
@@ -527,14 +559,12 @@ function checkAndroidLocationEnabled(forceFetch=false) {
   const isCurrentLocation = cityObj?.__isCurrentLocation;
 
   if (!forceFetch && cityObj && !isCurrentLocation) {
-    // Načítavam posledné FIXNÉ mesto
     console.log("Načítavam posledné fixné mesto z úložiska.");
     el.input.value = cityLabel(cityObj);
     run(cityObj);
     return;
   }
   
-  // Zistenie polohy je potrebné (aktuálna poloha, alebo nebolo uložené žiadne mesto)
   if (typeof median !== 'undefined' && median.android && median.android.geoLocation) {
     median.android.geoLocation.isLocationServicesEnabled({
       callback: function(result) {
@@ -542,14 +572,14 @@ function checkAndroidLocationEnabled(forceFetch=false) {
           getCurrentLocation();
         } else {
           requestAndroidLocationPermission();
-          handleLocationFailure(); // Volá novú funkciu
+          handleLocationFailure(); 
         }
       }
     });
   } else if ('geolocation' in navigator) {
     getCurrentLocation();
   } else {
-    handleLocationFailure(); // Volá novú funkciu
+    handleLocationFailure(); 
   }
 }
 
@@ -571,6 +601,7 @@ async function locationSuccess(position) {
   
   let locatedCity = null;
   try {
+      // Reverzná geolokácia cez Nominatim
       locatedCity = await reverseGeocode(latitude, longitude);
   } catch (e) {
       console.error("Chyba pri volaní Nominatim reverseGeocode (po úspechu GPS):", e);
@@ -592,18 +623,16 @@ async function locationSuccess(position) {
   run(cityToUse);
 }
 
-// ZMENA 2: Nová funkcia na spracovanie chyby polohy (timeout, permission denied)
 function locationError(error) {
-  console.error(`Chyba pri získavaní polohy: ${error.message}.`);
+  console.error(`Chyba pri získavaní polohy (timeout/chyba): ${error.message}.`);
   handleLocationFailure();
 }
 
-// ZMENA 3: Centrálna funkcia, ktorá sa spustí pri zlyhaní zistenia polohy
 function handleLocationFailure() {
     const cityObj = getCityFromStorage();
 
     if (cityObj) {
-        // Ak už MÁME uložené nejaké mesto (predchádzajúce úspešné zistenie polohy, alebo fixné mesto), použijeme ho.
+        // Ak už MÁME uložené nejaké mesto, použijeme ho.
         console.log("Zlyhanie GPS. Načítavam posledné úspešné mesto:", cityLabel(cityObj));
         el.input.value = cityLabel(cityObj);
         run(cityObj);
@@ -613,7 +642,6 @@ function handleLocationFailure() {
     }
 }
 
-// Ponechaná pôvodná funkcia na načítanie Bratislavy (volá sa len pri prvej chybe)
 function loadDefaultCity() {
   const defaultCity = { name:'Bratislava', latitude:48.1486, longitude:17.1077 };
   console.log("Načítavam predvolené mesto:", defaultCity.name);
