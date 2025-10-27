@@ -245,6 +245,13 @@ async function geocodeAll(q,count=8){
   const j=await r.json();
   return j.results||[];
 }
+// NOVÁ FUNKCIA pre reverznú geolokáciu
+async function reverseGeocode(lat, lon) {
+    const url = `${GEO}/reverse-geocode?latitude=${lat}&longitude=${lon}&language=sk&limit=1`;
+    const r = await fetch(url);
+    const j = await r.json();
+    return j.results?.[0] || null; // Vráti prvé nájdené mesto, alebo null
+}
 async function fetchWx(lat,lon){
   const url=`${API}/forecast?latitude=${lat}&longitude=${lon}`
     +`&current=temperature_2m,is_day,weather_code`
@@ -376,13 +383,19 @@ function renderUV(wx){
 async function run(queryOrCityObj){
   el.loading.classList.remove('hidden'); el.err.classList.add('hidden');
   try{
-    const city = typeof queryOrCityObj==='object'
+    let city = typeof queryOrCityObj==='object'
       ? queryOrCityObj
       : (await geocodeAll(cityLabel(queryOrCityObj),1))[0];
     if(!city) throw new Error('notfound');
 
     const wx=await fetchWx(city.latitude,city.longitude);
     const hist=await fetchHistoryExact(city.latitude,city.longitude);
+
+    // Kým je mesto načítané z reverznej geolokácie (ale má všetky parametre),
+    // pridelíme mu špeciálnu property pre uloženie (aby sa pri ďalšom načítaní nevolala reverzná geolokácia)
+    if(city.__isCurrentLocation){
+      city.name = cityLabel(city);
+    }
 
     renderHero(city,wx);
     renderHourly(wx);
@@ -391,7 +404,7 @@ async function run(queryOrCityObj){
     renderUV(wx);
 
     localStorage.setItem('lastCity', JSON.stringify(city));
-  }catch(e){ el.err.classList.remove('hidden'); }
+  }catch(e){ console.error(e); el.err.classList.remove('hidden'); }
   finally{ el.loading.classList.add('hidden'); }
 }
 
@@ -483,55 +496,62 @@ el.refreshContainer.addEventListener('touchend', async ()=>{
   if(pulling && activated){
     const last=localStorage.getItem('lastCity');
     const cityObj = last ? JSON.parse(last) : { name:'Bratislava', latitude:48.1486, longitude:17.1077 };
-    try{ await run(cityObj); }catch{}
+    
+    // Ak to bola posledne uložená poloha, znovu zistíme reálne súradnice
+    if(cityObj.__isCurrentLocation){
+        checkAndroidLocationEnabled(true); // vynútime re-fetch
+    } else {
+        await run(cityObj);
+    }
   }
   ptrReset();
 });
 
-/* ====== (NOVÉ) Geolokácia (Median.io Android + Web Fallback) ====== */
+/* ====== Geolokácia + Reverzná geolokácia ====== */
 
-// Nastavenia pre geolokáciu
 const locationOptions = { enableHighAccuracy: true, timeout: 10000, maximumAge: 0 };
 
-// Funkcia na požiadanie o povolenie na geolokáciu (Median)
-function requestAndroidLocationPermission() {
-  console.log("Požiadavka na povolenie (Median)...");
-  // Požiadame o povolenie na geolokáciu
-  median.android.geoLocation.promptLocationServices();
-}
+// Spustí získanie polohy (najprv Median, potom Web API)
+function checkAndroidLocationEnabled(forceFetch=false) {
+  const last = localStorage.getItem('lastCity');
+  const cityObj = last ? JSON.parse(last) : null;
 
-// Funkcia na kontrolu, či sú služby polohy povolené (Median alebo Web)
-function checkAndroidLocationEnabled() {
-  // Skontrolujeme, či 'median' objekt vôbec existuje (pre prípad, že bežíme v prehliadači)
+  // Ak nechceme nanovo zisťovať polohu a posledná poloha nebola "Vaša poloha" (súradnice),
+  // a je to len bežné mesto, načítame ho z localStorage.
+  if (!forceFetch && cityObj && !cityObj.__isCurrentLocation) {
+    console.log("Načítavam posledné mesto z úložiska:", cityObj.name);
+    el.input.value = cityLabel(cityObj);
+    run(cityObj);
+    return;
+  }
+  
   if (typeof median !== 'undefined' && median.android && median.android.geoLocation) {
     // --- Bežíme v Median Android WebView ---
-    console.log("Detekované Median.io API.");
     median.android.geoLocation.isLocationServicesEnabled({
       callback: function(result) {
         if (result.enabled) {
-          console.log("Geolokačné služby (Median) sú povolené.");
-          // Ak sú služby povolené, môžeme získať polohu (použijeme štandardné API)
           getCurrentLocation();
         } else {
-          console.log("Geolokačné služby (Median) nie sú povolené. Žiadam povolenie.");
-          // Služby nie sú povolené, skúsime ich vyžiadať
+          // Ak sú služby vypnuté, žiadam povolenie a zatiaľ načítam predvolené mesto
           requestAndroidLocationPermission();
-          // Medzitým načítame predvolené mesto
           loadDefaultCity();
         }
       }
     });
-  } else {
+  } else if ('geolocation' in navigator) {
     // --- Bežíme v štandardnom webovom prehliadači ---
-    console.log("Median.io API nenájdené. Skúšam štandardnú webovú geolokáciu.");
-    if ('geolocation' in navigator) {
-      // Štandardné webové API je dostupné
-      getCurrentLocation();
-    } else {
-      // Geolokácia nie je podporovaná vôbec
-      console.log("Geolokácia nie je v tomto prehliadači podporovaná. Načítavam predvolené mesto.");
-      loadDefaultCity();
-    }
+    getCurrentLocation();
+  } else {
+    // Geolokácia nie je podporovaná vôbec
+    loadDefaultCity();
+  }
+}
+
+// Funkcia na požiadanie o povolenie na geolokáciu (Median)
+function requestAndroidLocationPermission() {
+  console.log("Požiadavka na povolenie (Median)...");
+  if (typeof median !== 'undefined' && median.android && median.android.geoLocation) {
+    median.android.geoLocation.promptLocationServices();
   }
 }
 
@@ -541,74 +561,67 @@ function getCurrentLocation() {
   navigator.geolocation.getCurrentPosition(locationSuccess, locationError, locationOptions);
 }
 
-// <<< --- TU JE UPRAVENÁ FUNKCIA pre Reverznú Geolokáciu --- >>>
-// Callback pri úspešnom získaní polohy
+// Callback pri úspešnom získaní polohy (Lat/Lon)
 async function locationSuccess(position) {
   const latitude = position.coords.latitude;
   const longitude = position.coords.longitude;
+  
   console.log(`Aktuálna poloha získaná: Lat = ${latitude}, Lon = ${longitude}`);
 
-  let cityObject = null;
-  
-  // NOVÝ KROK: Reverzná geolokácia pre získanie názvu mesta
-  try {
-    // Používame Geocoding API s parametrami lat/lon na zistenie najbližšieho miesta
-    const reverseGeoUrl = `${GEO}/search?latitude=${latitude}&longitude=${longitude}&count=1&language=sk&format=json`;
-    const r = await fetch(reverseGeoUrl);
-    const j = await r.json();
-    
-    if (j.results && j.results.length > 0) {
-      // Ak je výsledok úspešný, použijeme objekt najbližšieho mesta
-      cityObject = j.results[0];
-      // Pridáme špeciálny príznak pre identifikáciu polohy
-      cityObject.country_code = "📍"; 
-      console.log(`Mesto nájdené reverznou geolokáciou: ${cityObject.name}`);
-    }
-  } catch (error) {
-    console.error("Chyba pri reverznej geolokácii, použijem záložný text:", error);
-  }
+  // NOVÝ KROK: Reverzná geolokácia
+  const locatedCity = await reverseGeocode(latitude, longitude);
 
-  // Ak sa nepodarilo získať mesto reverznou geolokáciou, použijeme záložný objekt
-  if (!cityObject) {
-    cityObject = {
+  let cityToUse;
+  if(locatedCity) {
+    // Reverzná geolokácia prebehla úspešne, použijeme zistené mesto
+    cityToUse = locatedCity;
+    // Nastavíme špeciálny flag, aby sme vedeli, že je to poloha zistená cez GPS/súradnice
+    cityToUse.__isCurrentLocation = true; 
+    console.log("Mesto zistené z GPS súradníc:", cityToUse.name);
+
+    // Aktualizujeme aj text vo vyhľadávacom poli na zistené mesto
+    if(el.input) {
+      el.input.value = cityLabel(cityToUse);
+    }
+  } else {
+    // Ak sa reverzná geolokácia nepodarila, vrátime sa k pôvodnému riešeniu
+    cityToUse = {
       name: "Vaša poloha",
       latitude: latitude,
       longitude: longitude,
-      country_code: "📍" // Pridáme emoji pre identifikáciu
+      country_code: "📍",
+      __isCurrentLocation: true
     };
+    console.log("Reverzná geolokácia neúspešná. Používam 'Vaša poloha'.");
+
+    if(el.input) {
+      el.input.value = "Vaša poloha";
+    }
   }
 
-  // Spustíme načítanie počasia pre nájdené alebo záložné miesto
-  run(cityObject);
-
-  // Aktualizujeme text vo vyhľadávacom poli na SKUTOČNÉ meno mesta (alebo zálohu)
-  if(el.input) {
-    // cityLabel() zabezpečí, že sa zobrazí iba čistý názov mesta
-    el.input.value = cityLabel(cityObject);
-  }
+  // Spustíme načítanie počasia
+  run(cityToUse);
 }
-// <<< ----------------------------------------------------------------- >>>
 
 // Callback pri chybe pri získavaní polohy
 function locationError(error) {
   console.error(`Chyba pri získavaní polohy: ${error.message}. Načítavam predvolené mesto.`);
-  // Ak sa nepodarí získať polohu (napr. užívateľ zamietol), načítame Bratislavu
   loadDefaultCity();
 }
 
 // Pomocná funkcia na načítanie predvoleného mesta (Bratislava)
 function loadDefaultCity() {
-  console.log("Načítavam predvolené mesto: Bratislava");
+  const defaultCity = { name:'Bratislava', latitude:48.1486, longitude:17.1077 };
+  console.log("Načítavam predvolené mesto:", defaultCity.name);
   if(el.input) {
-    el.input.value = 'Bratislava';
+    el.input.value = cityLabel(defaultCity);
   }
-  run('Bratislava');
+  run(defaultCity);
 }
 
-/* ====== Štart – Geolokácia alebo predvolená Bratislava ====== */
-// Namiesto priameho načítania Bratislavy skúsime získať polohu
+/* ====== Štart - Načíta posledné/aktuálne/predvolené mesto ====== */
+// Pri štarte sa pokúsime načítať posledné uložené mesto alebo zistiť polohu
 checkAndroidLocationEnabled();
-
 </script>
 </body>
 </html>
