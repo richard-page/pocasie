@@ -129,7 +129,6 @@
           Hľadať
         </button>
       </form>
-      <div id="citySuggestions" class="suggest hidden"></div>
     </div>
   </div>
 </header>
@@ -211,7 +210,6 @@ const NOMINATIM_API = 'https://nominatim.openstreetmap.org/reverse?format=json&e
 const el={
   form:document.getElementById('searchForm'),
   input:document.getElementById('cityInput'),
-  suggest:document.getElementById('citySuggestions'),
   hourRows:document.getElementById('hourRows'),
   hourList:document.getElementById('hourList'),
   dailyList:document.getElementById('dailyList'),
@@ -423,6 +421,7 @@ function renderUV(wx){
 async function run(queryOrCityObj){
   el.loading.classList.remove('hidden'); el.err.classList.add('hidden');
   try{
+    // Pre vyhľadávanie bez návrhov: vezmeme text z inputu a nájdeme len prvé mesto
     let city = typeof queryOrCityObj==='object'
       ? queryOrCityObj
       : (await geocodeAll(cityLabel(queryOrCityObj),1))[0];
@@ -466,65 +465,7 @@ function switchTab(tabName) {
 el.tab24hBtn.addEventListener('click', () => switchTab('hourly'));
 el.tab10dBtn.addEventListener('click', () => switchTab('daily'));
 
-let selIndex=-1;
-let lastSuggest=[];
-function hideSuggest(){ el.suggest.classList.add('hidden'); el.suggest.innerHTML=''; selIndex=-1; lastSuggest=[]; }
-function showSuggest(){ el.suggest.classList.remove('hidden'); }
-function cityRow(c){
-  const admin = c.admin1 || c.admin2 || c.admin3 || '';
-  const country = c.country || '';
-  const meta = [admin, country].filter(Boolean).join(' · ');
-  return `
-    <div class="s-name">${c.name}</div>
-    <div class="s-meta">${meta}</div>
-  `;
-}
-function renderSuggest(items){
-  el.suggest.innerHTML='';
-  items.forEach((c,idx)=>{
-    const d=document.createElement('div');
-    d.className='suggest-item';
-    d.setAttribute('role','option');
-    d.setAttribute('data-idx',idx);
-    d.innerHTML=`<span class="flag">${c.country_code?flag(c.country_code):''}</span><div>${cityRow(c)}</div>`;
-    d.addEventListener('mousedown',e=>{ e.preventDefault(); choose(idx); });
-    el.suggest.appendChild(d);
-  });
-  if(items.length===0){
-    const d=document.createElement('div');
-    d.className='suggest-item'; d.innerHTML='<div class="s-meta">Žiadne výsledky</div>';
-    el.suggest.appendChild(d);
-  }
-  showSuggest();
-}
-async function suggest(q){
-  q = cityLabel(q);
-  if(!q){ hideSuggest(); return; }
-  try{
-    const res=await geocodeAll(q,8);
-    lastSuggest=res;
-    renderSuggest(res);
-  }catch{ hideSuggest(); }
-}
-function choose(i){
-  const c=lastSuggest[i]; if(!c) return;
-  el.input.value = cityLabel(c);
-  hideSuggest();
-  run(c);
-}
-el.input.addEventListener('input', (e)=>{ suggest(e.target.value); });
-el.input.addEventListener('keydown',(e)=>{
-  const items=[...el.suggest.querySelectorAll('.suggest-item')];
-  if(e.key==='ArrowDown'){ if(items.length){ e.preventDefault(); selIndex=(selIndex+1)%items.length; updateSel(items); } }
-  else if(e.key==='ArrowUp'){ if(items.length){ e.preventDefault(); selIndex=(selIndex-1+items.length)%items.length; updateSel(items); } }
-  else if(e.key==='Enter'){ if(selIndex>=0 && lastSuggest[selIndex]){ e.preventDefault(); choose(selIndex); } }
-  else if(e.key==='Escape'){ hideSuggest(); }
-});
-function updateSel(items){
-  items.forEach((it,i)=> it.setAttribute('aria-selected', i===selIndex ? 'true' : 'false'));
-  const active=items[selIndex]; if(active){ active.scrollIntoView({block:'nearest'}); }
-}
-document.addEventListener('click',(e)=>{ if(!e.target.closest('.suggest-wrap')) hideSuggest(); });
+// Zostalo len spracovanie formulára
 el.form.addEventListener('submit', (ev)=>{
   ev.preventDefault();
   const q=cityLabel(el.input.value);
