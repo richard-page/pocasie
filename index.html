@@ -9,19 +9,14 @@
   :root { --glass: rgba(255,255,255,.08); --glass-b: rgba(255,255,255,.18); }
   *{ box-sizing:border-box }
   html,body{ width:100%; max-width:100%; overflow-x:hidden }
-  body{
-    margin:0; color:#fff; background:#0e4d73;
-    font-family:system-ui,-apple-system,Segoe UI,Roboto,sans-serif;
-  }
+  body{ margin:0; color:#fff; background:#0e4d73; font-family:system-ui,-apple-system,Segoe UI,Roboto,sans-serif }
   .glass{ background:var(--glass); border:1px solid var(--glass-b); backdrop-filter:blur(12px); border-radius:1rem }
-  .mono{ font-feature-settings:"tnum" 1,"lnum" 1 }
   .hero{ display:flex; flex-direction:column; align-items:center; justify-content:center; min-height:52vh; text-align:center; padding:3rem 1rem }
   body[data-mode="day"] .hero{ background:linear-gradient(180deg,#3aa7e0 0%, #1e87c9 55%, #176ea9 100%) }
   body[data-mode="night"] .hero{ background:linear-gradient(180deg,#0b3550 0%, #0a2c44 60%, #08273b 100%) }
   #heroPlace{ font-size:1.1rem; font-weight:600; opacity:.95 }
   #heroIcon{ width:128px; height:128px; margin:1rem auto }
   #heroTemp{ font-size:5.6rem; line-height:1; font-weight:800; letter-spacing:2px }
-  .sticky-header{ position:sticky; top:0; z-index:40 }
   .tbl th,.tbl td{ padding:.6rem .75rem; white-space:nowrap }
   .tbl thead th{ position:sticky; top:0; background:rgba(0,0,0,.15); backdrop-filter:blur(6px) }
   .emo{ font-size:1.5em; display:inline-block; transform:translateY(1px) }
@@ -47,8 +42,8 @@
                 class="px-4 py-2.5 rounded-lg bg-white/30 hover:bg-white/40 text-white font-medium">Hľadať</button>
         <button id="geoBtn" type="button"
                 class="px-4 py-2.5 rounded-lg bg-white/20 hover:bg-white/30 text-white font-medium">Použiť moju polohu</button>
-        <button id="androidBtn" type="button"
-                class="px-4 py-2.5 rounded-lg bg-white/10 hover:bg-white/20 text-white/90 font-medium">Povoliť v aplikácii (Android)</button>
+        <button id="askAndroidBtn" type="button"
+                class="px-4 py-2.5 rounded-lg bg-white/10 hover:bg-white/20 text-white/90 font-medium">Povoliť v aplikácii</button>
       </div>
     </form>
     <div id="permMsg" class="text-white/80"></div>
@@ -102,7 +97,7 @@
 const API='https://api.open-meteo.com/v1';
 const GEO='https://geocoding-api.open-meteo.com/v1';
 const ARCH='https://archive-api.open-meteo.com/v1/era5';
-const IPJSON='https://ipapi.co/json/'; // fallback podľa IP
+const IPJSON='https://ipapi.co/json/';
 const BRAT={lat:48.1486, lon:17.1077, label:'Bratislava'};
 
 /* ===== Elementy ===== */
@@ -121,7 +116,7 @@ const el={
   loading:document.getElementById('loading'),
   err:document.getElementById('err'),
   geoBtn:document.getElementById('geoBtn'),
-  androidBtn:document.getElementById('androidBtn'),
+  askBtn:document.getElementById('askAndroidBtn'),
   permMsg:document.getElementById('permMsg'),
 };
 
@@ -142,10 +137,10 @@ function iconFor(code){ code=sanitizeCode(code);
 function descFor(c){
   c=sanitizeCode(c);
   const d={0:'Jasno',1:'Prevažne jasno',2:'Čiastočne oblačno',3:'Zamračené',
-    51:'Mrholenie',61:'Slabý dážď',63:'Mierny dážď',65:'Silný dážď',
-    71:'Slabé sneženie',73:'Mierne sneženie',75:'Silné sneženie',
-    80:'Prehánky',81:'Mierne prehánky',82:'Silné prehánky',
-    95:'Búrka',96:'Búrka s krúpami',99:'Silná búrka s krúpami'};
+           51:'Mrholenie',61:'Slabý dážď',63:'Mierny dážď',65:'Silný dážď',
+           71:'Slabé sneženie',73:'Mierne sneženie',75:'Silné sneženie',
+           80:'Prehánky',81:'Mierne prehánky',82:'Silné prehánky',
+           95:'Búrka',96:'Búrka s krúpami',99:'Silná búrka s krúpami'};
   return d[c]||'—';
 }
 function withIcon(code){ return `<span class="emo">${iconFor(code)}</span> ${descFor(code)}`; }
@@ -201,7 +196,6 @@ function renderHourly(wx){
     const pmm=H.precipitation?.[i];
     const wind=H.wind_speed_10m?.[i], wdir=H.wind_direction_10m?.[i];
     const cld=H.cloud_cover?.[i];
-
     const tr=document.createElement('tr'); tr.className='hover:bg-white/10';
     tr.innerHTML=`
       <td class="mono">${fmtTime(H.time[i])}</td>
@@ -285,8 +279,30 @@ async function renderAllFor(lat,lon){
   finally{ el.loading.classList.add('hidden'); }
 }
 
-/* ===== Geolokácia (Android) ===== */
-// a) Zavolaj systémový prompt (ak je k dispozícii)
+/* ===== Median.co: Android Location Services ===== */
+// 1) natívny prompt cez Median bridge
+function promptMedianLocationServices(){
+  try{
+    if (window.median?.android?.geoLocation?.promptLocationServices){
+      window.median.android.geoLocation.promptLocationServices(); // zobrazí natívny dialóg
+      return true;
+    }
+  }catch(e){ console.warn(e); }
+  return false;
+}
+// 2) zisti, či sú služby povolené (Median callback API)
+function checkMedianLocationEnabled(cb){
+  try{
+    if (window.median?.android?.geoLocation?.isLocationServicesEnabled){
+      window.median.android.geoLocation.isLocationServicesEnabled({
+        callback: function(r){ try{ cb(!!(r&&r.enabled)); }catch{} }
+      });
+      return;
+    }
+  }catch(e){ console.warn(e); }
+  cb(null);
+}
+// 3) získaj polohu cez W3C geolocation (vyvolá systémové okno ak je k dispozícii)
 function getPositionOnce(){
   return new Promise((resolve,reject)=>{
     if(!('geolocation' in navigator)) return reject({code:'unsupported'});
@@ -297,17 +313,7 @@ function getPositionOnce(){
     );
   });
 }
-// b) Bridge – UPRAV PODĽA SVOJEJ PLATFORMY
-function requestAndroidRuntimePermission(){
-  try{
-    // Príklady bežných mien – ponechávam viac možností:
-    if (window.Median && typeof window.Median.requestGeolocationPermission==='function'){ window.Median.requestGeolocationPermission(); return true; }
-    if (window.Android && typeof window.Android.requestLocationPermission==='function'){ window.Android.requestLocationPermission(); return true; }
-    if (window.Median && typeof window.Median.requestPermissions==='function'){ window.Median.requestPermissions('geolocation'); return true; }
-  }catch(e){ console.warn('Bridge call failed:', e); }
-  return false;
-}
-// c) IP fallback
+// 4) IP fallback
 async function ipFallback(){
   try{
     const r=await fetch(IPJSON,{cache:'no-store'});
@@ -319,9 +325,31 @@ async function ipFallback(){
   return null;
 }
 
+// Hlavný tok
+async function locateAndLoad(){
+  el.permMsg.textContent='Overujem polohu…';
+  // a) skontroluj Median stav
+  checkMedianLocationEnabled(async (enabled)=>{
+    if(enabled===true){
+      // služby sú inicializované → spusti webový prompt/getCurrentPosition
+      await tryPromptThenFallback();
+    }else if(enabled===false){
+      el.permMsg.textContent='Žiadam aplikáciu o povolenie polohy…';
+      const called = promptMedianLocationServices();
+      // ak bridge existuje, natív po inicializácii zavolá window.median_geolocation_ready()
+      if(!called){ // bridge nie je → skús rovno webový prompt
+        await tryPromptThenFallback();
+      }
+    }else{
+      // nevieme zistiť stav → skús rovno prompt
+      await tryPromptThenFallback();
+    }
+  });
+}
+
 async function tryPromptThenFallback(){
   try{
-    const {lat,lon}=await getPositionOnce();           // systémový prompt
+    const {lat,lon}=await getPositionOnce();
     await renderAllFor(lat, lon);
   }catch(err){
     const ip=await ipFallback();
@@ -329,21 +357,8 @@ async function tryPromptThenFallback(){
     else{ await renderAllFor(BRAT.lat, BRAT.lon); el.permMsg.textContent='(Predvolená poloha: Bratislava)'; }
   }
 }
-// d) Hlavný tok
-async function locateAndLoad(){
-  el.permMsg.textContent='Pokus o zistenie polohy…';
-  const bridge= requestAndroidRuntimePermission();
-  if(bridge){
-    el.permMsg.textContent='Čakám na povolenie z aplikácie…';
-    // keď natív povolí, má zavolať window.median_geolocation_ready()
-    // pre istotu fallback: ak nič do 3s, skús prompt sám
-    setTimeout(()=>{ tryPromptThenFallback(); }, 3000);
-    return;
-  }
-  await tryPromptThenFallback();
-}
 
-/* Callback z natívnej appky po inicializácii/povolení */
+/* Median natív zavolá toto, keď sú Location Services inicializované */
 window.median_geolocation_ready = async function(){
   el.permMsg.textContent='Povolené v aplikácii – získavam polohu…';
   await tryPromptThenFallback();
@@ -351,9 +366,9 @@ window.median_geolocation_ready = async function(){
 
 /* ===== UI ===== */
 el.geoBtn.addEventListener('click', ()=> locateAndLoad());
-el.androidBtn.addEventListener('click', ()=>{
-  const ok = requestAndroidRuntimePermission();
-  el.permMsg.textContent = ok ? 'Žiadosť odoslaná aplikácii. Skontrolujte systémové okno.' : 'Bridge nenašiel – skúšam priamy prompt…';
+el.askBtn.addEventListener('click', ()=>{
+  const ok = promptMedianLocationServices();
+  el.permMsg.textContent = ok ? 'Žiadosť odoslaná aplikácii. Skontrolujte systémové okno.' : 'Bridge nedostupný – skúšam priamy prompt…';
   if(!ok) locateAndLoad();
 });
 el.form.addEventListener('submit', async (ev)=>{
@@ -367,7 +382,7 @@ el.form.addEventListener('submit', async (ev)=>{
   finally{ el.loading.classList.add('hidden'); }
 });
 
-/* Auto štart */
+/* Auto štart – hneď sa pokús o povolenie a načítaj dáta */
 locateAndLoad();
 </script>
 </body>
