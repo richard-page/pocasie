@@ -10,11 +10,11 @@
     --glass: rgba(255,255,255,.08);
     --glass-b: rgba(255,255,255,.18);
     /* >>> nové: kompaktná výška hero sekcie */
-    --hero-h: 34vh;        /* mobily */
-    --hero-icon: 76px;     /* veľkosť ikony */
-    --hero-temp: 5.6rem;   /* veľkosť čísla teploty */
-    --hero-pad-t: 1.6rem;  /* horný padding */
-    --hero-pad-b: 1.2rem;  /* spodný padding */
+    --hero-h: 34vh;          /* mobily */
+    --hero-icon: 76px;       /* veľkosť ikony */
+    --hero-temp: 5.6rem;     /* veľkosť čísla teploty */
+    --hero-pad-t: 1.6rem;    /* horný padding */
+    --hero-pad-b: 1.2rem;    /* spodný padding */
   }
   @media (min-width:480px){
     :root{ --hero-h: 36vh; --hero-icon: 86px; --hero-temp: 6rem; }
@@ -104,6 +104,7 @@
 </head>
 <body data-mode="day">
 
+<!-- HERO (skrátené) -->
 <section class="hero">
   <div id="heroPlace">—</div>
   <div id="heroIcon" aria-hidden="true"></div>
@@ -115,6 +116,7 @@
     <div class="font-semibold">Predpoveď počasia</div>
     <div class="flex-1"></div>
 
+    <!-- vyhľadávanie + návrhy -->
     <div class="suggest-wrap w-full sm:w-[560px] max-w-full">
       <form id="searchForm" class="grid grid-cols-1 sm:grid-cols-[1fr_auto] gap-2" novalidate>
         <input id="cityInput" placeholder="Zadaj mesto (napr. Bratislava)"
@@ -130,11 +132,13 @@
   </div>
 </header>
 
+<!-- Pull-to-refresh indikátor -->
 <div id="ptr"><div class="spinner"></div></div>
 
 <main id="refreshContainer" class="w-full px-2 md:px-4 lg:px-6 py-4 space-y-4">
 
   <section class="cols">
+    <!-- 24h -->
     <div class="col-left glass overflow-visible lg:overflow-hidden lg:basis-7/12 flex flex-col min-h-0">
       <div class="flex items-center justify-between px-4 py-3 border-b border-white/20">
         <h2 class="text-lg font-semibold">24-hodinová predpoveď</h2>
@@ -488,56 +492,30 @@ el.refreshContainer.addEventListener('touchend', async ()=>{
   ptrReset();
 });
 
-/* ====== (NOVÉ) Geolokácia (Median.io Android + Web Fallback) ====== */
-
-// Nastavenia pre geolokáciu
-const locationOptions = { enableHighAccuracy: true, timeout: 10000, maximumAge: 0 };
-
-// Funkcia na požiadanie o povolenie na geolokáciu (Median)
+  // Funkcia na požiadanie o povolenie na geolokáciu
 function requestAndroidLocationPermission() {
-  console.log("Požiadavka na povolenie (Median)...");
   // Požiadame o povolenie na geolokáciu
   median.android.geoLocation.promptLocationServices();
 }
 
-// Funkcia na kontrolu, či sú služby polohy povolené (Median alebo Web)
+// Funkcia na kontrolu, či sú služby polohy povolené
 function checkAndroidLocationEnabled() {
-  // Skontrolujeme, či 'median' objekt vôbec existuje (pre prípad, že bežíme v prehliadači)
-  if (typeof median !== 'undefined' && median.android && median.android.geoLocation) {
-    // --- Bežíme v Median Android WebView ---
-    console.log("Detekované Median.io API.");
-    median.android.geoLocation.isLocationServicesEnabled({
-      callback: function(result) {
-        if (result.enabled) {
-          console.log("Geolokačné služby (Median) sú povolené.");
-          // Ak sú služby povolené, môžeme získať polohu (použijeme štandardné API)
-          getCurrentLocation();
-        } else {
-          console.log("Geolokačné služby (Median) nie sú povolené. Žiadam povolenie.");
-          // Služby nie sú povolené, skúsime ich vyžiadať
-          requestAndroidLocationPermission();
-          // Medzitým načítame predvolené mesto
-          loadDefaultCity();
-        }
+  median.android.geoLocation.isLocationServicesEnabled({
+    callback: function(result) {
+      if (result.enabled) {
+        console.log("Geolokačné služby sú povolené.");
+        // Ak sú služby povolené, môžeme získať polohu
+        getCurrentLocation();
+      } else {
+        console.log("Geolokačné služby nie sú povolené.");
+        // Tu môžeme pridať logiku, aby sme upozornili užívateľa, že musí povoliť geolokáciu
       }
-    });
-  } else {
-    // --- Bežíme v štandardnom webovom prehliadači ---
-    console.log("Median.io API nenájdené. Skúšam štandardnú webovú geolokáciu.");
-    if ('geolocation' in navigator) {
-      // Štandardné webové API je dostupné
-      getCurrentLocation();
-    } else {
-      // Geolokácia nie je podporovaná vôbec
-      console.log("Geolokácia nie je v tomto prehliadači podporovaná. Načítavam predvolené mesto.");
-      loadDefaultCity();
     }
-  }
+  });
 }
 
-// Funkcia na získanie aktuálnej polohy (používa štandardné Web API)
+// Funkcia na získanie aktuálnej polohy
 function getCurrentLocation() {
-  console.log("Pokúšam sa získať aktuálnu polohu (navigator.geolocation)...");
   navigator.geolocation.getCurrentPosition(locationSuccess, locationError, locationOptions);
 }
 
@@ -545,45 +523,22 @@ function getCurrentLocation() {
 function locationSuccess(position) {
   const latitude = position.coords.latitude;
   const longitude = position.coords.longitude;
-  console.log(`Aktuálna poloha získaná: Lat = ${latitude}, Lon = ${longitude}`);
-
-  // Vytvoríme "city object" pre funkciu run()
-  const myLocation = {
-    name: "Vaša poloha",
-    latitude: latitude,
-    longitude: longitude,
-    country_code: "📍" // Pridáme emoji pre identifikáciu
-  };
-
-  // Spustíme načítanie počasia pre aktuálnu polohu
-  run(myLocation);
-
-  // Aktualizujeme aj text vo vyhľadávacom poli
-  if(el.input) {
-    el.input.value = "Vaša poloha";
-  }
+  console.log(`Aktuálna poloha: Latitude = ${latitude}, Longitude = ${longitude}`);
 }
 
 // Callback pri chybe pri získavaní polohy
 function locationError(error) {
-  console.error(`Chyba pri získavaní polohy: ${error.message}. Načítavam predvolené mesto.`);
-  // Ak sa nepodarí získať polohu (napr. užívateľ zamietol), načítame Bratislavu
-  loadDefaultCity();
+  console.error(`Chyba pri získavaní polohy: ${error.message}`);
 }
 
-// Pomocná funkcia na načítanie predvoleného mesta (Bratislava)
-function loadDefaultCity() {
-  console.log("Načítavam predvolené mesto: Bratislava");
-  if(el.input) {
-    el.input.value = 'Bratislava';
-  }
-  run('Bratislava');
-}
+// Možnosť vyvolania požiadania o povolenie na geolokáciu pri načítaní stránky
+window.onload = function() {
+  checkAndroidLocationEnabled();
+};
 
-/* ====== Štart – Geolokácia alebo predvolená Bratislava ====== */
-// Namiesto priameho načítania Bratislavy skúsime získať polohu
-checkAndroidLocationEnabled();
-
+/* ====== Štart – predvolená Bratislava ====== */
+el.input.value='Bratislava';
+run('Bratislava');
 </script>
 </body>
 </html>
