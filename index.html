@@ -12,12 +12,12 @@
   body{
     margin:0; color:#fff;
     font-family:system-ui,-apple-system,Segoe UI,Roboto,sans-serif;
-    background:#0e4d73; /* fallback */
+    background:#0e4d73;
   }
   .glass{ background:var(--glass); border:1px solid var(--glass-b); backdrop-filter:blur(12px); border-radius:1rem }
   .mono{ font-feature-settings:"tnum" 1,"lnum" 1 }
 
-  /* HERO deň/noc */
+  /* HERO */
   .hero{
     position:relative; isolation:isolate;
     display:flex; flex-direction:column; align-items:center; justify-content:center;
@@ -31,7 +31,7 @@
     background:linear-gradient(180deg,#0b3550 0%, #0a2c44 60%, #08273b 100%)
   }
   body[data-mode="night"] .hero::after{
-    content:""; position:absolute; inset:0; z-index:-1; pointer-events:none; opacity:.45;
+    content:""; position:absolute; inset:0; z-index:-1; opacity:.45; pointer-events:none;
     background:
       radial-gradient(2px 2px at 12% 18%, #fff 40%, transparent 42%),
       radial-gradient(1.5px 1.5px at 35% 28%, #fff 45%, transparent 47%),
@@ -51,7 +51,7 @@
   .tbl thead th{ position:sticky; top:0; background:rgba(0,0,0,.15); backdrop-filter:blur(6px) }
   .val-bold{ font-weight:600; color:#fff }
 
-  /* Mobilný akordeón (24h) */
+  /* Mobil akordeón */
   .card{ border-radius:1rem; border:1px solid var(--glass-b); background:var(--glass) }
   .acc-btn{ width:100%; background:none; border:0; cursor:pointer; padding:.9rem .95rem; display:flex; align-items:center; gap:.75rem; text-align:left; color:#fff }
   .acc-head{ flex:1; min-width:0 }
@@ -229,23 +229,6 @@ function dd2dir(dd){ if(dd==null||isNaN(dd)) return '—'; const deg=((dd%360)+3
 function fmtTime(iso){ const d=new Date(iso); return d.getHours().toString().padStart(2,'0')+':00'; }
 const flag=(cc)=> String.fromCodePoint(...[...cc.toUpperCase()].map(c=>127397+c.charCodeAt(0)));
 
-// krajší názov regiónu (hlavne pre SK)
-function niceRegion(city){
-  const a = (city.admin1 || '').toLowerCase().trim();
-  const skMap = {
-    'bratislavský kraj':'Bratislava',
-    'trnavský kraj':'Trnava',
-    'trenčiansky kraj':'Trenčín',
-    'nitriansky kraj':'Nitra',
-    'žilinský kraj':'Žilina',
-    'banskobystrický kraj':'Banská Bystrica',
-    'prešovský kraj':'Prešov',
-    'košický kraj':'Košice'
-  };
-  if (skMap[a]) return skMap[a];
-  return (city.admin1 || '').replace(/\s*(kraj|region|county)$/i,'').trim();
-}
-
 /* ====== API ====== */
 async function geocodeAll(q,count=8){
   const r=await fetch(`${GEO}/search?name=${encodeURIComponent(q)}&count=${count}&language=sk&format=json`);
@@ -277,13 +260,11 @@ function renderHero(city, wx){
   const code = sanitizeCode(wx.current.weather_code);
   document.body.setAttribute('data-mode', isDay ? 'day' : 'night');
 
-  const region = niceRegion(city);
-  const parts = [city.name, region].filter(Boolean);
-  if (parts[0] && parts[1] && parts[0].toLowerCase() === parts[1].toLowerCase()) parts.pop();
+  // >>> iba mesto
+  el.heroPlace.textContent = city.name || '—';
 
-  el.heroPlace.textContent = parts.join(', ');
   el.heroTemp.textContent = Math.round(wx.current.temperature_2m)+'°';
-  // Ikona podľa počasia (emoji)
+  // ikona podľa počasia (emoji)
   el.heroIcon.textContent = iconFor(code);
 }
 function renderHourly(wx){
@@ -409,7 +390,7 @@ async function run(queryOrCityObj){
   finally{ el.loading.classList.add('hidden'); }
 }
 
-/* ====== Návrhy miest počas písania ====== */
+/* ====== Návrhy miest ====== */
 let selIndex=-1;
 let lastSuggest=[];
 
@@ -417,11 +398,12 @@ function hideSuggest(){ el.suggest.classList.add('hidden'); el.suggest.innerHTML
 function showSuggest(){ el.suggest.classList.remove('hidden'); }
 
 function cityRow(c){
-  const country = c.country_code ? `${flag(c.country_code)} ${c.country}` : (c.country||'');
   const admin = c.admin1 || c.admin2 || c.admin3 || '';
+  const country = c.country || '';
+  const meta = [admin, country].filter(Boolean).join(' · ');
   return `
     <div class="s-name">${c.name}</div>
-    <div class="s-meta">${[admin,country].filter(Boolean).join(' · ')}</div>
+    <div class="s-meta">${meta}</div>
   `;
 }
 function renderSuggest(items){
@@ -452,9 +434,8 @@ async function suggest(q){
 }
 function choose(i){
   const c=lastSuggest[i]; if(!c) return;
-  const pretty=[c.name, niceRegion(c)].filter(Boolean);
-  if (pretty[0] && pretty[1] && pretty[0].toLowerCase()===pretty[1].toLowerCase()) pretty.pop();
-  el.input.value=pretty.join(', ');
+  // >>> do inputu dáme len MESTO
+  el.input.value = c.name;
   hideSuggest();
   run(c);
 }
@@ -501,16 +482,9 @@ el.refreshContainer.addEventListener('touchend', async ()=>{
   ptrReset();
 });
 
-/* ====== Štart – predvyplň Hlohovec ====== */
+/* ====== Štart ====== */
 el.input.value='Hlohovec';
 run('Hlohovec');
-
-/* ====== Geocoding ====== */
-async function geocodeAll(q,count=8){
-  const r=await fetch(`${GEO}/search?name=${encodeURIComponent(q)}&count=${count}&language=sk&format=json`);
-  const j=await r.json();
-  return j.results||[];
-}
 </script>
 </body>
 </html>
