@@ -24,12 +24,8 @@
     min-height:56vh; width:100%;
     padding:3.5rem 1rem 2rem; text-align:center; overflow:hidden
   }
-  body[data-mode="day"] .hero{
-    background:linear-gradient(180deg,#3aa7e0 0%, #1e87c9 55%, #176ea9 100%)
-  }
-  body[data-mode="night"] .hero{
-    background:linear-gradient(180deg,#0b3550 0%, #0a2c44 60%, #08273b 100%)
-  }
+  body[data-mode="day"] .hero{ background:linear-gradient(180deg,#3aa7e0 0%, #1e87c9 55%, #176ea9 100%) }
+  body[data-mode="night"] .hero{ background:linear-gradient(180deg,#0b3550 0%, #0a2c44 60%, #08273b 100%) }
   body[data-mode="night"] .hero::after{
     content:""; position:absolute; inset:0; z-index:-1; opacity:.45; pointer-events:none;
     background:
@@ -229,6 +225,13 @@ function dd2dir(dd){ if(dd==null||isNaN(dd)) return '—'; const deg=((dd%360)+3
 function fmtTime(iso){ const d=new Date(iso); return d.getHours().toString().padStart(2,'0')+':00'; }
 const flag=(cc)=> String.fromCodePoint(...[...cc.toUpperCase()].map(c=>127397+c.charCodeAt(0)));
 
+/* >>> iba mesto: */
+function cityLabel(cityOrString){
+  if (typeof cityOrString === 'string') return cityOrString.split(',')[0].trim();
+  const n = (cityOrString?.name || '').split(',')[0].trim();
+  return n || '—';
+}
+
 /* ====== API ====== */
 async function geocodeAll(q,count=8){
   const r=await fetch(`${GEO}/search?name=${encodeURIComponent(q)}&count=${count}&language=sk&format=json`);
@@ -260,12 +263,9 @@ function renderHero(city, wx){
   const code = sanitizeCode(wx.current.weather_code);
   document.body.setAttribute('data-mode', isDay ? 'day' : 'night');
 
-  // >>> iba mesto
-  el.heroPlace.textContent = city.name || '—';
-
-  el.heroTemp.textContent = Math.round(wx.current.temperature_2m)+'°';
-  // ikona podľa počasia (emoji)
-  el.heroIcon.textContent = iconFor(code);
+  el.heroPlace.textContent = cityLabel(city);       // <<< LEN MESTO
+  el.heroTemp.textContent  = Math.round(wx.current.temperature_2m)+'°';
+  el.heroIcon.textContent  = iconFor(code);         // ikona podľa počasia
 }
 function renderHourly(wx){
   const H=wx.hourly; el.hourRows.innerHTML=''; el.hourList.innerHTML='';
@@ -293,7 +293,6 @@ function renderHourly(wx){
       <td class="val-bold mono">${pres!=null?Math.round(pres):'—'} hPa</td>`;
     el.hourRows.appendChild(tr);
 
-    /* mobil karta */
     const card=document.createElement('div'); card.className='card';
     const btn=document.createElement('button'); btn.className='acc-btn'; btn.type='button'; btn.setAttribute('aria-expanded','false');
     btn.innerHTML=`
@@ -372,7 +371,7 @@ async function run(queryOrCityObj){
   try{
     const city = typeof queryOrCityObj==='object'
       ? queryOrCityObj
-      : (await geocodeAll(queryOrCityObj,1))[0];
+      : (await geocodeAll(cityLabel(queryOrCityObj),1))[0]; // vyhľadávaj podľa čistého mesta
 
     if(!city) throw new Error('notfound');
 
@@ -425,6 +424,7 @@ function renderSuggest(items){
   showSuggest();
 }
 async function suggest(q){
+  q = cityLabel(q);
   if(!q){ hideSuggest(); return; }
   try{
     const res=await geocodeAll(q,8);
@@ -434,12 +434,11 @@ async function suggest(q){
 }
 function choose(i){
   const c=lastSuggest[i]; if(!c) return;
-  // >>> do inputu dáme len MESTO
-  el.input.value = c.name;
+  el.input.value = cityLabel(c);  // len mesto
   hideSuggest();
   run(c);
 }
-el.input.addEventListener('input', (e)=>{ suggest(e.target.value.trim()); });
+el.input.addEventListener('input', (e)=>{ suggest(e.target.value); });
 el.input.addEventListener('keydown',(e)=>{
   const items=[...el.suggest.querySelectorAll('.suggest-item')];
   if(e.key==='ArrowDown'){ if(items.length){ e.preventDefault(); selIndex=(selIndex+1)%items.length; updateSel(items); } }
@@ -456,7 +455,7 @@ document.addEventListener('click',(e)=>{ if(!e.target.closest('.suggest-wrap')) 
 /* odoslanie formulára */
 el.form.addEventListener('submit', (ev)=>{
   ev.preventDefault();
-  const q=el.input.value.trim();
+  const q=cityLabel(el.input.value);
   if(q) run(q);
 });
 
