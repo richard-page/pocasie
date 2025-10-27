@@ -15,188 +15,412 @@
     background:#0e4d73;
   }
   .glass{ background:var(--glass); border:1px solid var(--glass-b); backdrop-filter:blur(12px); border-radius:1rem }
-  .hero{ display:flex; flex-direction:column; align-items:center; justify-content:center; min-height:56vh; text-align:center; }
-  #heroIcon{ width:130px; height:130px; margin:1rem auto }
-  #heroTemp{ font-size:6rem; font-weight:700 }
-  .sticky-header{ position:sticky; top:0; z-index:50 }
-  .tbl th,.tbl td{ padding:.6rem .75rem; white-space:nowrap }
-  .emo{ font-size:1.5em }
-  #permMsg{ font-size:.9rem; color:#fff; opacity:.85; }
+  .mono{ font-feature-settings:"tnum" 1,"lnum" 1 }
+
+  .hero{
+    position:relative; isolation:isolate;
+    display:flex; flex-direction:column; align-items:center; justify-content:center;
+    min-height:56vh; width:100%;
+    padding:3.5rem 1rem 2rem; text-align:center; overflow:hidden
+  }
+  body[data-mode="day"] .hero{
+    background:linear-gradient(180deg,#3aa7e0 0%, #1e87c9 55%, #176ea9 100%)
+  }
+  body[data-mode="night"] .hero{
+    background:linear-gradient(180deg,#0b3550 0%, #0a2c44 60%, #08273b 100%)
+  }
+  body[data-mode="night"] .hero::after{
+    content:""; position:absolute; inset:0; z-index:-1; pointer-events:none; opacity:.45;
+    background:
+      radial-gradient(2px 2px at 12% 18%, #fff 40%, transparent 42%),
+      radial-gradient(1.5px 1.5px at 35% 28%, #fff 45%, transparent 47%),
+      radial-gradient(1.8px 1.8px at 66% 14%, #fff 45%, transparent 47%),
+      radial-gradient(1.8px 1.8px at 82% 40%, #fff 45%, transparent 47%),
+      radial-gradient(1.8px 1.8px at 18% 65%, #fff 45%, transparent 47%),
+      radial-gradient(1.8px 1.8px at 58% 73%, #fff 45%, transparent 47%),
+      radial-gradient(1.8px 1.8px at 88% 78%, #fff 45%, transparent 47%),
+      radial-gradient(1.6px 1.6px at 44% 86%, #fff 45%, transparent 47%)
+  }
+  #heroPlace{ font-size:1.25rem; font-weight:600; opacity:.95; letter-spacing:.2px }
+  #heroIcon{ width:140px; height:140px; margin:1.2rem auto }
+  #heroTemp{ font-size:6.5rem; line-height:1; font-weight:700; letter-spacing:2px }
+
+  .sticky-header{ position:sticky; top:0; z-index:40 }
+  .tbl th,.tbl td{ padding:.65rem .75rem; white-space:nowrap }
+  .tbl thead th{ position:sticky; top:0; background:rgba(0,0,0,.15); backdrop-filter:blur(6px) }
+  .val-bold{ font-weight:600; color:#fff }
+
+  .card{ border-radius:1rem; border:1px solid var(--glass-b); background:var(--glass) }
+  .acc-btn{ width:100%; background:none; border:0; cursor:pointer; padding:.9rem .95rem; display:flex; align-items:center; gap:.75rem; text-align:left; color:#fff }
+  .acc-head{ flex:1; min-width:0 }
+  .acc-right{ margin-left:auto; display:flex; gap:.5rem; white-space:nowrap }
+  .chev{ transition:transform .22s ease }
+  .acc-btn[aria-expanded="true"] .chev{ transform:rotate(180deg) }
+  .panel-wrap{ height:0; overflow:hidden; transition:height .22s ease }
+  .panel{ padding:0 .95rem .95rem .95rem }
+
+  .cols{ display:grid; grid-template-columns:1fr; gap:1rem }
+  @media (min-width:1024px){ .cols{ display:flex; gap:1rem } .col-left,.col-right{ align-self:stretch } }
+
+  .emo{ font-size:1.5em; line-height:1; display:inline-block; transform:translateY(1px) }
+  @media (min-width:1024px){ .emo{ font-size:1.65em } }
+
+  .perm-tip{ font-size:.9rem }
 </style>
 </head>
 <body data-mode="day">
 
 <section class="hero">
   <div id="heroPlace">—</div>
-  <div id="heroIcon"></div>
-  <div id="heroTemp">--°</div>
+  <div id="heroIcon" aria-hidden="true"></div>
+  <div id="heroTemp" class="mono">--°</div>
 </section>
 
 <header class="sticky-header w-full glass">
-  <div class="w-full px-4 py-3 flex flex-col gap-2 items-center">
-    <form id="searchForm" class="grid grid-cols-1 gap-2 w-full sm:w-[560px] place-items-center" novalidate>
+  <div class="w-full px-3 md:px-6 py-3 flex flex-col gap-2 items-center justify-center">
+    <form id="searchForm" class="grid grid-cols-1 gap-2 w-full sm:w-[560px] max-w-full place-items-center" novalidate>
       <input id="cityInput" placeholder="Zadajte mesto"
-        class="w-full px-4 py-2.5 rounded-lg bg-white/20 border border-white/20 placeholder-white/70 focus:outline-none focus:ring-2 focus:ring-white/50"
-        autocomplete="off" inputmode="search" type="search" />
+             class="w-full px-4 py-2.5 rounded-lg bg-white/20 border border-white/20 placeholder-white/70 focus:outline-none focus:ring-2 focus:ring-white/50"
+             autocomplete="off" inputmode="search" type="search" />
       <div class="flex gap-2">
         <button id="searchBtn" type="submit"
-          class="px-4 py-2.5 rounded-lg bg-white/30 hover:bg-white/40 text-white font-medium">
+                class="inline-flex items-center justify-center px-4 md:px-5 py-2.5 rounded-lg bg-white/30 hover:bg-white/40 text-white font-medium">
           Hľadať
         </button>
         <button id="geoBtn" type="button"
-          class="px-4 py-2.5 rounded-lg bg-white/20 hover:bg-white/30 text-white font-medium">
+                class="inline-flex items-center justify-center px-3 md:px-4 py-2.5 rounded-lg bg-white/20 hover:bg-white/30 text-white font-medium">
           Použiť moju polohu
         </button>
       </div>
     </form>
-    <div id="permMsg"></div>
+    <div id="permMsg" class="perm-tip text-white/80"></div>
   </div>
 </header>
 
-<main class="w-full px-3 py-4 space-y-4">
-  <div id="dailyList" class="space-y-2"></div>
-  <div id="loading" class="hidden text-center py-6">Načítavam…</div>
-  <div id="err" class="hidden text-center text-red-300">Nepodarilo sa načítať údaje.</div>
+<main class="w-full px-2 md:px-4 lg:px-6 py-4 space-y-4">
+  <section class="cols">
+    <div class="col-left glass overflow-visible lg:overflow-hidden lg:basis-7/12 flex flex-col min-h-0">
+      <div class="flex items-center justify-between px-4 py-3 border-b border-white/20">
+        <h2 class="text-lg font-semibold">24-hodinová predpoveď</h2>
+      </div>
+      <div class="hidden lg:block overflow-x-auto flex-1 min-h-0">
+        <table class="tbl w-full h-full min-w-[900px] text-sm">
+          <thead>
+            <tr class="text-white/90">
+              <th>Čas</th><th>Počasie</th><th>Teplota</th><th>Rosný bod</th>
+              <th>Zrážky</th><th>Vietor</th><th>Oblačnosť</th><th>Tlak</th>
+            </tr>
+          </thead>
+          <tbody id="hourRows" class="divide-y divide-white/10"></tbody>
+        </table>
+      </div>
+      <div id="hourList" class="block lg:hidden p-2 space-y-2"></div>
+    </div>
+
+    <div class="col-right lg:basis-5/12 space-y-4">
+      <div class="glass">
+        <div class="px-4 py-3 border-b border-white/20"><h2 class="text-lg font-semibold">10-dňová predpoveď</h2></div>
+        <div id="dailyList" class="p-3 space-y-2"></div>
+      </div>
+
+      <div class="glass">
+        <div class="px-4 py-3 border-b border-white/20"><h2 class="text-lg font-semibold">Presne pred rokom</h2></div>
+        <div id="historyExact" class="p-4"></div>
+      </div>
+
+      <div class="glass">
+        <div class="px-4 py-3 border-b border-white/20"><h2 class="text-lg font-semibold">UV index</h2></div>
+        <div id="uvPanel" class="p-4">
+          <div class="grid grid-cols-2 gap-3">
+            <div class="glass p-2 rounded-lg"><div class="text-white/70 text-sm">Aktuálne</div><div id="uvNow" class="mono font-semibold">—</div></div>
+            <div class="glass p-2 rounded-lg"><div class="text-white/70 text-sm">Dnešné maximum</div><div id="uvMax" class="mono font-semibold">—</div></div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <div id="loading" class="hidden text-center py-10">
+    <div class="inline-block w-8 h-8 border-4 border-white/30 border-t-white rounded-full animate-spin"></div>
+    <p class="mt-2">Načítavam…</p>
+  </div>
+  <div id="err" class="hidden glass p-4">
+    <div class="text-center text-red-200">Nepodarilo sa načítať údaje. Skús iné mesto alebo povoľ polohu.</div>
+  </div>
 </main>
 
 <script>
 const API='https://api.open-meteo.com/v1';
 const GEO='https://geocoding-api.open-meteo.com/v1';
-const IPINFO='https://ipapi.co/json/';
+const ARCH='https://archive-api.open-meteo.com/v1/era5';
+const IPJSON='https://ipapi.co/json/'; // IP fallback (mestská presnosť)
 
 const el={
+  form:document.getElementById('searchForm'),
+  input:document.getElementById('cityInput'),
+  hourRows:document.getElementById('hourRows'),
+  hourList:document.getElementById('hourList'),
+  dailyList:document.getElementById('dailyList'),
+  historyExact:document.getElementById('historyExact'),
+  uvNow:document.getElementById('uvNow'),
+  uvMax:document.getElementById('uvMax'),
   heroPlace:document.getElementById('heroPlace'),
   heroIcon:document.getElementById('heroIcon'),
   heroTemp:document.getElementById('heroTemp'),
-  permMsg:document.getElementById('permMsg'),
   loading:document.getElementById('loading'),
   err:document.getElementById('err'),
-  dailyList:document.getElementById('dailyList'),
   geoBtn:document.getElementById('geoBtn'),
-  input:document.getElementById('cityInput')
+  permMsg:document.getElementById('permMsg'),
 };
 
-// === pomocné ===
+const svgSun=`<svg viewBox="0 0 128 128" xmlns="http://www.w3.org/2000/svg"><defs><radialGradient id="g" cx="50%" cy="50%" r="50%"><stop offset="0%" stop-color="#ffe27a"/><stop offset="70%" stop-color="#ffd057"/><stop offset="100%" stop-color="#f7b538"/></radialGradient></defs><circle cx="64" cy="64" r="28" fill="url(#g)"/><g stroke="#ffd36a" stroke-width="6" stroke-linecap="round"><line x1="64" y1="8"  x2="64" y2="28"/><line x1="64" y1="100" x2="64" y2="120"/><line x1="8"  y1="64" x2="28" y2="64"/><line x1="100" y1="64" x2="120" y2="64"/><line x1="20" y1="20" x2="34" y2="34"/><line x1="94" y1="94" x2="108" y2="108"/><line x1="20" y1="108" x2="34" y2="94"/><line x1="94" y1="34" x2="108" y2="20"/></g></svg>`;
+const svgMoon=`<svg viewBox="0 0 128 128" xmlns="http://www.w3.org/2000/svg"><defs><radialGradient id="m" cx="40%" cy="35%" r="60%"><stop offset="0%" stop-color="#f4f4f6"/><stop offset="100%" stop-color="#cfd4da"/></radialGradient></defs><path d="M90 82c-29 0-52-23-52-52 0-7 1-14 4-20C25 16 16 32 16 50c0 30 24 54 54 54 18 0 34-9 40-26-6 3-13 4-20 4z" fill="url(#m)"/></svg>`;
+
+function sanitizeCode(c){ c=Number(c); return (c===45||c===48)?3:c; }
 function iconFor(code){
-  if([0,1].includes(code))return'☀️';
-  if(code===2)return'⛅';
-  if(code===3)return'☁️';
-  if([61,63,65,80,81,82].includes(code))return'🌧️';
-  if([71,73,75].includes(code))return'🌨️';
-  if([95,96,99].includes(code))return'⛈️';
-  return'🌤️';
+  code=sanitizeCode(code);
+  if([0,1].includes(code)) return '☀️';
+  if(code===2) return '⛅';
+  if(code===3) return '☁️';
+  if([51].includes(code)) return '🌦️';
+  if([61,63,65,80,81,82].includes(code)) return '🌧️';
+  if([71,73,75].includes(code)) return '🌨️';
+  if([95,96,99].includes(code)) return '⛈️';
+  return '🌤️';
 }
-function descFor(code){
+function descFor(c){
+  c=sanitizeCode(c);
   const d={0:'Jasno',1:'Prevažne jasno',2:'Čiastočne oblačno',3:'Zamračené',
-           61:'Slabý dážď',63:'Mierny dážď',65:'Silný dážď',71:'Sneženie',95:'Búrka'};
-  return d[code]||'—';
+           51:'Mrholenie',61:'Slabý dážď',63:'Mierny dážď',65:'Silný dážď',
+           71:'Slabé sneženie',73:'Mierne sneženie',75:'Silné sneženie',
+           80:'Prehánky',81:'Mierne prehánky',82:'Silné prehánky',
+           95:'Búrka',96:'Búrka s krúpami',99:'Silná búrka s krúpami'};
+  return d[c]||'—';
 }
+function withIcon(code){ return `<span class="emo">${iconFor(code)}</span> ${descFor(code)}`; }
+function dd2dir(dd){ if(dd==null||isNaN(dd)) return '—'; const deg=((dd%360)+360)%360; const dirs=['S','SV','V','JV','J','JZ','Z','SZ']; return dirs[Math.floor((deg+22.5)/45)%8]; }
+function fmtTime(iso){ const d=new Date(iso); return d.getHours().toString().padStart(2,'0')+':00'; }
 
-// === API volania ===
-async function fetchWx(lat,lon){
-  const url=`${API}/forecast?latitude=${lat}&longitude=${lon}&current=temperature_2m,is_day,weather_code&daily=weather_code,temperature_2m_max,temperature_2m_min&timezone=auto&forecast_days=10`;
-  const r=await fetch(url);
-  if(!r.ok)throw new Error('api');
-  return await r.json();
-}
-async function reverseGeocode(lat,lon){
+async function geocode(q){ const r=await fetch(`${GEO}/search?name=${encodeURIComponent(q)}&count=1&language=sk`); const j=await r.json(); if(!j.results||j.results.length===0) throw new Error('notfound'); return j.results[0]; }
+async function reverseGeocodeLabel(lat,lon){
   const r=await fetch(`${GEO}/reverse?latitude=${lat}&longitude=${lon}&language=sk`);
-  const j=await r.json(); const res=j.results&&j.results[0];
-  if(!res)return'Vaša poloha';
-  return res.name||res.admin2||res.admin1||'Vaša poloha';
-}
-async function ipFallback(){
-  const r=await fetch(IPINFO);
   const j=await r.json();
-  if(!j||!j.latitude)return null;
-  return {lat:j.latitude,lon:j.longitude,city:j.city||'Podľa IP'};
+  const res=j.results && j.results[0];
+  if(!res) return {name:'Vaša poloha', country:''};
+  const name = res.name?.trim() || res.admin2 || res.admin1 || res.country || 'Vaša poloha';
+  return {name, country: res.country || ''};
+}
+async function fetchWx(lat,lon){
+  const url=`${API}/forecast?latitude=${lat}&longitude=${lon}`
+    +`&current=temperature_2m,is_day,weather_code`
+    +`&hourly=temperature_2m,dew_point_2m,surface_pressure,weather_code,precipitation_probability,precipitation,wind_speed_10m,wind_direction_10m,cloud_cover,uv_index`
+    +`&daily=weather_code,temperature_2m_max,temperature_2m_min,uv_index_max`
+    +`&timezone=auto&forecast_days=16`;
+  const r=await fetch(url); if(!r.ok) throw new Error('api'); return await r.json();
+}
+async function fetchHistoryExact(lat,lon){
+  const d=new Date(); d.setFullYear(d.getFullYear()-1);
+  const date=d.toISOString().slice(0,10);
+  const url=`${ARCH}?latitude=${lat}&longitude=${lon}`
+    +`&start_date=${date}&end_date=${date}`
+    +`&daily=temperature_2m_max,temperature_2m_min,precipitation_sum,weathercode`
+    +`&hourly=wind_speed_10m,wind_direction_10m`
+    +`&timezone=auto`;
+  const r=await fetch(url); if(!r.ok) throw new Error('arch1'); return await r.json();
 }
 
-// === Render ===
-function renderWeather(city,wx){
-  el.heroPlace.textContent=city;
-  el.heroIcon.textContent=iconFor(wx.current.weather_code);
-  el.heroTemp.textContent=Math.round(wx.current.temperature_2m)+'°';
-  const D=wx.daily;
-  el.dailyList.innerHTML='';
-  for(let i=0;i<D.time.length;i++){
-    const d=new Date(D.time[i]);
-    const name=d.toLocaleDateString('sk-SK',{weekday:'short'});
-    const tmax=Math.round(D.temperature_2m_max[i]);
-    const tmin=Math.round(D.temperature_2m_min[i]);
-    const code=D.weather_code[i];
-    const div=document.createElement('div');
-    div.className='glass p-3 rounded-lg flex justify-between';
-    div.innerHTML=`<div>${name} ${d.getDate()}. ${iconFor(code)} ${descFor(code)}</div>
-                   <div>${tmax}° / ${tmin}°</div>`;
-    el.dailyList.appendChild(div);
+function renderHero(city, wx){
+  const isDay=!!wx.current.is_day;
+  document.body.setAttribute('data-mode',isDay?'day':'night');
+  const label = city.country ? `${city.name}, ${city.country}` : city.name;
+  el.heroPlace.textContent = label || 'Vaša poloha';
+  el.heroTemp.textContent = Math.round(wx.current.temperature_2m)+'°';
+  el.heroIcon.innerHTML = isDay ? svgSun : svgMoon;
+}
+
+function renderHourly(wx){
+  const H=wx.hourly; el.hourRows.innerHTML=''; el.hourList.innerHTML='';
+  const now=new Date(); let start=0; for(let i=0;i<H.time.length;i++){ if(new Date(H.time[i])>=now){ start=i; break; } }
+  const end=Math.min(start+24,H.time.length);
+  for(let i=start;i<end;i++){
+    const code=sanitizeCode(H.weather_code[i]);
+    const temp=Math.round(H.temperature_2m[i]);
+    const dew=H.dew_point_2m?.[i];
+    const pres=H.surface_pressure?.[i];
+    const pop=H.precipitation_probability?.[i];
+    const pmm=H.precipitation?.[i];
+    const wind=H.wind_speed_10m?.[i], wdir=H.wind_direction_10m?.[i];
+    const cld=H.cloud_cover?.[i];
+
+    const tr=document.createElement('tr'); tr.className='hover:bg-white/10';
+    tr.innerHTML=`
+      <td class="mono">${fmtTime(H.time[i])}</td>
+      <td class="text-white/85 font-medium">${withIcon(code)}</td>
+      <td class="val-bold mono">${temp}°</td>
+      <td class="val-bold mono">${dew!=null?Math.round(dew):'—'}°</td>
+      <td class="val-bold mono">${pop!=null?`${pop}%`:'—'} · ${pmm!=null?pmm.toFixed(1):'0.0'} mm</td>
+      <td class="val-bold mono">${wind!=null?`${Math.round(wind)} km/h`:'—'} (${dd2dir(wdir)})</td>
+      <td class="val-bold mono">${cld!=null?`${cld}%`:'—'}</td>
+      <td class="val-bold mono">${pres!=null?Math.round(pres):'—'} hPa</td>`;
+    el.hourRows.appendChild(tr);
+
+    const card=document.createElement('div'); card.className='card';
+    const btn=document.createElement('button'); btn.className='acc-btn'; btn.type='button'; btn.setAttribute('aria-expanded','false');
+    btn.innerHTML=`
+      <div class="acc-head">
+        <div><div class="mono font-semibold">${fmtTime(H.time[i])} · ${temp}°</div><div class="text-white/80 text-sm">${withIcon(code)}</div></div>
+      </div>
+      <div class="acc-right">
+        <span class="mono">${pop!=null?`${pop}%`:'—'} · ${pmm!=null?pmm.toFixed(1):'0.0'} mm</span>
+        <svg class="chev" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="6 9 12 15 18 9"></polyline></svg>
+      </div>`;
+    const wrap=document.createElement('div'); wrap.className='panel-wrap';
+    const panel=document.createElement('div'); panel.className='panel';
+    panel.innerHTML=`
+      <div class="grid grid-cols-2 gap-2 mt-3 text-sm">
+        <div class="glass p-2 rounded-lg"><div class="text-white/70 text-sm">Tlak</div><div class="mono font-semibold">${pres!=null?Math.round(pres):'—'} hPa</div></div>
+        <div class="glass p-2 rounded-lg"><div class="text-white/70 text-sm">Rosný bod</div><div class="mono font-semibold">${dew!=null?Math.round(dew):'—'}°</div></div>
+        <div class="glass p-2 rounded-lg"><div class="text-white/70 text-sm">Oblačnosť</div><div class="mono font-semibold">${cld!=null?`${cld}%`:'—'}</div></div>
+        <div class="glass p-2 rounded-lg"><div class="text-white/70 text-sm">Vietor</div><div class="mono font-semibold">${wind!=null?`${Math.round(wind)} km/h`:'—'} (${dd2dir(wdir)})</div></div>
+      </div>`;
+    wrap.appendChild(panel); card.appendChild(btn); card.appendChild(wrap); el.hourList.appendChild(card);
+    let open=false; const setH=()=>{ wrap.style.height=open?panel.scrollHeight+'px':'0px'; };
+    btn.addEventListener('click',()=>{ if(wrap.style.height==='auto'){ wrap.style.height=panel.scrollHeight+'px'; } open=!open; btn.setAttribute('aria-expanded',String(open)); requestAnimationFrame(setH); });
+    wrap.addEventListener('transitionend',e=>{ if(e.propertyName!=='height')return; if(open){ wrap.style.height='auto'; } });
   }
 }
 
-// === Logika lokalizácie ===
-async function getPosition(){
-  return new Promise((res,rej)=>{
-    if(!navigator.geolocation) return rej('unsupported');
+function renderDaily(wx){
+  const D=wx.daily; el.dailyList.innerHTML=''; const n=Math.min(10,D.time.length);
+  for(let i=0;i<n;i++){
+    const d=new Date(D.time[i]); const dn=['Ne','Po','Ut','St','Št','Pi','So'][d.getDay()];
+    const tmin=Math.round(D.temperature_2m_min[i]); const tmax=Math.round(D.temperature_2m_max[i]); const code=sanitizeCode(D.weather_code[i]);
+    const card=document.createElement('div'); card.className='glass p-3 rounded-xl';
+    card.innerHTML=`
+      <div class="flex items-center justify-between">
+        <div>
+          <div class="font-medium">${dn} ${d.getDate()}</div>
+          <div class="text-white/70 text-sm">${withIcon(code)}</div>
+        </div>
+        <div class="mono text-lg font-semibold">${tmax}° / <span class="text-white/80">${tmin}°</span></div>
+      </div>`;
+    el.dailyList.appendChild(card);
+  }
+}
+
+function renderHistoryExact(hist){
+  const H=hist.daily; const dateStr=H.time?.[0];
+  if(!dateStr){ el.historyExact.innerHTML='<div class="text-white/80">Dáta nie sú dostupné.</div>'; return; }
+  const d=new Date(dateStr); const dn=['Ne','Po','Ut','St','Št','Pi','So'][d.getDay()];
+  const tmin=Math.round(H.temperature_2m_min?.[0]); const tmax=Math.round(H.temperature_2m_max?.[0]); const pr=(H.precipitation_sum?.[0] ?? 0).toFixed(1); const code=(H.weathercode?.[0] ?? 3);
+  let windBox='—'; const HH=hist.hourly;
+  if(HH?.wind_speed_10m?.length){ let mi=0,mv=-1; for(let i=0;i<HH.wind_speed_10m.length;i++){ const v=HH.wind_speed_10m[i]; if(typeof v==='number'&&v>mv){ mv=v; mi=i; } }
+    const dir=dd2dir(HH.wind_direction_10m?.[mi]); if(isFinite(mv)) windBox=`${Math.round(mv)} km/h ${dir}`; }
+  el.historyExact.innerHTML=`
+    <div class="glass p-4 rounded-xl space-y-3">
+      <div>
+        <div class="font-semibold text-lg">${dn} ${d.getDate()}.${(d.getMonth()+1).toString().padStart(2,'0')}.${d.getFullYear()}</div>
+        <div class="text-white/80">${withIcon(code)}</div>
+      </div>
+      <div class="grid grid-cols-2 sm:grid-cols-4 gap-3">
+        <div class="glass p-2 rounded-lg"><div class="text-white/70 text-sm">Max</div><div class="mono font-semibold">${tmax}°</div></div>
+        <div class="glass p-2 rounded-lg"><div class="text-white/70 text-sm">Min</div><div class="mono font-semibold">${tmin}°</div></div>
+        <div class="glass p-2 rounded-lg"><div class="text-white/70 text-sm">Zrážky</div><div class="mono font-semibold">${pr} mm</div></div>
+        <div class="glass p-2 rounded-lg"><div class="text-white/70 text-sm">Vietor (max)</div><div class="mono font-semibold">${windBox}</div></div>
+      </div>
+    </div>`;
+}
+
+function renderUV(wx){
+  const H=wx.hourly; let uvNow=null; const now=new Date();
+  for(let i=0;i<H.time.length;i++){ if(new Date(H.time[i])>=now){ uvNow=H.uv_index?.[i] ?? null; break; } }
+  const uvMax = wx.daily.uv_index_max?.[0] ?? null;
+  el.uvNow.textContent = uvNow!=null ? uvNow.toFixed(1) : '—';
+  el.uvMax.textContent = uvMax!=null ? uvMax.toFixed(1) : '—';
+}
+
+async function renderAllFor(lat,lon){
+  const [wx,hist,cityLabel] = await Promise.all([
+    fetchWx(lat,lon),
+    fetchHistoryExact(lat,lon),
+    reverseGeocodeLabel(lat,lon)
+  ]);
+  renderHero(cityLabel,wx);
+  renderHourly(wx);
+  renderDaily(wx);
+  renderHistoryExact(hist);
+  renderUV(wx);
+}
+
+/* ====== Geolokácia: prompt + IP fallback + Bratislava ====== */
+function updatePermMsg(txt){ el.permMsg.textContent = txt || ''; }
+
+function getPositionOnce(){
+  return new Promise((resolve,reject)=>{
+    if(!('geolocation' in navigator)) return reject({code:'unsupported'});
+    // Voláme getCurrentPosition – ak prostredie podporuje prompt, zobrazí systémové okno
     navigator.geolocation.getCurrentPosition(
-      pos=>res({lat:pos.coords.latitude,lon:pos.coords.longitude}),
-      err=>rej(err),
-      {enableHighAccuracy:true,timeout:10000,maximumAge:0}
+      pos=>resolve({lat:pos.coords.latitude, lon:pos.coords.longitude}),
+      err=>reject(err),
+      {enableHighAccuracy:true, timeout:10000, maximumAge:0}
     );
   });
 }
 
-async function locateAndLoad(){
-  el.loading.classList.remove('hidden');
-  el.err.classList.add('hidden');
-  el.permMsg.textContent='Zisťujem polohu…';
+async function ipFallback(){
   try{
-    const {lat,lon}=await getPosition(); // pokus o natívne povolenie
-    const city=await reverseGeocode(lat,lon);
-    const wx=await fetchWx(lat,lon);
-    renderWeather(city,wx);
-    el.permMsg.textContent='';
+    const r=await fetch(IPJSON, {cache:'no-store'});
+    const j=await r.json();
+    if(j && typeof j.latitude==='number' && typeof j.longitude==='number'){
+      return {lat:j.latitude, lon:j.longitude, city:j.city||'Podľa IP'};
+    }
+  }catch{}
+  return null;
+}
+
+async function locateAndLoad(){
+  el.loading.classList.remove('hidden'); el.err.classList.add('hidden');
+  updatePermMsg('Pokus o zistenie polohy…');
+  try{
+    const {lat,lon}=await getPositionOnce();        // 1) spúšťa systémový prompt (ak je k dispozícii)
+    await renderAllFor(lat,lon);
+    updatePermMsg('');
   }catch(e){
-    // ak používateľ odmietne alebo chyba – fallback podľa IP
-    console.warn('geo err:',e);
+    // 2) fallback podľa IP (ak používateľ odmietol alebo prompt nie je k dispozícii vo WebView)
     const ip=await ipFallback();
     if(ip){
-      const city=ip.city;
-      const wx=await fetchWx(ip.lat,ip.lon);
-      renderWeather(city,wx);
-      el.permMsg.textContent='(Poloha podľa IP)';
+      await renderAllFor(ip.lat, ip.lon);
+      updatePermMsg('(Poloha podľa IP – menej presná)');
     }else{
-      const wx=await fetchWx(48.1486,17.1077); // Bratislava
-      renderWeather('Bratislava',wx);
-      el.permMsg.textContent='(Predvolená poloha: Bratislava)';
+      // 3) posledný fallback: Bratislava
+      const city=await geocode('Bratislava');
+      await renderAllFor(city.latitude, city.longitude);
+      updatePermMsg('(Predvolená poloha: Bratislava)');
     }
   }finally{
     el.loading.classList.add('hidden');
   }
 }
 
-// === Ovládanie ===
-el.geoBtn.addEventListener('click',()=>locateAndLoad());
-document.getElementById('searchForm').addEventListener('submit',async ev=>{
-  ev.preventDefault();
-  const q=el.input.value.trim();
-  if(!q)return;
-  el.loading.classList.remove('hidden');
-  try{
-    const r=await fetch(`${GEO}/search?name=${encodeURIComponent(q)}&count=1&language=sk`);
-    const j=await r.json();
-    if(!j.results||!j.results[0])throw new Error();
-    const city=j.results[0];
-    const wx=await fetchWx(city.latitude,city.longitude);
-    renderWeather(city.name,wx);
-    el.permMsg.textContent='';
-  }catch{
-    el.err.classList.remove('hidden');
-  }finally{
-    el.loading.classList.add('hidden');
-  }
+/* ====== UI bindingy ====== */
+el.geoBtn.addEventListener('click', ()=> {
+  // manuálne vyžiada prompt znova
+  locateAndLoad();
 });
 
-// automatický pokus po načítaní
+el.form.addEventListener('submit', async (ev)=>{
+  ev.preventDefault();
+  const q=el.input.value.trim();
+  if(!q) return;
+  el.loading.classList.remove('hidden'); el.err.classList.add('hidden'); updatePermMsg('');
+  try{
+    const city=await geocode(q);
+    await renderAllFor(city.latitude, city.longitude);
+  }catch{ el.err.classList.remove('hidden'); }
+  finally{ el.loading.classList.add('hidden'); }
+});
+
+/* Auto pokus po načítaní – vyžiada prompt (ak to prostredie podporí) */
 locateAndLoad();
 </script>
 </body>
