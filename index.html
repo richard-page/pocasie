@@ -19,35 +19,15 @@
     .card { background:rgba(255,255,255,.12); border:none; }
   }
 
-  /* DEFINITÍVNE SKRYTIE SCROLL BAR PRE VYBRANÉ ELEMENTY A NA CELOM BODY BEZ ZRUŠENIA SCROLLOVANIA */
-  /* Aplikuje sa len na vizuálne skrytie lišty, nie na zablokovanie scrollovania */
-  .no-scrollbar, body {
-    -ms-overflow-style: none;  /* IE and Edge */
-    scrollbar-width: none;     /* Firefox */
-  }
-  .no-scrollbar::-webkit-scrollbar, body::-webkit-scrollbar {
-    display: none;             /* Chrome, Safari, Opera */
-  }
-
-  /* Zabezpečenie proti horizontálnemu pretečeniu - kľúčová zmena */
-  /* Toto chráni pred horizontálnou lištou BEZ ZRUŠENIA vertikálneho scrollovania */
-  /* Vertikálne scrollovanie sa riadi automaticky */
+  /* Zabezpečenie, že žiadne elementy nespôsobujú horizontálny scroll */
   *{ box-sizing:border-box }
-  html,body{ width:100%; max-width:100%; }
+  html,body{ width:100%; max-width:100%; overflow-x:hidden }
   
   body{
     margin:0; color:#fff;
     font-family:system-ui,-apple-system,Segoe UI,Roboto,sans-serif;
     background:#0e4d73;
-    /* ODSTRÁNENÉ: overflow-x: hidden; - aby stránka scrollovala normálne */
   }
-
-  /* Tabuľka: Horizontálne rolovanie je povolené, ale lišta je skrytá a pretečenie za jej rámec je OREZANÉ */
-  .hourly-table-wrapper {
-    overflow-x: auto; /* Ponechať rolovanie dát v tabuľke */
-    overflow-y: clip; /* Zabrániť, aby nežiaduce vertikálne pretečenie nepresahovalo rámec */
-  }
-  
   .glass{ background:var(--glass); border:1px solid var(--glass-b); backdrop-filter:blur(12px); border-radius:1rem }
   .mono{ font-feature-settings:"tnum" 1,"lnum" 1 }
   
@@ -109,10 +89,7 @@
   .suggest{
     position:absolute; top:100%; left:0; right:0; margin-top:.35rem;
     background:#fff; color:#0b1720; border-radius:.75rem; border:1px solid rgba(0,0,0,.08);
-    box-shadow:0 10px 25px rgba(0,0,0,.25); 
-    /* Vrátené na pôvodné: potrebujeme vertikálne scrollovanie v roletke */
-    overflow:auto; 
-    max-height:18rem; z-index:50;
+    box-shadow:0 10px 25px rgba(0,0,0,.25); overflow:auto; max-height:18rem; z-index:50;
   }
   .suggest.hidden{ display:none }
   .suggest-item{ display:flex; align-items:center; gap:.6rem; padding:.55rem .75rem; cursor:pointer }
@@ -152,7 +129,7 @@
           Hľadať
         </button>
       </form>
-      <div id="citySuggestions" class="suggest hidden no-scrollbar"></div>
+      <div id="citySuggestions" class="suggest hidden"></div>
     </div>
   </div>
 </header>
@@ -169,7 +146,7 @@
     </div>
 
     <div id="hourlyContent" class="tab-content" data-tab-content="hourly">
-                <div class="hidden lg:block hourly-table-wrapper min-h-0 no-scrollbar" style="overflow-x: auto; overflow-y: clip;">
+        <div class="hidden lg:block overflow-x-auto min-h-0">
             <table class="tbl w-full h-full min-w-[900px] text-sm">
                 <thead>
                     <tr class="text-white/90">
@@ -203,7 +180,7 @@
           <div class="glass p-2 rounded-lg"><div class="text-white/70 text-sm">Aktuálne</div><div id="uvNow" class="mono font-semibold">—</div></div>
           <div class="glass p-2 rounded-lg"><div class="text-white/70 text-sm">Dnešné maximum</div><div id="uvMax" class="mono font-semibold">—</div></div>
         </div>
-      </div>
+        </div>
     </div>
   </section>
 
