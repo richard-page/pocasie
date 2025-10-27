@@ -107,9 +107,10 @@
     <div class="font-semibold">Predpoveď počasia</div>
     <div class="flex-1"></div>
 
-    <button id="locateBtn"
-            class="hidden sm:inline-flex items-center gap-2 px-3 py-2.5 rounded-lg bg-white/30 hover:bg-white/40 text-white font-medium">
-      Použiť moju polohu
+    <!-- tlačidlo – poloha zo zariadenia -->
+    <button id="deviceLocBtn"
+            class="inline-flex items-center gap-2 px-3 py-2.5 rounded-lg bg-white/30 hover:bg-white/40 text-white font-medium">
+      Poloha zo zariadenia
     </button>
 
     <div class="suggest-wrap w-full sm:w-[560px] max-w-full">
@@ -206,7 +207,7 @@ const el={
   err:document.getElementById('err'),
   ptr:document.getElementById('ptr'),
   refreshContainer:document.getElementById('refreshContainer'),
-  locateBtn:document.getElementById('locateBtn'),
+  deviceLocBtn:document.getElementById('deviceLocBtn'),
 };
 
 /* ===== Helpers ===== */
@@ -234,10 +235,9 @@ function descFor(c){
 function withIcon(code){ return `${iconFor(code)} ${descFor(code)}`; }
 function dd2dir(dd){ if(dd==null||isNaN(dd)) return '—'; const deg=((dd%360)+360)%360; const dirs=['S','SV','V','JV','J','JZ','Z','SZ']; return dirs[Math.floor((deg+22.5)/45)%8]; }
 function fmtTime(iso){ const d=new Date(iso); return d.getHours().toString().padStart(2,'0')+':00'; }
-const flag=(cc)=> String.fromCodePoint(...[...cc.toUpperCase()].map(c=>127397+c.charCodeAt(0)));
 function cityLabel(x){ return (typeof x==='string'?(x.split(',')[0]):(x?.name||'')).trim()||'—'; }
 
-/* ===== Open-Meteo API ===== */
+/* ===== Open-Meteo ===== */
 async function geocodeAll(q,count=8){
   const r=await fetch(`${GEO}/search?name=${encodeURIComponent(q)}&count=${count}&language=sk&format=json`);
   const j=await r.json(); return j.results||[];
@@ -374,7 +374,7 @@ function renderUV(wx){
   el.uvMax.textContent = uvMax!=null ? uvMax.toFixed(1) : '—';
 }
 
-/* ===== Beh ===== */
+/* ===== Beh / načítanie mesta ===== */
 async function run(queryOrCityObj){
   el.loading.classList.remove('hidden'); el.err.classList.add('hidden');
   try{
@@ -449,67 +449,104 @@ function updateSel(items){
 document.addEventListener('click',(e)=>{ if(!e.target.closest('.suggest-wrap')) hideSuggest(); });
 el.form.addEventListener('submit', (ev)=>{ ev.preventDefault(); const q=cityLabel(el.input.value); if(q) run(q); });
 
-/* ===== Geolokácia (GPS → IP fallbacks) ===== */
-function geolocationPromise(timeoutMs=6000){
+/* ===== Poloha zo zariadenia (GEOLocation + natívny most) ===== */
+
+/* natívny spätný callback – Android/iOS ho môžu zavolať po získaní lokácie */
+window._onNativeLocation = async function(lat, lon){
+  try{
+    if(typeof lat!=='number') lat=Number(lat);
+    if(typeof lon!=='number') lon=Number(lon);
+    if(!isFinite(lat) || !isFinite(lon)) throw new Error('bad coords');
+    const city = await reverseGeocode(lat, lon) || { name:'Moja poloha', latitude:lat, longitude:lon };
+    await run(city);
+  }catch(e){}
+};
+window._onNativeLocationError = function(msg){ console.warn('Native location error:', msg); };
+
+/* pokus 1 – web geolokácia */
+function geolocationPromise(timeoutMs=8000){
   return new Promise((resolve,reject)=>{
-    if(!('geolocation' in navigator)) return reject(new Error('no-geo'));
+    if(!('geolocation' in navigator)) return reject(new Error('no-geolocation'));
     const t=setTimeout(()=>reject(new Error('geo-timeout')), timeoutMs);
     navigator.geolocation.getCurrentPosition(
       pos=>{ clearTimeout(t); resolve({lat:pos.coords.latitude, lon:pos.coords.longitude}); },
       err=>{ clearTimeout(t); reject(err||new Error('geo-error')); },
-      { enableHighAccuracy:false, maximumAge:300000, timeout:timeoutMs }
+      { enableHighAccuracy:true, maximumAge:120000, timeout:timeoutMs }
     );
   });
 }
-async function ipLocate(){
-  // 1) ipwho.is
-  try{
-    const r=await fetch('https://ipwho.is/?fields=latitude,longitude,city,success');
-    const j=await r.json();
-    if(j?.success && j.latitude && j.longitude) return {lat:j.latitude, lon:j.longitude};
-  }catch{}
-  // 2) ipapi.co
-  try{
-    const r=await fetch('https://ipapi.co/json/');
-    const j=await r.json();
-    if(j?.latitude && j?.longitude) return {lat:j.latitude, lon:j.longitude};
-  }catch{}
-  // 3) ipinfo.io (má limit, ale často stačí)
-  try{
-    const r=await fetch('https://ipinfo.io/json');
-    const j=await r.json();
-    if(j?.loc){ const [lat,lon]=j.loc.split(',').map(Number); if(lat&&lon) return {lat,lon}; }
-  }catch{}
-  throw new Error('ip-failed');
-}
-async function locateAndRun(){
-  el.locateBtn?.setAttribute('disabled','true');
-  el.locateBtn?.classList.add('opacity-60','cursor-not-allowed');
 
+/* pokus 2 – Android WebView JS bridge */
+async function tryAndroidBridge(){
   try{
-    let coords=null;
-    // 1) GPS ak ide
-    try{ coords=await geolocationPromise(); }catch{}
-    // 2) IP fallbacky
-    if(!coords){ coords=await ipLocate(); }
-
-    if(coords){
-      const city = await reverseGeocode(coords.lat, coords.lon) || { name:'Moja poloha', latitude:coords.lat, longitude:coords.lon };
-      await run(city);
-    }else{
-      throw new Error('no-coords');
+    if(window.Android && typeof window.Android.getLocation === 'function'){
+      const res = window.Android.getLocation(); // môže byť sync reťazec alebo nič (async callback)
+      if(res){
+        try{
+          const obj = typeof res==='string' && res.trim().startsWith('{') ? JSON.parse(res) : res;
+          if(typeof obj==='string' && obj.includes(',')){
+            const [lat,lon]=obj.split(',').map(Number); return {lat,lon};
+          }else if(typeof obj==='object' && obj){
+            if(obj.lat!=null && obj.lon!=null) return {lat:Number(obj.lat), lon:Number(obj.lon)};
+            if(obj.latitude!=null && obj.longitude!=null) return {lat:Number(obj.latitude), lon:Number(obj.longitude)};
+          }
+        }catch{}
+      }
+      // ak natívny kód vráti neskôr -> zavolá window._onNativeLocation
     }
-  }catch{
-    // nič – užívateľ zostane na poslednom meste
+  }catch{}
+  return null;
+}
+
+/* pokus 3 – iOS WKWebView message handler */
+function pingIOSBridge(){
+  try{
+    if(window.webkit && window.webkit.messageHandlers && window.webkit.messageHandlers.getLocation){
+      window.webkit.messageHandlers.getLocation.postMessage(null);
+      return true; // odpoveď príde cez window._onNativeLocation
+    }
+  }catch{}
+  return false;
+}
+
+/* verejná funkcia pre tlačidlo aj auto-štart */
+async function requestDeviceLocation(){
+  const btn = el.deviceLocBtn;
+  btn.setAttribute('disabled','true');
+  btn.classList.add('opacity-60','cursor-not-allowed');
+
+  try{
+    // 1) Web geolokácia (ak je povolená)
+    try{
+      const c = await geolocationPromise();
+      if(c){ await window._onNativeLocation(c.lat, c.lon); return; }
+    }catch{}
+
+    // 2) Android bridge (sync hodnota)
+    const a = await tryAndroidBridge();
+    if(a){ await window._onNativeLocation(a.lat, a.lon); return; }
+
+    // 3) iOS bridge (asynchrónna odpoveď)
+    const pinged = pingIOSBridge();
+    if(pinged){
+      // nič – čakáme na _onNativeLocation, tu len nastavíme 6s mäkký timeout
+      await new Promise(res=>setTimeout(res, 6000));
+    }
+    // ak stále nič, necháme posledné mesto (bez IP!)
   }finally{
-    el.locateBtn?.removeAttribute('disabled');
-    el.locateBtn?.classList.remove('opacity-60','cursor-not-allowed');
+    btn.removeAttribute('disabled');
+    btn.classList.remove('opacity-60','cursor-not-allowed');
   }
 }
 
-/* tlačidlo – zobraz len ak WebView podporuje fetch (áno) */
-el.locateBtn.classList.remove('hidden');
-el.locateBtn.addEventListener('click', locateAndRun);
+/* udalosť z natívu – alternatívna cesta (napr. Android môže vystreliť CustomEvent) */
+window.addEventListener('nativeLocation', (e)=>{
+  const d=e?.detail||{};
+  if(d.lat!=null && d.lon!=null) window._onNativeLocation(d.lat, d.lon);
+});
+
+/* tlačidlo */
+el.deviceLocBtn.addEventListener('click', requestDeviceLocation);
 
 /* ===== Pull-to-refresh ===== */
 let startY=0, pulling=false, activated=false;
@@ -533,9 +570,9 @@ el.refreshContainer.addEventListener('touchend', async ()=>{
 
 /* ===== Štart ===== */
 el.input.value='Bratislava';
-run('Bratislava').then(()=> {
-  // pokus o automatickú polohu (nezdrží UI; ak zlyhá, zostane BA)
-  locateAndRun();
+run('Bratislava').then(()=>{
+  // automaticky sa pokús o polohu zo zariadenia (ak natív dá, super; inak ostane BA)
+  requestDeviceLocation();
 });
 </script>
 </body>
