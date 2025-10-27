@@ -1,88 +1,88 @@
 <!DOCTYPE html>
 <html lang="sk">
 <head>
-<meta charset="UTF-8" />
-<meta name="viewport" content="width=device-width, initial-scale=1" />
-<title>Predpoveď počasia</title>
-<script src="https://cdn.tailwindcss.com"></script>
-<style>
-  :root{
-    --glass: rgba(255,255,255,.08);
-    --glass-b: rgba(255,255,255,.18);
-    --hero-h: 34vh;        /* mobily */
-    --hero-icon: 76px;     /* veľkosť ikony */
-    --hero-temp: 5.6rem;   /* veľkosť čísla teploty */
-    --hero-pad-t: 1.6rem;  /* horný padding */
-    --hero-pad-b: 1.2rem;  /* spodný padding */
-  }
-  @media (min-width:480px){
-    :root{ --hero-h: 36vh; --hero-icon: 86px; --hero-temp: 6rem; }
-  }
-  @media (min-width:768px){
-    :root{ --hero-h: 38vh; --hero-icon: 96px; --hero-temp: 6.2rem; }
-  }
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Predpoveď počasia</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <style>
+    :root{
+      --glass: rgba(255,255,255,.08);
+      --glass-b: rgba(255,255,255,.18);
+      --hero-h: 34vh;
+      --hero-icon: 76px;
+      --hero-temp: 5.6rem;
+      --hero-pad-t: 1.6rem;
+      --hero-pad-b: 1.2rem;
+    }
+    @media (min-width:480px){
+      :root{ --hero-h: 36vh; --hero-icon: 86px; --hero-temp: 6rem; }
+    }
+    @media (min-width:768px){
+      :root{ --hero-h: 38vh; --hero-icon: 96px; --hero-temp: 6.2rem; }
+    }
 
-  *{ box-sizing:border-box }
-  html,body{ width:100%; max-width:100%; overflow-x:hidden }
-  body{
-    margin:0; color:#fff;
-    font-family:system-ui,-apple-system,Segoe UI,Roboto,sans-serif;
-    background:#0e4d73;
-  }
-  .glass{ background:var(--glass); border:1px solid var(--glass-b); backdrop-filter:blur(12px); border-radius:1rem }
-  .mono{ font-feature-settings:"tnum" 1,"lnum" 1 }
+    *{ box-sizing:border-box }
+    html,body{ width:100%; max-width:100%; overflow-x:hidden }
+    body{
+      margin:0; color:#fff;
+      font-family:system-ui,-apple-system,Segoe UI,Roboto,sans-serif;
+      background:#0e4d73;
+    }
+    .glass{ background:var(--glass); border:1px solid var(--glass-b); backdrop-filter:blur(12px); border-radius:1rem }
+    .mono{ font-feature-settings:"tnum" 1,"lnum" 1 }
 
-  .hero{
-    position:relative; isolation:isolate;
-    display:flex; flex-direction:column; align-items:center; justify-content:center;
-    min-height:var(--hero-h); width:100%;
-    padding:var(--hero-pad-t) 1rem var(--hero-pad-b);
-    text-align:center; overflow:hidden
-  }
-  body[data-mode="day"] .hero{ background:#176ea9 }
-  body[data-mode="night"] .hero{ background:#08273b }
-  #heroPlace{ font-size:1.18rem; font-weight:600; opacity:.95; letter-spacing:.2px }
-  #heroIcon{ width:var(--hero-icon); height:var(--hero-icon); margin:.65rem auto .35rem; font-size:calc(var(--hero-icon) - 8px); line-height:var(--hero-icon) }
-  #heroTemp{ font-size:var(--hero-temp); line-height:1; font-weight:700; letter-spacing:1px }
+    .hero{
+      position:relative; isolation:isolate;
+      display:flex; flex-direction:column; align-items:center; justify-content:center;
+      min-height:var(--hero-h); width:100%;
+      padding:var(--hero-pad-t) 1rem var(--hero-pad-b);
+      text-align:center; overflow:hidden
+    }
+    body[data-mode="day"] .hero{ background:#176ea9 }
+    body[data-mode="night"] .hero{ background:#08273b }
+    #heroPlace{ font-size:1.18rem; font-weight:600; opacity:.95; letter-spacing:.2px }
+    #heroIcon{ width:var(--hero-icon); height:var(--hero-icon); margin:.65rem auto .35rem; font-size:calc(var(--hero-icon) - 8px); line-height:var(--hero-icon) }
+    #heroTemp{ font-size:var(--hero-temp); line-height:1; font-weight:700; letter-spacing:1px }
 
-  .sticky-header{ position:sticky; top:0; z-index:40 }
-  .tbl th,.tbl td{ padding:.65rem .75rem; white-space:nowrap }
-  .tbl thead th{ position:sticky; top:0; background:rgba(0,0,0,.15); backdrop-filter:blur(6px) }
-  .val-bold{ font-weight:600; color:#fff }
+    .sticky-header{ position:sticky; top:0; z-index:40 }
+    .tbl th,.tbl td{ padding:.65rem .75rem; white-space:nowrap }
+    .tbl thead th{ position:sticky; top:0; background:rgba(0,0,0,.15); backdrop-filter:blur(6px) }
+    .val-bold{ font-weight:600; color:#fff }
 
-  .card{ border-radius:1rem; border:1px solid var(--glass-b); background:var(--glass) }
-  .acc-btn{ width:100%; background:none; border:0; cursor:pointer; padding:.9rem .95rem; display:flex; align-items:center; gap:.75rem; text-align:left; color:#fff }
-  .acc-head{ flex:1; min-width:0 }
-  .acc-right{ margin-left:auto; display:flex; gap:.5rem; white-space:nowrap }
-  .chev{ transition:transform .22s ease }
-  .panel-wrap{ height:0; overflow:hidden; transition:height .22s ease }
-  .panel{ padding:0 .95rem .95rem .95rem }
+    .card{ border-radius:1rem; border:1px solid var(--glass-b); background:var(--glass) }
+    .acc-btn{ width:100%; background:none; border:0; cursor:pointer; padding:.9rem .95rem; display:flex; align-items:center; gap:.75rem; text-align:left; color:#fff }
+    .acc-head{ flex:1; min-width:0 }
+    .acc-right{ margin-left:auto; display:flex; gap:.5rem; white-space:nowrap }
+    .chev{ transition:transform .22s ease }
+    .panel-wrap{ height:0; overflow:hidden; transition:height .22s ease }
+    .panel{ padding:0 .95rem .95rem .95rem }
 
-  .cols{ display:grid; grid-template-columns:1fr; gap:1rem }
-  @media (min-width:1024px){ .cols{ display:flex; gap:1rem } .col-left,.col-right{ align-self:stretch } }
+    .cols{ display:grid; grid-template-columns:1fr; gap:1rem }
+    @media (min-width:1024px){ .cols{ display:flex; gap:1rem } .col-left,.col-right{ align-self:stretch } }
 
-  .suggest-wrap{ position:relative; }
-  .suggest{
-    position:absolute; top:100%; left:0; right:0; margin-top:.35rem;
-    background:#fff; color:#0b1720; border-radius:.75rem; border:1px solid rgba(0,0,0,.08);
-    box-shadow:0 10px 25px rgba(0,0,0,.25); overflow:auto; max-height:18rem; z-index:50;
-  }
-  .suggest.hidden{ display:none }
-  .suggest-item{ display:flex; align-items:center; gap:.6rem; padding:.55rem .75rem; cursor:pointer }
-  .suggest-item:hover,.suggest-item[aria-selected="true"]{ background:#eef6ff }
-  .flag{ width:18px; flex:0 0 18px }
-  .s-meta{ font-size:.82rem; color:#425466 }
-  .s-name{ font-weight:600 }
+    .suggest-wrap{ position:relative; }
+    .suggest{
+      position:absolute; top:100%; left:0; right:0; margin-top:.35rem;
+      background:#fff; color:#0b1720; border-radius:.75rem; border:1px solid rgba(0,0,0,.08);
+      box-shadow:0 10px 25px rgba(0,0,0,.25); overflow:auto; max-height:18rem; z-index:50;
+    }
+    .suggest.hidden{ display:none }
+    .suggest-item{ display:flex; align-items:center; gap:.6rem; padding:.55rem .75rem; cursor:pointer }
+    .suggest-item:hover,.suggest-item[aria-selected="true"]{ background:#eef6ff }
+    .flag{ width:18px; flex:0 0 18px }
+    .s-meta{ font-size:.82rem; color:#425466 }
+    .s-name{ font-weight:600 }
 
-  #ptr{ position:sticky; top:0; height:0; overflow:visible; z-index:45; }
-  #ptr .spinner{
-    margin:.35rem auto 0; width:34px; height:34px; border-radius:9999px;
-    border:4px solid rgba(255,255,255,.28); border-top-color:#fff;
-    animation:spin 1s linear infinite; opacity:0; transform:scale(.8); transition:opacity .15s ease, transform .15s ease;
-  }
-  #ptr.active .spinner{ opacity:1; transform:scale(1) }
-  @keyframes spin{ to{ transform:rotate(360deg) } }
-</style>
+    #ptr{ position:sticky; top:0; height:0; overflow:visible; z-index:45; }
+    #ptr .spinner{
+      margin:.35rem auto 0; width:34px; height:34px; border-radius:9999px;
+      border:4px solid rgba(255,255,255,.28); border-top-color:#fff;
+      animation:spin 1s linear infinite; opacity:0; transform:scale(.8); transition:opacity .15s ease, transform .15s ease;
+    }
+    #ptr.active .spinner{ opacity:1; transform:scale(1) }
+    @keyframes spin{ to{ transform:rotate(360deg) } }
+  </style>
 </head>
 <body data-mode="day">
 
@@ -96,7 +96,6 @@
   <div class="w-full px-3 md:px-6 py-3 flex items-center gap-3">
     <div class="font-semibold">Predpoveď počasia</div>
     <div class="flex-1"></div>
-
     <div class="suggest-wrap w-full sm:w-[560px] max-w-full">
       <form id="searchForm" class="grid grid-cols-1 sm:grid-cols-[1fr_auto] gap-2" novalidate>
         <input id="cityInput" placeholder="Zadaj mesto (napr. Bratislava)"
@@ -115,7 +114,6 @@
 <div id="ptr"><div class="spinner"></div></div>
 
 <main id="refreshContainer" class="w-full px-2 md:px-4 lg:px-6 py-4 space-y-4">
-
   <section class="cols">
     <div class="col-left glass overflow-visible lg:overflow-hidden lg:basis-7/12 flex flex-col min-h-0">
       <div class="flex items-center justify-between px-4 py-3 border-b border-white/20">
