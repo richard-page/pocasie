@@ -61,14 +61,12 @@
   .tbl thead th{ position:sticky; top:0; background:rgba(0,0,0,.15); backdrop-filter:blur(6px) }
   .val-bold{ font-weight:600; color:#fff }
 
-  /* Taby */
   .tabs-nav{ display:grid; grid-template-columns:1fr 1fr; background:rgba(0,0,0,.2); padding:.25rem; border-radius:1rem; }
   .tab-btn{ padding:.65rem 1rem; border-radius:.75rem; font-weight:600; text-align:center; background:none; border:0; color:#fff; cursor:pointer; transition:background .2s ease }
   .tab-btn[aria-selected="true"]{ background:#fff; color:#0b1720; box-shadow:0 2px 8px rgba(0,0,0,.2) }
   .tab-content{ padding-top:1rem }
   .tab-content.hidden{ display:none }
 
-  /* Mobil akordeón */
   .card{ border-radius:1rem; border:1px solid var(--glass-b); background:var(--glass) }
   .acc-btn{ width:100%; background:none; border:0; cursor:pointer; padding:.9rem .95rem; display:flex; align-items:center; gap:.75rem; text-align:left; color:#fff }
   .acc-head{ flex:1; min-width:0 }
@@ -78,7 +76,6 @@
   .panel-wrap{ height:0; overflow:hidden; transition:height .22s ease }
   .panel{ padding:0 .95rem .95rem .95rem }
   
-  /* Návrhy miest (nezmenené) */
   .suggest-wrap{ position:relative; }
   .suggest{
     position:absolute; top:100%; left:0; right:0; margin-top:.35rem;
@@ -92,7 +89,6 @@
   .s-meta{ font-size:.82rem; color:#425466 }
   .s-name{ font-weight:600 }
 
-  /* Pull-to-refresh (nezmenené) */
   #ptr{ position:sticky; top:0; height:0; overflow:visible; z-index:45; }
   #ptr .spinner{
     margin:.35rem auto 0; width:34px; height:34px; border-radius:9999px;
@@ -190,13 +186,11 @@
 </main>
 
 <script>
-/* ====== API endpointy (bez zmien) ====== */
 const API='https://api.open-meteo.com/v1';
-const GEO='https://geocoding-api.open-meteo.com/v1'; // Ponechané len pre geokódovanie mien, NIE reverzné!
+const GEO='https://geocoding-api.open-meteo.com/v1';
 const ARCH='https://archive-api.open-meteo.com/v1/era5';
 const NOMINATIM_API = 'https://nominatim.openstreetmap.org/reverse?format=json&extratags=1&addressdetails=1&zoom=14&accept-language=sk';
 
-/* ====== DOM refs ====== */
 const el={
   form:document.getElementById('searchForm'),
   input:document.getElementById('cityInput'),
@@ -214,14 +208,12 @@ const el={
   err:document.getElementById('err'),
   ptr:document.getElementById('ptr'),
   refreshContainer:document.getElementById('refreshContainer'),
-  // NOVÉ: Taby
   tab24hBtn: document.getElementById('tab24hBtn'),
   tab10dBtn: document.getElementById('tab10dBtn'),
   hourlyContent: document.getElementById('hourlyContent'),
   dailyContent: document.getElementById('dailyContent'),
 };
 
-/* ====== Pomocné funkcie (nezmenené) ====== */
 function sanitizeCode(c){ c=Number(c); return (c===45||c===48)?3:c; }
 function iconFor(code){
   code=sanitizeCode(code);
@@ -249,7 +241,6 @@ function fmtTime(iso){ const d=new Date(iso); return d.getHours().toString().pad
 const flag=(cc)=> String.fromCodePoint(...[...cc.toUpperCase()].map(c=>127397+c.charCodeAt(0)));
 function cityLabel(x){ return (typeof x==='string'?(x.split(',')[0]):(x?.name||'')).trim()||'—'; }
 
-/* ====== API funkcie (bez zmien) ====== */
 async function geocodeAll(q,count=8){
   const r=await fetch(`${GEO}/search?name=${encodeURIComponent(q)}&count=${count}&language=sk&format=json`);
   const j=await r.json();
@@ -292,7 +283,6 @@ async function fetchHistoryExact(lat,lon){
   const r=await fetch(url); if(!r.ok) throw new Error('arch1'); return await r.json();
 }
 
-/* ====== Vykreslenie (nezmenené) ====== */
 function renderHero(city, wx){
   const isDay = !!wx.current.is_day;
   const code = sanitizeCode(wx.current.weather_code);
@@ -301,7 +291,7 @@ function renderHero(city, wx){
   el.heroTemp.textContent  = Math.round(wx.current.temperature_2m)+'°';
   el.heroIcon.textContent  = iconFor(code);
 }
-function renderHourly(wx){ /* ... (kód) ... */
+function renderHourly(wx){
   const H=wx.hourly; el.hourRows.innerHTML=''; el.hourList.innerHTML='';
   const now=new Date(); let start=0; for(let i=0;i<H.time.length;i++){ if(new Date(H.time[i])>=now){ start=i; break; } }
   const end=Math.min(start+24,H.time.length);
@@ -352,7 +342,7 @@ function renderHourly(wx){ /* ... (kód) ... */
     wrap.addEventListener('transitionend',e=>{ if(e.propertyName!=='height')return; if(open){ wrap.style.height='auto'; } });
   }
 }
-function renderDaily(wx){ /* ... (kód) ... */
+function renderDaily(wx){
   const D=wx.daily; el.dailyList.innerHTML=''; const n=Math.min(10,D.time.length);
   for(let i=0;i<n;i++){
     const d=new Date(D.time[i]); const dn=['Ne','Po','Ut','St','Št','Pi','So'][d.getDay()];
@@ -369,7 +359,7 @@ function renderDaily(wx){ /* ... (kód) ... */
     el.dailyList.appendChild(card);
   }
 }
-function renderHistoryExact(hist){ /* ... (kód) ... */
+function renderHistoryExact(hist){
   const H=hist.daily; const dateStr=H.time?.[0];
   if(!dateStr){ el.historyExact.innerHTML='<div class="text-white/80">Dáta nie sú dostupné.</div>'; return; }
   const d=new Date(dateStr); const dn=['Ne','Po','Ut','St','Št','Pi','So'][d.getDay()];
@@ -391,7 +381,7 @@ function renderHistoryExact(hist){ /* ... (kód) ... */
       </div>
     </div>`;
 }
-function renderUV(wx){ /* ... (kód) ... */
+function renderUV(wx){
   const H=wx.hourly; let uvNow=null; const now=new Date();
   for(let i=0;i<H.time.length;i++){ if(new Date(H.time[i])>=now){ uvNow=H.uv_index?.[i] ?? null; break; } }
   const uvMax = wx.daily.uv_index_max?.[0] ?? null;
@@ -399,7 +389,6 @@ function renderUV(wx){ /* ... (kód) ... */
   el.uvMax.textContent = uvMax!=null ? uvMax.toFixed(1) : '—';
 }
 
-/* ====== Beh appky (bez zmien) ====== */
 async function run(queryOrCityObj){
   el.loading.classList.remove('hidden'); el.err.classList.add('hidden');
   try{
@@ -428,7 +417,6 @@ async function run(queryOrCityObj){
   finally{ el.loading.classList.add('hidden'); }
 }
 
-/* ====== Tabs logika (NOVÉ) ====== */
 function switchTab(tabName) {
     const allBtns = [el.tab24hBtn, el.tab10dBtn];
     const allContents = [el.hourlyContent, el.dailyContent];
@@ -444,11 +432,9 @@ function switchTab(tabName) {
     });
 }
 
-// Event Listeners pre taby
 el.tab24hBtn.addEventListener('click', () => switchTab('hourly'));
 el.tab10dBtn.addEventListener('click', () => switchTab('daily'));
 
-/* ====== Ostatné funkcie (bez zmien) ====== */
 let selIndex=-1;
 let lastSuggest=[];
 function hideSuggest(){ el.suggest.classList.add('hidden'); el.suggest.innerHTML=''; selIndex=-1; lastSuggest=[]; }
@@ -504,7 +490,7 @@ el.input.addEventListener('keydown',(e)=>{
   else if(e.key==='Escape'){ hideSuggest(); }
 });
 function updateSel(items){
-  items.forEach((it,i)=> it.setAttribute('aria-selected', i===selIndex ? 'true':'false'));
+  items.forEach((it,i)=> it.setAttribute('aria-selected', i===selIndex ? 'true' : 'false'));
   const active=items[selIndex]; if(active){ active.scrollIntoView({block:'nearest'}); }
 }
 document.addEventListener('click',(e)=>{ if(!e.target.closest('.suggest-wrap')) hideSuggest(); });
@@ -515,7 +501,7 @@ el.form.addEventListener('submit', (ev)=>{
 });
 
 let startY=0, pulling=false, activated=false;
-const THRESH=72; // px
+const THRESH=72;
 function ptrReset(){ pulling=false; activated=false; startY=0; el.ptr.classList.remove('active'); }
 el.refreshContainer.addEventListener('touchstart',(e)=>{
   if(window.scrollY===0){ startY=e.touches[0].clientY; pulling=true; }
@@ -539,9 +525,6 @@ el.refreshContainer.addEventListener('touchend', async ()=>{
   ptrReset();
 });
 
-/* ====== Geolokácia + Spracovanie Chýb (OPÄŤ RÝCHLEJŠIA POLOHA) ====== */
-
-// ZMENA 1: Zníženie timeoutu na 5s pre rýchlejšiu reakciu
 const locationOptions = { enableHighAccuracy: true, timeout: 5000, maximumAge: 0 }; 
 
 function getCityFromStorage() {
@@ -559,7 +542,6 @@ function checkAndroidLocationEnabled(forceFetch=false) {
   const isCurrentLocation = cityObj?.__isCurrentLocation;
 
   if (!forceFetch && cityObj && !isCurrentLocation) {
-    console.log("Načítavam posledné fixné mesto z úložiska.");
     el.input.value = cityLabel(cityObj);
     run(cityObj);
     return;
@@ -584,14 +566,12 @@ function checkAndroidLocationEnabled(forceFetch=false) {
 }
 
 function requestAndroidLocationPermission() {
-  console.log("Požiadavka na povolenie (Median)...");
   if (typeof median !== 'undefined' && median.android && median.android.geoLocation) {
     median.android.geoLocation.promptLocationServices();
   }
 }
 
 function getCurrentLocation() {
-  console.log("Pokúšam sa získať aktuálnu polohu (navigator.geolocation)...");
   navigator.geolocation.getCurrentPosition(locationSuccess, locationError, locationOptions);
 }
 
@@ -601,10 +581,8 @@ async function locationSuccess(position) {
   
   let locatedCity = null;
   try {
-      // Reverzná geolokácia cez Nominatim
       locatedCity = await reverseGeocode(latitude, longitude);
   } catch (e) {
-      console.error("Chyba pri volaní Nominatim reverseGeocode (po úspechu GPS):", e);
       locatedCity = null;
   }
 
@@ -624,7 +602,6 @@ async function locationSuccess(position) {
 }
 
 function locationError(error) {
-  console.error(`Chyba pri získavaní polohy (timeout/chyba): ${error.message}.`);
   handleLocationFailure();
 }
 
@@ -632,26 +609,21 @@ function handleLocationFailure() {
     const cityObj = getCityFromStorage();
 
     if (cityObj) {
-        // Ak už MÁME uložené nejaké mesto, použijeme ho.
-        console.log("Zlyhanie GPS. Načítavam posledné úspešné mesto:", cityLabel(cityObj));
         el.input.value = cityLabel(cityObj);
         run(cityObj);
     } else {
-        // Iba ak nemáme ULOŽENÉ ŽIADNE dáta, prejdeme na predvolené mesto (Bratislava).
         loadDefaultCity();
     }
 }
 
 function loadDefaultCity() {
   const defaultCity = { name:'Bratislava', latitude:48.1486, longitude:17.1077 };
-  console.log("Načítavam predvolené mesto:", defaultCity.name);
   if(el.input) {
     el.input.value = cityLabel(defaultCity);
   }
   run(defaultCity);
 }
 
-/* ====== Štart ====== */
 checkAndroidLocationEnabled();
 </script>
 </body>
