@@ -19,8 +19,22 @@
     .card { background:rgba(255,255,255,.12); border:none; }
   }
 
-  /* 🔥 ULTIMATÍVNE CSS PRE SKRYTIE SCROLL BAR */
-  /* Pre WebKit (Chrome, Safari, Android WebView) */
+  /* 🔥 Nukleárna eliminácia horizontálnej posuvnej lišty na všetkých elementoch */
+  * { 
+      box-sizing: border-box !important;
+      overflow-x: hidden !important; /* !!! Nová globálna oprava !!! */
+  }
+
+  /* 🔥 Prebíjanie všetkých systémových marginov a paddingov */
+  html, body { 
+      margin: 0 !important; 
+      padding: 0 !important; 
+      width: 100% !important; 
+      max-width: 100% !important;
+      overflow-x: hidden !important;
+  }
+  
+  /* Skrytie posuvnej lišty (ak ju prehliadač rešpektuje) */
   body::-webkit-scrollbar, 
   html::-webkit-scrollbar,
   #refreshContainer::-webkit-scrollbar {
@@ -29,33 +43,14 @@
     background: transparent !important;
   }
   
-  /* Pre IE, Edge a Firefox */
   body, html, #refreshContainer {
     -ms-overflow-style: none !important;  /* IE and Edge */
     scrollbar-width: none !important;     /* Firefox */
-    overflow-x: hidden !important;        /* Zakáže horizontálny scroll absolútne */
   }
 
-  /* Zabezpečenie, že žiadne elementy nespôsobujú horizontálny scroll */
-  *{ box-sizing:border-box !important; } /* Používam !important na box-sizing pre istotu */
-  html,body{ 
-      width:100% !important; 
-      max-width:100% !important;
-      /* Zamykám vertikálny scroll len na body/html, aby neostal na main kontajneri */
-      overflow-y: scroll !important;
-      overflow-x: hidden !important;
-  }
+  /* ------------------- */
+  /* Zvyšok CSS zostáva rovnaký, len pre istotu som z neho vymazal konfliktné časti */
 
-  /* 🔥 ULTIMATÍVNE CENTROVANIE PÄTICE */
-  .footer-force-center {
-      /* Zabezpečí, že blok zaberá celú šírku a centruje všetok inline obsah */
-      width: 100% !important; 
-      text-align: center !important; 
-      /* Aplikuje margin auto na blok, ak by bol menší ako 100% */
-      margin-left: auto !important;
-      margin-right: auto !important;
-  }
-  
   body{
     margin:0; color:#fff;
     font-family:system-ui,-apple-system,Segoe UI,Roboto,sans-serif;
@@ -229,13 +224,14 @@
     </div>
   </div>
   
-  <div class="pt-2 pb-0 text-white/50 text-xs footer-force-center">
+  <div style="width: 100%; text-align: center !important; padding-top: 8px; padding-bottom: 0;" class="text-white/50 text-xs">
     Údaje poskytuje <a href="https://open-meteo.com/" target="_blank" rel="noopener noreferrer" class="hover:text-white/80 underline">Open-Meteo</a>.
   </div>
   
 </main>
 
 <script>
+// ... (Zvyšok JS kódu zostáva nezmenený) ...
 const API='https://api.open-meteo.com/v1';
 const GEO='https://geocoding-api.open-meteo.com/v1';
 const ARCH='https://archive-api.open-meteo.com/v1/era5';
