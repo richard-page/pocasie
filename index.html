@@ -111,11 +111,9 @@
 </section>
 
 <header class="sticky-header w-full glass">
-  <div class="w-full px-3 md:px-6 py-3 flex items-center gap-3">
-    <div class="font-semibold">Predpoveď počasia</div>
-    <div class="flex-1"></div>
-
-    <div class="suggest-wrap w-full sm:w-[560px] max-w-full">
+  <div class="w-full px-3 md:px-6 py-3 flex items-center justify-center">
+    
+    <div class="suggest-wrap w-full sm:w-[560px] max-w-full mx-auto">
       <form id="searchForm" class="grid grid-cols-1 sm:grid-cols-[1fr_auto] gap-2" novalidate>
         <input id="cityInput" placeholder="Zadaj mesto (napr. Bratislava)"
                class="w-full px-4 py-2.5 rounded-lg bg-white/20 border border-white/20 placeholder-white/70 focus:outline-none focus:ring-2 focus:ring-white/50"
@@ -190,7 +188,6 @@
 const API='https://api.open-meteo.com/v1';
 const GEO='https://geocoding-api.open-meteo.com/v1';
 const ARCH='https://archive-api.open-meteo.com/v1/era5';
-// NOVÉ: Nominatim OpenStreetMap API pre reverznú geolokáciu
 const NOMINATIM_API = 'https://nominatim.openstreetmap.org/reverse?format=json&extratags=1&addressdetails=1&zoom=14&accept-language=sk';
 
 /* ====== DOM refs ====== */
@@ -213,7 +210,7 @@ const el={
   refreshContainer:document.getElementById('refreshContainer'),
 };
 
-/* ====== Pomocné funkcie ====== */
+/* ====== Pomocné funkcie (nezmenené) ====== */
 function sanitizeCode(c){ c=Number(c); return (c===45||c===48)?3:c; }
 function iconFor(code){
   code=sanitizeCode(code);
@@ -241,45 +238,37 @@ function fmtTime(iso){ const d=new Date(iso); return d.getHours().toString().pad
 const flag=(cc)=> String.fromCodePoint(...[...cc.toUpperCase()].map(c=>127397+c.charCodeAt(0)));
 function cityLabel(x){ return (typeof x==='string'?(x.split(',')[0]):(x?.name||'')).trim()||'—'; }
 
-/* ====== API ====== */
+/* ====== API (nezmenené) ====== */
 async function geocodeAll(q,count=8){
   const r=await fetch(`${GEO}/search?name=${encodeURIComponent(q)}&count=${count}&language=sk&format=json`);
   const j=await r.json();
   return j.results||[];
 }
 
-// NOVÁ FUNKCIA pre reverznú geolokáciu (Nominatim)
 async function reverseGeocode(lat, lon) {
     const url = `${NOMINATIM_API}&lat=${lat}&lon=${lon}`;
     try {
-        // POZNÁMKA: V bežnom prehliadači by bolo nutné nastaviť user-agent v headeroch (ale to v Mediane nevieme)
         const r = await fetch(url);
         if (!r.ok) {
             console.error(`Nominatim API volanie zlyhalo s HTTP statusom ${r.status}`);
             return null;
         }
         const j = await r.json();
-
-        // Extrahujeme názov sídla z rôznych polí v Nominatim odpovedi (municipality, city, town, village)
         const addr = j.address;
         if (!addr) return null;
 
         const name = addr.city || addr.town || addr.village || addr.municipality || addr.county;
         
         if (name) {
-            // Vraciame nájdené mesto v kompatibilnom formáte
             return {
                 name: name,
                 latitude: lat,
                 longitude: lon,
                 country_code: addr.country_code ? addr.country_code.toUpperCase() : 'SK',
-                admin1: addr.state || '', // Kraj / Región
+                admin1: addr.state || '', 
             };
         }
-        
-        // Ak sa nepodarilo nájsť konkrétne sídlo, vrátime null
         return null;
-        
     } catch (e) {
         console.error("Chyba pri volaní Nominatim reverseGeocode:", e);
         return null;
@@ -305,18 +294,18 @@ async function fetchHistoryExact(lat,lon){
   const r=await fetch(url); if(!r.ok) throw new Error('arch1'); return await r.json();
 }
 
-/* ====== Vykreslenie ====== */
+/* ====== Vykreslenie (nezmenené) ====== */
 function renderHero(city, wx){
   const isDay = !!wx.current.is_day;
   const code = sanitizeCode(wx.current.weather_code);
   document.body.setAttribute('data-mode', isDay ? 'day' : 'night');
 
-  // ZMENA: Ak je aktuálna poloha, ale nemá meno (zlyhanie geokódovania), zobrazí "—"
   el.heroPlace.textContent = city?.__isCurrentLocation && !city.name ? '—' : cityLabel(city);
   el.heroTemp.textContent  = Math.round(wx.current.temperature_2m)+'°';
   el.heroIcon.textContent  = iconFor(code);
 }
-function renderHourly(wx){
+// ... (ostatné render funkcie zostávajú nezmenené)
+function renderHourly(wx){ /* ... (kód) ... */
   const H=wx.hourly; el.hourRows.innerHTML=''; el.hourList.innerHTML='';
   const now=new Date(); let start=0; for(let i=0;i<H.time.length;i++){ if(new Date(H.time[i])>=now){ start=i; break; } }
   const end=Math.min(start+24,H.time.length);
@@ -367,7 +356,7 @@ function renderHourly(wx){
     wrap.addEventListener('transitionend',e=>{ if(e.propertyName!=='height')return; if(open){ wrap.style.height='auto'; } });
   }
 }
-function renderDaily(wx){
+function renderDaily(wx){ /* ... (kód) ... */
   const D=wx.daily; el.dailyList.innerHTML=''; const n=Math.min(10,D.time.length);
   for(let i=0;i<n;i++){
     const d=new Date(D.time[i]); const dn=['Ne','Po','Ut','St','Št','Pi','So'][d.getDay()];
@@ -384,7 +373,7 @@ function renderDaily(wx){
     el.dailyList.appendChild(card);
   }
 }
-function renderHistoryExact(hist){
+function renderHistoryExact(hist){ /* ... (kód) ... */
   const H=hist.daily; const dateStr=H.time?.[0];
   if(!dateStr){ el.historyExact.innerHTML='<div class="text-white/80">Dáta nie sú dostupné.</div>'; return; }
   const d=new Date(dateStr); const dn=['Ne','Po','Ut','St','Št','Pi','So'][d.getDay()];
@@ -406,7 +395,7 @@ function renderHistoryExact(hist){
       </div>
     </div>`;
 }
-function renderUV(wx){
+function renderUV(wx){ /* ... (kód) ... */
   const H=wx.hourly; let uvNow=null; const now=new Date();
   for(let i=0;i<H.time.length;i++){ if(new Date(H.time[i])>=now){ uvNow=H.uv_index?.[i] ?? null; break; } }
   const uvMax = wx.daily.uv_index_max?.[0] ?? null;
@@ -414,7 +403,7 @@ function renderUV(wx){
   el.uvMax.textContent = uvMax!=null ? uvMax.toFixed(1) : '—';
 }
 
-/* ====== Beh appky ====== */
+/* ====== Beh appky (nezmenené) ====== */
 async function run(queryOrCityObj){
   el.loading.classList.remove('hidden'); el.err.classList.add('hidden');
   try{
@@ -432,10 +421,8 @@ async function run(queryOrCityObj){
     renderHistoryExact(hist);
     renderUV(wx);
 
-    // Dôležitá zmena: Uložíme fixné mesto alebo polohu s názvom, ak je.
     localStorage.setItem('lastCity', JSON.stringify({
         ...city,
-        // Ak je to aktuálna poloha, uložíme aj zistený názov, ak existuje.
         name: city.name, 
         __isCurrentLocation: !!city.__isCurrentLocation
     }));
@@ -443,13 +430,12 @@ async function run(queryOrCityObj){
   finally{ el.loading.classList.add('hidden'); }
 }
 
-/* ====== Návrhy miest (zostáva rovnaké) ====== */
+/* ====== Ostatné funkcie (Návrhy miest, PTR, atď. - nezmenené) ====== */
+// ... (Suggest/choose/input event listeners) ...
 let selIndex=-1;
 let lastSuggest=[];
-
 function hideSuggest(){ el.suggest.classList.add('hidden'); el.suggest.innerHTML=''; selIndex=-1; lastSuggest=[]; }
 function showSuggest(){ el.suggest.classList.remove('hidden'); }
-
 function cityRow(c){
   const admin = c.admin1 || c.admin2 || c.admin3 || '';
   const country = c.country || '';
@@ -505,19 +491,15 @@ function updateSel(items){
   const active=items[selIndex]; if(active){ active.scrollIntoView({block:'nearest'}); }
 }
 document.addEventListener('click',(e)=>{ if(!e.target.closest('.suggest-wrap')) hideSuggest(); });
-
-/* odoslanie formulára */
 el.form.addEventListener('submit', (ev)=>{
   ev.preventDefault();
   const q=cityLabel(el.input.value);
   if(q) run(q);
 });
 
-/* ====== Pull-to-refresh (mobil) ====== */
 let startY=0, pulling=false, activated=false;
 const THRESH=72; // px
 function ptrReset(){ pulling=false; activated=false; startY=0; el.ptr.classList.remove('active'); }
-
 el.refreshContainer.addEventListener('touchstart',(e)=>{
   if(window.scrollY===0){ startY=e.touches[0].clientY; pulling=true; }
 },{passive:true});
@@ -532,9 +514,8 @@ el.refreshContainer.addEventListener('touchend', async ()=>{
     const last=localStorage.getItem('lastCity');
     const cityObj = last ? JSON.parse(last) : { name:'Bratislava', latitude:48.1486, longitude:17.1077 };
     
-    // Ak to bola posledne uložená poloha, znovu zistíme reálne súradnice
     if(cityObj.__isCurrentLocation){
-        checkAndroidLocationEnabled(true); // vynútime re-fetch
+        checkAndroidLocationEnabled(true); 
     } else {
         await run(cityObj);
     }
@@ -542,20 +523,20 @@ el.refreshContainer.addEventListener('touchend', async ()=>{
   ptrReset();
 });
 
-/* ====== Geolokácia + Reverzná geolokácia (Nominatim) ====== */
+/* ====== Geolokácia (DÔLEŽITÁ ZMENA) ====== */
 
-const locationOptions = { enableHighAccuracy: true, timeout: 10000, maximumAge: 0 };
+// ZMENA: Zníženie timeoutu z 10000ms na 5000ms pre rýchlejšiu reakciu
+const locationOptions = { enableHighAccuracy: true, timeout: 5000, maximumAge: 0 };
 
-// Spustí získanie polohy (najprv Median, potom Web API)
 function checkAndroidLocationEnabled(forceFetch=false) {
   const last = localStorage.getItem('lastCity');
-  const cityObj = last ? JSON.parse(last) : null;
+  let cityObj = null;
+  try { cityObj = last ? JSON.parse(last) : null; } catch (e) { console.error("Chyba pri parsovaní lastCity:", e); }
   
   const isCurrentLocation = cityObj?.__isCurrentLocation;
 
   if (!forceFetch && cityObj && !isCurrentLocation) {
-    // Načítavam posledné fixné mesto, nejdeme zisťovať polohu.
-    console.log("Načítavam posledné mesto z úložiska:", cityObj.name || 'Bratislava (predvolené)');
+    console.log("Načítavam posledné fixné mesto z úložiska.");
     el.input.value = cityLabel(cityObj);
     run(cityObj);
     return;
@@ -563,7 +544,6 @@ function checkAndroidLocationEnabled(forceFetch=false) {
   
   // Zistenie polohy je potrebné
   if (typeof median !== 'undefined' && median.android && median.android.geoLocation) {
-    // --- Bežíme v Median Android WebView ---
     median.android.geoLocation.isLocationServicesEnabled({
       callback: function(result) {
         if (result.enabled) {
@@ -575,15 +555,12 @@ function checkAndroidLocationEnabled(forceFetch=false) {
       }
     });
   } else if ('geolocation' in navigator) {
-    // --- Bežíme v štandardnom webovom prehliadači ---
     getCurrentLocation();
   } else {
-    // Geolokácia nie je podporovaná vôbec
     loadDefaultCity();
   }
 }
 
-// Funkcia na požiadanie o povolenie na geolokáciu (Median)
 function requestAndroidLocationPermission() {
   console.log("Požiadavka na povolenie (Median)...");
   if (typeof median !== 'undefined' && median.android && median.android.geoLocation) {
@@ -591,22 +568,18 @@ function requestAndroidLocationPermission() {
   }
 }
 
-// Funkcia na získanie aktuálnej polohy (používa štandardné Web API)
 function getCurrentLocation() {
   console.log("Pokúšam sa získať aktuálnu polohu (navigator.geolocation)...");
   navigator.geolocation.getCurrentPosition(locationSuccess, locationError, locationOptions);
 }
 
-// Callback pri úspešnom získaní polohy (Lat/Lon)
 async function locationSuccess(position) {
   const latitude = position.coords.latitude;
   const longitude = position.coords.longitude;
   
-  console.log(`Aktuálna poloha získaná: Lat = ${latitude}, Lon = ${longitude}`);
-
-  // NOVÝ KROK: Reverzná geolokácia (Nominatim)
   let locatedCity = null;
   try {
+      // Reverzná geolokácia (Nominatim)
       locatedCity = await reverseGeocode(latitude, longitude);
   } catch (e) {
       console.error("Chyba pri volaní Nominatim reverseGeocode:", e);
@@ -619,25 +592,22 @@ async function locationSuccess(position) {
     latitude: latitude,
     longitude: longitude,
     country_code: locatedCity?.country_code || "SK",
-    __isCurrentLocation: true // Dôležitý flag pre persistenciu
+    __isCurrentLocation: true
   };
   
-  // Do poľa vyhľadávania sa načíta ZISTENÉ MESTO (alebo zostane prázdne, ak sa nezistilo)
+  // Do poľa vyhľadávania sa načíta ZISTENÉ MESTO (alebo zostane prázdne)
   if(el.input) {
     el.input.value = cityToUse.name;
   }
 
-  // Spustíme načítanie počasia
   run(cityToUse);
 }
 
-// Callback pri chybe pri získavaní polohy
 function locationError(error) {
   console.error(`Chyba pri získavaní polohy: ${error.message}. Načítavam predvolené mesto.`);
   loadDefaultCity();
 }
 
-// Pomocná funkcia na načítanie predvoleného mesta (Bratislava)
 function loadDefaultCity() {
   const defaultCity = { name:'Bratislava', latitude:48.1486, longitude:17.1077 };
   console.log("Načítavam predvolené mesto:", defaultCity.name);
@@ -647,8 +617,7 @@ function loadDefaultCity() {
   run(defaultCity);
 }
 
-/* ====== Štart - Načíta posledné/aktuálne/predvolené mesto ====== */
-// Pri štarte sa pokúsime načítať posledné uložené mesto alebo zistiť polohu
+/* ====== Štart ====== */
 checkAndroidLocationEnabled();
 </script>
 </body>
