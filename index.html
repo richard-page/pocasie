@@ -1,4 +1,3 @@
-
 <!DOCTYPE html>
 <html lang="sk">
 <head>
@@ -548,21 +547,32 @@ function locationSuccess(position) {
   const longitude = position.coords.longitude;
   console.log(`Aktuálna poloha získaná: Lat = ${latitude}, Lon = ${longitude}`);
 
-  // Vytvoríme "city object" pre funkciu run()
-  const myLocation = {
-    name: "Vaša poloha",
-    latitude: latitude,
-    longitude: longitude,
-    country_code: "📍" // Pridáme emoji pre identifikáciu
-  };
+  // Zavoláme geokódovaciu službu na získanie názvu mesta
+  fetch(`https://geocoding-api.open-meteo.com/v1/reverse?latitude=${latitude}&longitude=${longitude}&language=sk&format=json`)
+    .then(response => response.json())
+    .then(data => {
+      const cityName = data.results && data.results[0] ? data.results[0].name : 'Nezistené mesto';
 
-  // Spustíme načítanie počasia pre aktuálnu polohu
-  run(myLocation);
+      // Vytvoríme "city object" pre funkciu run()
+      const myLocation = {
+        name: cityName, // Tu bude reálne mesto
+        latitude: latitude,
+        longitude: longitude,
+        country_code: "📍" // Pridáme emoji pre identifikáciu
+      };
 
-  // Aktualizujeme aj text vo vyhľadávacom poli
-  if(el.input) {
-    el.input.value = "Vaša poloha";
-  }
+      // Spustíme načítanie počasia pre aktuálnu polohu
+      run(myLocation);
+
+      // Aktualizujeme aj text vo vyhľadávacom poli
+      if(el.input) {
+        el.input.value = cityName; // Tu už bude názov reálneho mesta
+      }
+    })
+    .catch(error => {
+      console.error("Chyba pri geokódovaní:", error);
+      loadDefaultCity(); // Ak zlyhá geokódovanie, načítame predvolené mesto
+    });
 }
 
 // Callback pri chybe pri získavaní polohy
