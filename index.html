@@ -19,15 +19,18 @@
     .card { background:rgba(255,255,255,.12); border:none; }
   }
 
-  /* DEFINITÍVNE SKRYTIE SCROLL BAR PRE VŠETKY PREHLIADAČE */
-  body {
+  /* DEFINITÍVNE SKRYTIE SCROLL BAR PRE VŠETKY PREHLIADAČE NA ELEMENTOCH S TRIEDOU .no-scrollbar A NA BODY */
+  .no-scrollbar, body {
     -ms-overflow-style: none;  /* IE and Edge */
     scrollbar-width: none;     /* Firefox */
-    overflow-x: hidden; /* Zabezpečí, že sa nezobrazí horizontálna lišta */
   }
-  body::-webkit-scrollbar {
+  .no-scrollbar::-webkit-scrollbar, body::-webkit-scrollbar {
     display: none;             /* Chrome, Safari, Opera */
   }
+  /* Zabezpečí, že hlavný dokument má skrytý len horizontálny scroll */
+  body {
+    overflow-x: hidden;
+  }
 
   /* Zabezpečenie, že žiadne elementy nespôsobujú horizontálny scroll */
   *{ box-sizing:border-box }
@@ -156,7 +159,7 @@
     </div>
 
     <div id="hourlyContent" class="tab-content" data-tab-content="hourly">
-        <div class="hidden lg:block overflow-x-auto min-h-0">
+                <div class="hidden lg:block overflow-x-auto min-h-0 no-scrollbar">
             <table class="tbl w-full h-full min-w-[900px] text-sm">
                 <thead>
                     <tr class="text-white/90">
