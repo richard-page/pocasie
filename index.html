@@ -19,10 +19,11 @@
     .card { background:rgba(255,255,255,.12); border:none; }
   }
 
-  /* 🔥 ULTIMATÍVNE CSS PRE SKRYTIE SCROLL BAR */
+  /* 🔥 ULTIMATÍVNE CSS PRE SKRYTIE SCROLL BAR --- (FINÁLNA OPRAVA) --- */
+  
   /* Pre WebKit (Chrome, Safari, Android WebView) */
+  /* Skryjeme scrollbar na body A na refreshContainer pre istotu */
   body::-webkit-scrollbar, 
-  html::-webkit-scrollbar,
   #refreshContainer::-webkit-scrollbar {
     display: none !important;       
     width: 0 !important;          
@@ -30,23 +31,45 @@
   }
  
   /* Pre IE, Edge a Firefox */
-  body, html, #refreshContainer {
+  /* Aplikujeme na body A na refreshContainer */
+  body, #refreshContainer {
     -ms-overflow-style: none !important;  /* IE and Edge */
     scrollbar-width: none !important;     /* Firefox */
-    overflow-x: hidden !important;     /* Zakáže horizontálny scroll absolútne */
   }
-
+  
   /* Zabezpečenie, že žiadne elementy nespôsobujú horizontálny scroll */
-  *{ box-sizing:border-box !important; } /* Používam !important na box-sizing pre istotu */
-  html,body{ 
-      width:100% !important; 
-      max-width:100% !important;
-      /* Zamykám vertikálny scroll len na body/html, aby neostal na main kontajneri */
-      /* --- UPRAVENÉ: 'scroll' zmenené na 'auto', aby sa pruh (gutter) nezobrazoval, keď nie je potrebný --- */
-      overflow-y: auto !important;
-      overflow-x: hidden !important;
+  *{ box-sizing:border-box !important; }
+  
+  /* KROK 1: HTML element zamkneme (nebude skrolovateľný) */
+  html { 
+    width:100% !important; 
+    max-width:100% !important;
+    height: 100% !important; /* Dôležité pre 100% výšku body */
+    overflow: hidden !important; /* ZAKÁŽE SCROLL NA HTML (okne) */
   }
 
+  /* KROK 2: BODY bude jediný element, ktorý skroluje */
+  body { 
+    width:100% !important; 
+    max-width:100% !important;
+    height: 100% !important; /* Bude mať 100% výšky okna */
+    
+    /* --- TOTO JE KĽÚČOVÁ ZMENA: 'scroll' na 'auto' --- */
+    /* Povolí scroll (bez "koľajničky"), len ak je potrebný */
+    overflow-y: auto !important; 
+    overflow-x: hidden !important;
+    
+    /* Pôvodné štýly pre body */
+    margin:0; color:#fff;
+    font-family:system-ui,-apple-system,Segoe UI,Roboto,sans-serif;
+    background:#0e4d73;
+  }
+
+  /* Zaistíme, aby ani #refreshContainer nespôsobil problém */
+  #refreshContainer {
+     overflow-x: hidden !important;
+  }
+  
   /* 🔥 ULTIMATÍVNE CENTROVANIE PÄTICE */
   .footer-force-center {
       /* Zabezpečí, že blok zaberá celú šírku a centruje všetok inline obsah */
@@ -57,11 +80,7 @@
       margin-right: auto !important;
   }
 
-  body{
-    margin:0; color:#fff;
-    font-family:system-ui,-apple-system,Segoe UI,Roboto,sans-serif;
-    background:#0e4d73;
-  }
+  /* Ostatné štýly (zostávajú rovnaké) */
   .glass{ background:var(--glass); border:1px solid var(--glass-b); backdrop-filter:blur(12px); border-radius:1rem }
   .mono{ font-feature-settings:"tnum" 1,"lnum" 1 }
 
@@ -534,7 +553,13 @@ let startY=0, pulling=false, activated=false;
 const THRESH=72;
 function ptrReset(){ pulling=false; activated=false; startY=0; el.ptr.classList.remove('active'); }
 el.refreshContainer.addEventListener('touchstart',(e)=>{
-  if(window.scrollY===0){ startY=e.touches[0].clientY; pulling=true; }
+  // Pôvodne tu bolo `window.scrollY===0`, ale keďže skrolujeme `body`,
+  // musíme kontrolovať `document.body.scrollTop` (alebo `document.documentElement.scrollTop` pre istotu)
+  // Najlepšie je skontrolovať scrollTop priamo na body
+  if(document.body.scrollTop === 0){ 
+    startY=e.touches[0].clientY; 
+    pulling=true; 
+  }
 },{passive:true});
 el.refreshContainer.addEventListener('touchmove',(e)=>{
   if(!pulling) return;
