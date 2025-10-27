@@ -9,24 +9,27 @@
   :root{
     --glass: rgba(255,255,255,.08);
     --glass-b: rgba(255,255,255,.18);
-    /* Zníženie minimálnej výšky pre menšie medzery */
-    --hero-h: 24vh; 
-    --hero-icon: 76px;
-    --hero-temp: 5.6rem;
-    --hero-pad-t: 1.6rem;
-    --hero-pad-b: 1.2rem;
+    /* EXTRÉMNE ZNÍŽENIE MINIMÁLNEJ VÝŠKY */
+    --hero-h: 18vh; 
+    --hero-icon: 68px; /* mierne zníženie ikony */
+    --hero-temp: 5rem; /* mierne zníženie teploty */
+    --hero-pad-t: 1rem;
+    --hero-pad-b: 0.8rem;
   }
   @media (min-width:480px){
-    --hero-h: 26vh; --hero-icon: 86px; --hero-temp: 6rem;
+    :root{ --hero-h: 20vh; --hero-icon: 76px; --hero-temp: 5.6rem; }
   }
   @media (min-width:768px){
-    --hero-h: 28vh; --hero-icon: 96px; --hero-temp: 6.2rem;
+    :root{ --hero-h: 22vh; --hero-icon: 86px; --hero-temp: 6rem; }
   }
   
   /* Nastavenie farby pozadia pre mobil */
   @media (max-width: 640px) {
     .glass { background:rgba(255,255,255,.12); border:none; }
     .card { background:rgba(255,255,255,.12); border:none; }
+    /* Zníženie medzier pre mobilné zariadenia */
+    .hero{ padding:1rem 1rem 0.5rem; }
+    #heroIcon{ margin:0.4rem auto 0.2rem; }
   }
 
   *{ box-sizing:border-box }
@@ -134,7 +137,7 @@
 
 <div id="ptr"><div class="spinner"></div></div>
 
-<main id="refreshContainer" class="w-full px-2 md:px-4 lg:px-6 py-4 space-y-4">
+<main id="refreshContainer" class="w-full px-2 md:px-4 lg:px-6 py-2 space-y-4">
 
   <section class="glass p-3 lg:p-4">
     
@@ -194,7 +197,7 @@
     </div>
   </div>
   
-  <div class="text-center pt-8 pb-4 text-white/50 text-xs">
+  <div class="text-center pt-4 pb-2 text-white/50 text-xs">
     Údaje poskytuje <a href="https://open-meteo.com/" target="_blank" rel="noopener noreferrer" class="hover:text-white/80 underline">Open-Meteo</a>.
   </div>
   
@@ -597,23 +600,18 @@ function getCurrentLocation() {
   navigator.geolocation.getCurrentPosition(locationSuccess, locationError, locationOptions);
 }
 
-// ZJEDNODUŠENÁ logická časť, ktorá eliminuje chybné volania Open-Meteo reverse geocoding
 async function locationSuccess(position) {
   const latitude = position.coords.latitude;
   const longitude = position.coords.longitude;
   
   let locatedCity = null;
   try {
-      // Používame VÝHRADNE Nominatim (reverseGeocode)
       locatedCity = await reverseGeocode(latitude, longitude);
   } catch (e) {
-      // Ak zlyhá aj Nominatim, použijeme len súradnice
       locatedCity = null;
   }
 
   const cityToUse = {
-    // Ak sa nepodarilo nájsť mesto, necháme názov prázdny. 
-    // Na HERO sekcii sa potom zobrazí len "—"
     name: locatedCity?.name || "", 
     latitude: latitude,
     longitude: longitude,
@@ -622,7 +620,6 @@ async function locationSuccess(position) {
   };
   
   if(el.input) {
-    // Ak je názov mesta prázdny, nezobrazujeme v inpute nič, aby to vyzeralo čisto
     el.input.value = cityToUse.name;
   }
 
@@ -638,11 +635,9 @@ function handleLocationFailure() {
     el.loading.classList.add('hidden');
 
     if (cityObj) {
-        // Ak zlyhá GPS, ale máme uložené posledné mesto, použijeme ho
         el.input.value = cityLabel(cityObj);
         run(cityObj);
     } else {
-        // Ak nebolo NIKDY uložené žiadne mesto, ukážeme chybu a ukončíme načítanie.
         el.err.classList.remove('hidden');
         el.heroPlace.textContent = 'Poloha nezistená';
         el.heroTemp.textContent  = '--°';
