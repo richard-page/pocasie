@@ -237,7 +237,6 @@ function withIcon(code){ return `${iconFor(code)} ${descFor(code)}`; }
 function dd2dir(dd){ if(dd==null||isNaN(dd)) return '—'; const deg=((dd%360)+360)%360; const dirs=['S','SV','V','JV','J','JZ','Z','SZ']; return dirs[Math.floor((deg+22.5)/45)%8]; }
 function fmtTime(iso){ const d=new Date(iso); return d.getHours().toString().padStart(2,'0')+':00'; }
 const flag=(cc)=> String.fromCodePoint(...[...cc.toUpperCase()].map(c=>127397+c.charCodeAt(0)));
-// ZMENA: Ak nie je meno, vracia len "—" namiesto prázdneho reťazca, aby sa hero sekcia neprepisovala prázdnym menom.
 function cityLabel(x){ return (typeof x==='string'?(x.split(',')[0]):(x?.name||'')).trim()||'—'; }
 
 /* ====== API ====== */
@@ -246,9 +245,6 @@ async function geocodeAll(q,count=8){
   const j=await r.json();
   return j.results||[];
 }
-
-// ZMÄNA: Funkcia reverznej geolokácie bola odstránená
-// async function reverseGeocode(lat, lon) { ... }
 
 async function fetchWx(lat,lon){
   const url=`${API}/forecast?latitude=${lat}&longitude=${lon}`
@@ -275,12 +271,11 @@ function renderHero(city, wx){
   const code = sanitizeCode(wx.current.weather_code);
   document.body.setAttribute('data-mode', isDay ? 'day' : 'night');
 
-  // Hero Place: Ak je to aktuálna poloha, zobrazí len "—" namiesto mena
-  el.heroPlace.textContent = city?.__isCurrentLocation ? '—' : cityLabel(city);
+  // ZMENA: Ak je aktuálna poloha, zobrazí "Aktuálna poloha" namiesto "—"
+  el.heroPlace.textContent = city?.__isCurrentLocation ? 'Aktuálna poloha' : cityLabel(city);
   el.heroTemp.textContent  = Math.round(wx.current.temperature_2m)+'°';
   el.heroIcon.textContent  = iconFor(code);
 }
-// ... (ostatné render funkcie zostávajú rovnaké)
 function renderHourly(wx){
   const H=wx.hourly; el.hourRows.innerHTML=''; el.hourList.innerHTML='';
   const now=new Date(); let start=0; for(let i=0;i<H.time.length;i++){ if(new Date(H.time[i])>=now){ start=i; break; } }
@@ -378,7 +373,6 @@ function renderUV(wx){
   el.uvNow.textContent = uvNow!=null ? uvNow.toFixed(1) : '—';
   el.uvMax.textContent = uvMax!=null ? uvMax.toFixed(1) : '—';
 }
-// ... (ostatné render funkcie zostávajú rovnaké)
 
 /* ====== Beh appky ====== */
 async function run(queryOrCityObj){
@@ -398,10 +392,12 @@ async function run(queryOrCityObj){
     renderHistoryExact(hist);
     renderUV(wx);
 
-    // Uložíme buď názov mesta, alebo špeciálny objekt s aktuálnymi súradnicami
+    // Dôležitá zmena: Uložíme buď fixné mesto, alebo súradnice s flagom
     localStorage.setItem('lastCity', JSON.stringify({
         ...city,
-        // Ak je to aktuálna poloha, uložíme len súradnice a flag, bez názvu "Vaša poloha"
+        // Ak je to aktuálna poloha, uložíme len súradnice, latitude/longitude a flag
+        // Názov sa uloží, len ak je to skutočné mesto z vyhľadávania.
+        // To zabezpečí, že pri ďalšom spustení sa znovu pokúsime zistiť GPS.
         name: city.__isCurrentLocation ? '' : city.name 
     }));
   }catch(e){ console.error(e); el.err.classList.remove('hidden'); }
@@ -516,15 +512,19 @@ function checkAndroidLocationEnabled(forceFetch=false) {
   const last = localStorage.getItem('lastCity');
   const cityObj = last ? JSON.parse(last) : null;
   
-  // ZMENA: Ak je aktuálna poloha, názov mesta sa neuložil (je len "" alebo "—"),
-  // takže stačí overiť flag __isCurrentLocation
-  if (!forceFetch && cityObj && !cityObj.__isCurrentLocation) {
-    console.log("Načítavam posledné mesto z úložiska:", cityObj.name || 'Nešpecifikované (GPS)');
+  // OPRAVA: Overujeme, či JE to aktuálna poloha (alebo či tam bola uložená)
+  // Ak áno, musíme ju zistiť znova (forceFetch). Ak ide o iné, fixné mesto, tak ho stačí načítať.
+  const isCurrentLocation = cityObj?.__isCurrentLocation;
+
+  if (!forceFetch && cityObj && !isCurrentLocation) {
+    // Načítavam posledné fixné mesto, nejdeme zisťovať polohu.
+    console.log("Načítavam posledné mesto z úložiska:", cityObj.name || 'Bratislava (predvolené)');
     el.input.value = cityLabel(cityObj);
     run(cityObj);
     return;
   }
   
+  // Zistenie polohy je potrebné (buď sa vynútilo, alebo nebola uložená žiadna poloha/posledná bola aktuálna)
   if (typeof median !== 'undefined' && median.android && median.android.geoLocation) {
     // --- Bežíme v Median Android WebView ---
     median.android.geoLocation.isLocationServicesEnabled({
@@ -532,7 +532,6 @@ function checkAndroidLocationEnabled(forceFetch=false) {
         if (result.enabled) {
           getCurrentLocation();
         } else {
-          // Ak sú služby vypnuté, žiadam povolenie a zatiaľ načítam predvolené mesto
           requestAndroidLocationPermission();
           loadDefaultCity();
         }
@@ -568,9 +567,8 @@ async function locationSuccess(position) {
   
   console.log(`Aktuálna poloha získaná: Lat = ${latitude}, Lon = ${longitude}`);
 
-  // ZMENA: Namiesto reverznej geolokácie len vytvoríme objekt s flagom
   const cityToUse = {
-    // Názov je PRÁZDNY, aby sa do poľa "Zadaj mesto..." nenačítalo nič
+    // Názov je PRÁZDNY (ako si prial používateľ), prejde ako "—" do Hero sekcie
     name: "", 
     latitude: latitude,
     longitude: longitude,
@@ -578,7 +576,7 @@ async function locationSuccess(position) {
     __isCurrentLocation: true
   };
   
-  // Do poľa vyhľadávania sa nič nenačíta
+  // DÔLEŽITÉ: Do poľa vyhľadávania sa NENAČÍTA NIČ
   if(el.input) {
     el.input.value = "";
   }
