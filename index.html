@@ -19,33 +19,42 @@
     .card { background:rgba(255,255,255,.12); border:none; }
   }
 
-  /* RADIKÁLNE CSS PRE SKRYTIE SCROLL BAR */
-  /* 1. Pre WebKit (Chrome, Safari, Android WebView) */
-  body::-webkit-scrollbar, html::-webkit-scrollbar {
+  /* 🔥 ULTIMATÍVNE CSS PRE SKRYTIE SCROLL BAR */
+  /* Pre WebKit (Chrome, Safari, Android WebView) */
+  body::-webkit-scrollbar, 
+  html::-webkit-scrollbar,
+  #refreshContainer::-webkit-scrollbar {
     display: none !important;             
     width: 0 !important;                  
     background: transparent !important;
   }
   
-  /* 2. Pre IE a Firefox */
-  body, html {
+  /* Pre IE, Edge a Firefox */
+  body, html, #refreshContainer {
     -ms-overflow-style: none !important;  /* IE and Edge */
     scrollbar-width: none !important;     /* Firefox */
-    overflow-x: hidden !important;        /* Agresívne skrytie horizontálneho */
-  }
-  
-  /* 3. Aplikovanie skrytia aj na vnútorný kontajner, ak by sa scrolloval on */
-  #refreshContainer {
-    -ms-overflow-style: none !important;
-    scrollbar-width: none !important;
-  }
-  #refreshContainer::-webkit-scrollbar {
-    display: none !important;
+    overflow-x: hidden !important;        /* Zakáže horizontálny scroll absolútne */
   }
 
   /* Zabezpečenie, že žiadne elementy nespôsobujú horizontálny scroll */
-  *{ box-sizing:border-box }
-  html,body{ width:100%; max-width:100%; }
+  *{ box-sizing:border-box !important; } /* Používam !important na box-sizing pre istotu */
+  html,body{ 
+      width:100% !important; 
+      max-width:100% !important;
+      /* Zamykám vertikálny scroll len na body/html, aby neostal na main kontajneri */
+      overflow-y: scroll !important;
+      overflow-x: hidden !important;
+  }
+
+  /* 🔥 ULTIMATÍVNE CENTROVANIE PÄTICE */
+  .footer-force-center {
+      /* Zabezpečí, že blok zaberá celú šírku a centruje všetok inline obsah */
+      width: 100% !important; 
+      text-align: center !important; 
+      /* Aplikuje margin auto na blok, ak by bol menší ako 100% */
+      margin-left: auto !important;
+      margin-right: auto !important;
+  }
   
   body{
     margin:0; color:#fff;
@@ -220,7 +229,7 @@
     </div>
   </div>
   
-  <div class="text-center pt-2 pb-0 text-white/50 text-xs w-full" style="text-align: center;">
+  <div class="pt-2 pb-0 text-white/50 text-xs footer-force-center">
     Údaje poskytuje <a href="https://open-meteo.com/" target="_blank" rel="noopener noreferrer" class="hover:text-white/80 underline">Open-Meteo</a>.
   </div>
   
