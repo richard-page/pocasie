@@ -9,21 +9,34 @@
   :root{
     --glass: rgba(255,255,255,.08);
     --glass-b: rgba(255,255,255,.18);
+    --hero-h: 34vh;
+    --hero-icon: 76px;
+    --hero-temp: 5.6rem;
+    --hero-pad-t: 1.6rem;
+    --hero-pad-b: 1.2rem;
   }
-  *{box-sizing:border-box}
-  html,body{margin:0;width:100%;color:#fff;font-family:system-ui,-apple-system,Segoe UI,Roboto,sans-serif;background:#0e4d73;overflow-x:hidden}
-  .glass{background:var(--glass);border:1px solid var(--glass-b);backdrop-filter:blur(12px);border-radius:1rem}
-  .mono{font-feature-settings:"tnum" 1,"lnum" 1}
-  .hero{display:flex;flex-direction:column;align-items:center;justify-content:center;min-height:34vh;text-align:center}
-  body[data-mode="day"] .hero{background:#176ea9}
-  body[data-mode="night"] .hero{background:#08273b}
-  #heroPlace{font-size:1.2rem;font-weight:600;opacity:.95}
-  #heroTemp{font-size:5.6rem;font-weight:700;letter-spacing:1px}
-  .sticky-header{position:sticky;top:0;z-index:40}
-  .tbl th,.tbl td{padding:.65rem .75rem;white-space:nowrap}
-  .tbl thead th{position:sticky;top:0;background:rgba(0,0,0,.15);backdrop-filter:blur(6px)}
-  #toast{position:fixed;bottom:14px;left:50%;transform:translateX(-50%);background:rgba(0,0,0,.7);color:#fff;padding:.6rem .9rem;border-radius:.7rem;font-size:.9rem;z-index:60;display:none}
-  #toast.show{display:block}
+  @media (min-width:480px){
+    :root{ --hero-h: 36vh; --hero-icon: 86px; --hero-temp: 6rem; }
+  }
+  @media (min-width:768px){
+    :root{ --hero-h: 38vh; --hero-icon: 96px; --hero-temp: 6.2rem; }
+  }
+
+  *{ box-sizing:border-box }
+  html,body{ width:100%; max-width:100%; overflow-x:hidden }
+  body{
+    margin:0; color:#fff;
+    font-family:system-ui,-apple-system,Segoe UI,Roboto,sans-serif;
+    background:#0e4d73;
+  }
+  .glass{ background:var(--glass); border:1px solid var(--glass-b); backdrop-filter:blur(12px); border-radius:1rem }
+  .mono{ font-feature-settings:"tnum" 1,"lnum" 1 }
+  .hero{ position:relative; display:flex; flex-direction:column; align-items:center; justify-content:center; min-height:var(--hero-h); padding:var(--hero-pad-t) 1rem var(--hero-pad-b); text-align:center }
+  body[data-mode="day"] .hero{ background:#176ea9 }
+  body[data-mode="night"] .hero{ background:#08273b }
+  #heroPlace{ font-size:1.18rem; font-weight:600; opacity:.95; letter-spacing:.2px }
+  #heroIcon{ width:var(--hero-icon); height:var(--hero-icon); margin:.65rem auto .35rem; font-size:calc(var(--hero-icon) - 8px); line-height:var(--hero-icon) }
+  #heroTemp{ font-size:var(--hero-temp); line-height:1; font-weight:700; letter-spacing:1px }
 </style>
 </head>
 <body data-mode="day">
@@ -35,144 +48,106 @@
 </section>
 
 <header class="sticky-header w-full glass">
-  <div class="px-4 py-3 flex items-center">
+  <div class="w-full px-3 md:px-6 py-3 flex items-center gap-3">
     <div class="font-semibold">Predpoveď počasia</div>
+    <div class="flex-1"></div>
+    <div class="suggest-wrap w-full sm:w-[560px] max-w-full">
+      <form id="searchForm" class="grid grid-cols-1 sm:grid-cols-[1fr_auto] gap-2" novalidate>
+        <input id="cityInput" placeholder="Zadaj mesto (napr. Bratislava)" class="w-full px-4 py-2.5 rounded-lg bg-white/20 border border-white/20 placeholder-white/70 focus:outline-none focus:ring-2 focus:ring-white/50" autocomplete="off" inputmode="search" type="search" />
+        <button id="searchBtn" type="submit" class="w-full sm:w-auto inline-flex items-center justify-center px-4 md:px-5 py-2.5 rounded-lg bg-white/30 hover:bg-white/40 text-white font-medium">Hľadať</button>
+      </form>
+      <div id="citySuggestions" class="suggest hidden"></div>
+    </div>
   </div>
 </header>
 
-<main class="px-4 py-4 space-y-4">
-  <div class="glass overflow-hidden">
-    <div class="px-4 py-3 border-b border-white/20 flex justify-between items-center">
-      <h2 class="text-lg font-semibold">24-hodinová predpoveď</h2>
+<main id="refreshContainer" class="w-full px-2 md:px-4 lg:px-6 py-4 space-y-4">
+  <section class="cols">
+    <div class="col-left glass overflow-visible lg:overflow-hidden lg:basis-7/12 flex flex-col min-h-0">
+      <div class="flex items-center justify-between px-4 py-3 border-b border-white/20">
+        <h2 class="text-lg font-semibold">24-hodinová predpoveď</h2>
+      </div>
+      <div class="hidden lg:block overflow-x-auto flex-1 min-h-0">
+        <table class="tbl w-full h-full min-w-[900px] text-sm">
+          <thead>
+            <tr class="text-white/90">
+              <th>Čas</th><th>Počasie</th><th>Teplota</th><th>Rosný bod</th><th>Zrážky</th><th>Vietor</th><th>Oblačnosť</th><th>Tlak</th>
+            </tr>
+          </thead>
+          <tbody id="hourRows" class="divide-y divide-white/10"></tbody>
+        </table>
+      </div>
+      <div id="hourList" class="block lg:hidden p-2 space-y-2"></div>
     </div>
-    <div class="overflow-x-auto">
-      <table class="tbl w-full text-sm">
-        <thead>
-          <tr class="text-white/90">
-            <th>Čas</th><th>Počasie</th><th>Teplota</th><th>Rosný bod</th>
-            <th>Zrážky</th><th>Vietor</th><th>Oblačnosť</th><th>Tlak</th>
-          </tr>
-        </thead>
-        <tbody id="hourRows" class="divide-y divide-white/10"></tbody>
-      </table>
+
+    <div class="col-right lg:basis-5/12 space-y-4">
+      <div class="glass">
+        <div class="px-4 py-3 border-b border-white/20"><h2 class="text-lg font-semibold">10-dňová predpoveď</h2></div>
+        <div id="dailyList" class="p-3 space-y-2"></div>
+      </div>
+      <div class="glass">
+        <div class="px-4 py-3 border-b border-white/20"><h2 class="text-lg font-semibold">Presne pred rokom</h2></div>
+        <div id="historyExact" class="p-4"></div>
+      </div>
+      <div class="glass">
+        <div class="px-4 py-3 border-b border-white/20"><h2 class="text-lg font-semibold">UV index</h2></div>
+        <div id="uvPanel" class="p-4">
+          <div class="grid grid-cols-2 gap-3">
+            <div class="glass p-2 rounded-lg"><div class="text-white/70 text-sm">Aktuálne</div><div id="uvNow" class="mono font-semibold">—</div></div>
+            <div class="glass p-2 rounded-lg"><div class="text-white/70 text-sm">Dnešné maximum</div><div id="uvMax" class="mono font-semibold">—</div></div>
+          </div>
+        </div>
+      </div>
     </div>
-  </div>
-
-  <div class="glass">
-    <div class="px-4 py-3 border-b border-white/20"><h2 class="text-lg font-semibold">10-dňová predpoveď</h2></div>
-    <div id="dailyList" class="p-3 space-y-2"></div>
-  </div>
-
-  <div class="glass">
-    <div class="px-4 py-3 border-b border-white/20"><h2 class="text-lg font-semibold">Presne pred rokom</h2></div>
-    <div id="historyExact" class="p-4"></div>
-  </div>
+  </section>
 
   <div id="loading" class="hidden text-center py-10">
     <div class="inline-block w-8 h-8 border-4 border-white/30 border-t-white rounded-full animate-spin"></div>
     <p class="mt-2">Načítavam…</p>
   </div>
-
-  <div id="err" class="hidden glass p-4">
-    <div class="text-center text-red-200">Nepodarilo sa načítať údaje.</div>
-  </div>
+  <div id="err" class="hidden glass p-4 text-center text-red-200">Nepodarilo sa načítať údaje.</div>
 </main>
-
-<footer class="py-4 px-6 bg-black text-white text-center">
-  <p>Zdroj dát: <a href="https://open-meteo.com/" target="_blank" class="text-blue-400">Open-Meteo</a></p>
-</footer>
-
-<div id="toast"></div>
 
 <script>
 const API='https://api.open-meteo.com/v1';
 const GEO='https://geocoding-api.open-meteo.com/v1';
 const ARCH='https://archive-api.open-meteo.com/v1/era5';
-const el={hourRows:document.getElementById('hourRows'),dailyList:document.getElementById('dailyList'),
-historyExact:document.getElementById('historyExact'),heroPlace:document.getElementById('heroPlace'),
-heroIcon:document.getElementById('heroIcon'),heroTemp:document.getElementById('heroTemp'),
-loading:document.getElementById('loading'),err:document.getElementById('err'),toast:document.getElementById('toast')};
-function toast(t){el.toast.textContent=t;el.toast.classList.add('show');setTimeout(()=>el.toast.classList.remove('show'),2200);}
+const el={hourRows:document.getElementById('hourRows'),hourList:document.getElementById('hourList'),dailyList:document.getElementById('dailyList'),historyExact:document.getElementById('historyExact'),uvNow:document.getElementById('uvNow'),uvMax:document.getElementById('uvMax'),heroPlace:document.getElementById('heroPlace'),heroIcon:document.getElementById('heroIcon'),heroTemp:document.getElementById('heroTemp'),loading:document.getElementById('loading'),err:document.getElementById('err')};
+
 function sanitizeCode(c){c=Number(c);return(c===45||c===48)?3:c;}
-function iconFor(code){code=sanitizeCode(code);
-if([0,1].includes(code))return'☀️';if(code===2)return'⛅';if(code===3)return'☁️';
-if([51].includes(code))return'🌦️';if([61,63,65,80,81,82].includes(code))return'🌧️';
-if([71,73,75].includes(code))return'🌨️';if([95,96,99].includes(code))return'⛈️';return'🌤️';}
-function descFor(c){c=sanitizeCode(c);
-const d={0:'Jasno',1:'Prevažne jasno',2:'Čiastočne oblačno',3:'Zamračené',51:'Mrholenie',
-61:'Slabý dážď',63:'Mierny dážď',65:'Silný dážď',71:'Slabé sneženie',73:'Mierne sneženie',
-75:'Silné sneženie',80:'Prehánky',81:'Mierne prehánky',82:'Silné prehánky',95:'Búrka',
-96:'Búrka s krúpami',99:'Silná búrka s krúpami'};return d[c]||'—';}
-function withIcon(code){return iconFor(code)+' '+descFor(code);}
-function dd2dir(dd){if(dd==null||isNaN(dd))return'—';const deg=((dd%360)+360)%360;
-const dirs=['S','SV','V','JV','J','JZ','Z','SZ'];return dirs[Math.floor((deg+22.5)/45)%8];}
+function iconFor(code){code=sanitizeCode(code);if([0,1].includes(code))return'☀️';if(code===2)return'⛅';if(code===3)return'☁️';if([61,63,65,80,81,82].includes(code))return'🌧️';if([71,73,75].includes(code))return'🌨️';if([95,96,99].includes(code))return'⛈️';return'🌤️';}
+function descFor(c){c=sanitizeCode(c);const d={0:'Jasno',1:'Prevažne jasno',2:'Čiastočne oblačno',3:'Zamračené',61:'Slabý dážď',63:'Mierny dážď',65:'Silný dážď',71:'Slabé sneženie',73:'Mierne sneženie',75:'Silné sneženie',95:'Búrka',96:'Búrka s krúpami',99:'Silná búrka s krúpami'};return d[c]||'—';}
+function dd2dir(dd){if(dd==null||isNaN(dd))return'—';const deg=((dd%360)+360)%360;const dirs=['S','SV','V','JV','J','JZ','Z','SZ'];return dirs[Math.floor((deg+22.5)/45)%8];}
 function fmtTime(iso){const d=new Date(iso);return d.getHours().toString().padStart(2,'0')+':00';}
+async function reverseGeo(lat,lon){const r=await fetch(`${GEO}/reverse?latitude=${lat}&longitude=${lon}&language=sk&format=json`);const j=await r.json();return j.results?.[0]||{name:'Neznáme miesto'};}
+async function fetchWx(lat,lon){const u=`${API}/forecast?latitude=${lat}&longitude=${lon}&current=temperature_2m,is_day,weather_code&hourly=temperature_2m,dew_point_2m,surface_pressure,weather_code,precipitation_probability,precipitation,wind_speed_10m,wind_direction_10m,cloud_cover,uv_index&daily=weather_code,temperature_2m_max,temperature_2m_min,uv_index_max&timezone=auto&forecast_days=16`;const r=await fetch(u);if(!r.ok)throw new Error('api');return await r.json();}
+async function fetchHistoryExact(lat,lon){const d=new Date();d.setFullYear(d.getFullYear()-1);const date=d.toISOString().slice(0,10);const u=`${ARCH}?latitude=${lat}&longitude=${lon}&start_date=${date}&end_date=${date}&daily=temperature_2m_max,temperature_2m_min,precipitation_sum,weathercode&timezone=auto`;const r=await fetch(u);if(!r.ok)throw new Error('arch');return await r.json();}
+function renderHero(city,wx){document.body.setAttribute('data-mode',wx.current.is_day?'day':'night');el.heroPlace.textContent=city.name;el.heroTemp.textContent=Math.round(wx.current.temperature_2m)+'°';el.heroIcon.textContent=iconFor(wx.current.weather_code);}
+function renderHourly(wx){const H=wx.hourly;el.hourRows.innerHTML='';const now=new Date();let s=0;for(let i=0;i<H.time.length;i++){if(new Date(H.time[i])>=now){s=i;break;}}const e=Math.min(s+24,H.time.length);for(let i=s;i<e;i++){const tr=document.createElement('tr');tr.innerHTML=`<td>${fmtTime(H.time[i])}</td><td>${descFor(H.weather_code[i])}</td><td>${Math.round(H.temperature_2m[i])}°</td><td>${Math.round(H.dew_point_2m[i])}°</td><td>${H.precipitation[i].toFixed(1)} mm</td><td>${Math.round(H.wind_speed_10m[i])} km/h (${dd2dir(H.wind_direction_10m[i])})</td><td>${H.cloud_cover[i]}%</td><td>${Math.round(H.surface_pressure[i])} hPa</td>`;el.hourRows.appendChild(tr);}}
+function renderDaily(wx){const D=wx.daily;el.dailyList.innerHTML='';for(let i=0;i<10&&i<D.time.length;i++){const d=new Date(D.time[i]);const card=document.createElement('div');card.innerHTML=`<div class="flex justify-between"><div>${d.getDate()}.${d.getMonth()+1}. ${descFor(D.weather_code[i])}</div><div>${Math.round(D.temperature_2m_max[i])}° / ${Math.round(D.temperature_2m_min[i])}°</div></div>`;el.dailyList.appendChild(card);}}
+function renderHistoryExact(h){const H=h.daily;const d=new Date(H.time[0]);el.historyExact.innerHTML=`<div>${d.getDate()}.${d.getMonth()+1}.${d.getFullYear()} – ${descFor(H.weathercode[0])}, ${Math.round(H.temperature_2m_min[0])}° / ${Math.round(H.temperature_2m_max[0])}°, ${H.precipitation_sum[0].toFixed(1)} mm</div>`;}
+function renderUV(wx){const H=wx.hourly;let uvNow=null;const now=new Date();for(let i=0;i<H.time.length;i++){if(new Date(H.time[i])>=now){uvNow=H.uv_index?.[i];break;}}el.uvNow.textContent=uvNow!=null?uvNow.toFixed(1):'—';el.uvMax.textContent=wx.daily.uv_index_max?.[0]?.toFixed(1)||'—';}
+async function run(city){el.loading.classList.remove('hidden');el.err.classList.add('hidden');try{const wx=await fetchWx(city.latitude,city.longitude);const hist=await fetchHistoryExact(city.latitude,city.longitude);renderHero(city,wx);renderHourly(wx);renderDaily(wx);renderHistoryExact(hist);renderUV(wx);}catch(e){el.err.classList.remove('hidden');}finally{el.loading.classList.add('hidden');}}
 
-async function reverseGeo(lat,lon){const r=await fetch(`${GEO}/reverse?latitude=${lat}&longitude=${lon}&language=sk&format=json`);
-const j=await r.json();const c=j.results?.[0];if(!c)return null;return{name:c.name,latitude:c.latitude,longitude:c.longitude};}
-async function fetchWx(lat,lon){const url=`${API}/forecast?latitude=${lat}&longitude=${lon}&current=temperature_2m,is_day,weather_code&hourly=temperature_2m,dew_point_2m,surface_pressure,weather_code,precipitation_probability,precipitation,wind_speed_10m,wind_direction_10m,cloud_cover&daily=weather_code,temperature_2m_max,temperature_2m_min&timezone=auto&forecast_days=16`;
-const r=await fetch(url);if(!r.ok)throw new Error('api');return await r.json();}
-async function fetchHistoryExact(lat,lon){const d=new Date();d.setFullYear(d.getFullYear()-1);const date=d.toISOString().slice(0,10);
-const url=`${ARCH}?latitude=${lat}&longitude=${lon}&start_date=${date}&end_date=${date}&daily=temperature_2m_max,temperature_2m_min,precipitation_sum,weathercode&hourly=wind_speed_10m,wind_direction_10m&timezone=auto`;
-const r=await fetch(url);if(!r.ok)throw new Error('arch');return await r.json();}
-
-function renderHero(city,wx){const isDay=!!wx.current.is_day;
-document.body.setAttribute('data-mode',isDay?'day':'night');
-el.heroPlace.textContent=city.name;el.heroTemp.textContent=Math.round(wx.current.temperature_2m)+'°';
-el.heroIcon.textContent=iconFor(wx.current.weather_code);}
-function renderHourly(wx){const H=wx.hourly;el.hourRows.innerHTML='';const now=new Date();let start=0;
-for(let i=0;i<H.time.length;i++){if(new Date(H.time[i])>=now){start=i;break;}}const end=Math.min(start+24,H.time.length);
-for(let i=start;i<end;i++){const code=sanitizeCode(H.weather_code[i]);const temp=Math.round(H.temperature_2m[i]);
-const dew=H.dew_point_2m?.[i];const pres=H.surface_pressure?.[i];const pop=H.precipitation_probability?.[i];
-const pmm=H.precipitation?.[i];const wind=H.wind_speed_10m?.[i],wdir=H.wind_direction_10m?.[i];
-const cld=H.cloud_cover?.[i];const tr=document.createElement('tr');
-tr.innerHTML=`<td class="mono">${fmtTime(H.time[i])}</td><td>${withIcon(code)}</td><td class="val-bold mono">${temp}°</td><td class="val-bold mono">${dew!=null?Math.round(dew):'—'}°</td><td class="val-bold mono">${pop!=null?pop+'%':'—'} · ${pmm!=null?pmm.toFixed(1):'0.0'} mm</td><td class="val-bold mono">${wind!=null?Math.round(wind)+' km/h':'—'} (${dd2dir(wdir)})</td><td class="val-bold mono">${cld!=null?cld+'%':'—'}</td><td class="val-bold mono">${pres!=null?Math.round(pres):'—'} hPa</td>`;
-el.hourRows.appendChild(tr);}}
-function renderDaily(wx){const D=wx.daily;el.dailyList.innerHTML='';for(let i=0;i<10&&i<D.time.length;i++){const d=new Date(D.time[i]);
-const dn=['Ne','Po','Ut','St','Št','Pi','So'][d.getDay()];const tmin=Math.round(D.temperature_2m_min[i]);
-const tmax=Math.round(D.temperature_2m_max[i]);const code=sanitizeCode(D.weather_code[i]);
-const card=document.createElement('div');card.className='glass p-3 rounded-xl';
-card.innerHTML=`<div class="flex items-center justify-between"><div><div class="font-medium">${dn} ${d.getDate()}</div><div class="text-white/70 text-sm">${withIcon(code)}</div></div><div class="mono text-lg font-semibold">${tmax}° / <span class="text-white/80">${tmin}°</span></div></div>`;
-el.dailyList.appendChild(card);}}
-function renderHistoryExact(hist){const H=hist.daily;if(!H.time?.length){el.historyExact.textContent='Dáta nie sú dostupné';return;}
-const d=new Date(H.time[0]);const tmin=Math.round(H.temperature_2m_min[0]);const tmax=Math.round(H.temperature_2m_max[0]);
-const pr=(H.precipitation_sum?.[0]??0).toFixed(1);const code=(H.weathercode?.[0]??3);
-el.historyExact.innerHTML=`<div class="glass p-4 rounded-xl space-y-3"><div><div class="font-semibold text-lg">${d.getDate()}.${d.getMonth()+1}.${d.getFullYear()}</div><div class="text-white/80">${withIcon(code)}</div></div><div class="grid grid-cols-3 gap-3"><div><div class="text-white/70 text-sm">Max</div><div class="mono font-semibold">${tmax}°</div></div><div><div class="text-white/70 text-sm">Min</div><div class="mono font-semibold">${tmin}°</div></div><div><div class="text-white/70 text-sm">Zrážky</div><div class="mono font-semibold">${pr} mm</div></div></div></div>`;}
-async function run(city){el.loading.classList.remove('hidden');el.err.classList.add('hidden');
-try{const wx=await fetchWx(city.latitude,city.longitude);const hist=await fetchHistoryExact(city.latitude,city.longitude);
-renderHero(city,wx);renderHourly(wx);renderDaily(wx);renderHistoryExact(hist);}catch(e){el.err.classList.remove('hidden');}
-finally{el.loading.classList.add('hidden');}}
-
-function handlePosition(pos){
-  if(!pos){toast('Nepodarilo sa získať polohu');run({name:'Bratislava',latitude:48.1486,longitude:17.1077});return;}
-  let lat=pos.latitude||pos.lat||pos[0];let lon=pos.longitude||pos.lon||pos[1];let acc=pos.accuracy||pos.acc||null;
-  if(lat&&lon){reverseGeo(lat,lon).then(city=>{if(city){run(city);if(acc>1000)toast('Poloha môže byť menej presná');}else run({name:'Bratislava',latitude:48.1486,longitude:17.1077});});}
-  else{toast('Nepodarilo sa získať polohu');run({name:'Bratislava',latitude:48.1486,longitude:17.1077});}
+/* === Geolokácia cez Median === */
+async function handlePosition(lat,lon){
+  if(!lat||!lon){run({name:'Bratislava',latitude:48.1486,longitude:17.1077});return;}
+  const city=await reverseGeo(lat,lon);
+  run(city);
 }
-
-/* === Median Bridge univerzálna verzia === */
 async function median_geolocation_ready(){
   try{
     if(typeof median_geolocation_request==='function'){
-      let got=false;
-      // callback
-      median_geolocation_request((a,b,c)=>{
-        got=true;let pos=null;
-        try{
-          if(typeof a==='string'){pos=JSON.parse(a);}
-          else if(typeof a==='object'){pos=a;}
-          else{pos={latitude:a,longitude:b,accuracy:c};}
-        }catch{}handlePosition(pos);
-      });
-      // promise
-      try{const maybe=await median_geolocation_request();if(maybe&&!got)handlePosition(maybe);}catch{}
-      // event fallback
-      window.onMedianLocation=(lat,lon)=>{if(!got)handlePosition({latitude:lat,longitude:lon});};
-    }else{run({name:'Bratislava',latitude:48.1486,longitude:17.1077});}
+      const res=await median_geolocation_request();
+      if(res){
+        let lat,resLat,resLon;
+        if(typeof res==='object'){lat=res.latitude;resLon=res.longitude;}
+        else if(typeof res==='string'){const j=JSON.parse(res);lat=j.latitude;resLon=j.longitude;}
+        handlePosition(lat,resLon);
+      }else run({name:'Bratislava',latitude:48.1486,longitude:17.1077});
+    }else run({name:'Bratislava',latitude:48.1486,longitude:17.1077});
   }catch(e){run({name:'Bratislava',latitude:48.1486,longitude:17.1077});}
 }
-
-/* fallback pre web test */
 window.addEventListener('load',()=>{if(typeof median_geolocation_request!=='function'){run({name:'Bratislava',latitude:48.1486,longitude:17.1077});}});
 </script>
 </body>
