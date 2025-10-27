@@ -514,7 +514,7 @@ el.refreshContainer.addEventListener('touchmove',(e)=>{
 el.refreshContainer.addEventListener('touchend', async ()=>{
   if(pulling && activated){
     const last=localStorage.getItem('lastCity');
-    const cityObj = last ? JSON.parse(last) : { name:'Bratislava', latitude:48.1486, longitude:17.1077 };
+   const cityObj = last ? JSON.parse(last) : null;  // Ak neexistuje uložené mesto, nastavíme to na null
     try{ await run(cityObj); }catch{}
   }
   ptrReset();
