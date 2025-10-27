@@ -19,9 +19,19 @@
     .card { background:rgba(255,255,255,.12); border:none; }
   }
 
+  /* DEFINITÍVNE SKRYTIE SCROLL BAR PRE VŠETKY PREHLIADAČE */
+  body {
+    -ms-overflow-style: none;  /* IE and Edge */
+    scrollbar-width: none;     /* Firefox */
+    overflow-x: hidden; /* Zabezpečí, že sa nezobrazí horizontálna lišta */
+  }
+  body::-webkit-scrollbar {
+    display: none;             /* Chrome, Safari, Opera */
+  }
+
   /* Zabezpečenie, že žiadne elementy nespôsobujú horizontálny scroll */
   *{ box-sizing:border-box }
-  html,body{ width:100%; max-width:100%; overflow-x:hidden }
+  html,body{ width:100%; max-width:100%; }
   
   body{
     margin:0; color:#fff;
@@ -180,7 +190,7 @@
           <div class="glass p-2 rounded-lg"><div class="text-white/70 text-sm">Aktuálne</div><div id="uvNow" class="mono font-semibold">—</div></div>
           <div class="glass p-2 rounded-lg"><div class="text-white/70 text-sm">Dnešné maximum</div><div id="uvMax" class="mono font-semibold">—</div></div>
         </div>
-        </div>
+      </div>
     </div>
   </section>
 
