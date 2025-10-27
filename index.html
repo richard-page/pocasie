@@ -9,12 +9,12 @@
   :root{
     --glass: rgba(255,255,255,.08);
     --glass-b: rgba(255,255,255,.18);
-    /* >>> kompaktná výška hero sekcie */
-    --hero-h: 34vh;          /* mobily */
-    --hero-icon: 76px;       /* veľkosť ikony */
-    --hero-temp: 5.6rem;     /* veľkosť čísla teploty */
-    --hero-pad-t: 1.6rem;    /* horný padding */
-    --hero-pad-b: 1.2rem;    /* spodný padding */
+    /* >>> nové: kompaktná výška hero sekcie */
+    --hero-h: 34vh;        /* mobily */
+    --hero-icon: 76px;     /* veľkosť ikony */
+    --hero-temp: 5.6rem;   /* veľkosť čísla teploty */
+    --hero-pad-t: 1.6rem;  /* horný padding */
+    --hero-pad-b: 1.2rem;  /* spodný padding */
   }
   @media (min-width:480px){
     :root{ --hero-h: 36vh; --hero-icon: 86px; --hero-temp: 6rem; }
@@ -104,10 +104,9 @@
 </head>
 <body data-mode="day">
 
-<!-- HERO -->
 <section class="hero">
-  <div id="heroPlace">Zisťujem polohu…</div>
-  <div id="heroIcon" aria-hidden="true">🌍</div>
+  <div id="heroPlace">—</div>
+  <div id="heroIcon" aria-hidden="true"></div>
   <div id="heroTemp" class="mono">--°</div>
 </section>
 
@@ -116,7 +115,6 @@
     <div class="font-semibold">Predpoveď počasia</div>
     <div class="flex-1"></div>
 
-    <!-- vyhľadávanie + návrhy -->
     <div class="suggest-wrap w-full sm:w-[560px] max-w-full">
       <form id="searchForm" class="grid grid-cols-1 sm:grid-cols-[1fr_auto] gap-2" novalidate>
         <input id="cityInput" placeholder="Zadaj mesto (napr. Bratislava)"
@@ -132,13 +130,11 @@
   </div>
 </header>
 
-<!-- Pull-to-refresh indikátor -->
 <div id="ptr"><div class="spinner"></div></div>
 
 <main id="refreshContainer" class="w-full px-2 md:px-4 lg:px-6 py-4 space-y-4">
 
   <section class="cols">
-    <!-- 24h -->
     <div class="col-left glass overflow-visible lg:overflow-hidden lg:basis-7/12 flex flex-col min-h-0">
       <div class="flex items-center justify-between px-4 py-3 border-b border-white/20">
         <h2 class="text-lg font-semibold">24-hodinová predpoveď</h2>
@@ -215,7 +211,7 @@ const el={
   refreshContainer:document.getElementById('refreshContainer'),
 };
 
-/* ====== Pomocné ====== */
+/* ====== Pomocné funkcie ====== */
 function sanitizeCode(c){ c=Number(c); return (c===45||c===48)?3:c; }
 function iconFor(code){
   code=sanitizeCode(code);
@@ -248,11 +244,6 @@ async function geocodeAll(q,count=8){
   const r=await fetch(`${GEO}/search?name=${encodeURIComponent(q)}&count=${count}&language=sk&format=json`);
   const j=await r.json();
   return j.results||[];
-}
-async function reverseGeocode(lat,lon){
-  const r=await fetch(`${GEO}/reverse?latitude=${lat}&longitude=${lon}&language=sk&format=json`);
-  const j=await r.json();
-  return (j.results&&j.results[0])||null;
 }
 async function fetchWx(lat,lon){
   const url=`${API}/forecast?latitude=${lat}&longitude=${lon}`
@@ -407,8 +398,10 @@ async function run(queryOrCityObj){
 /* ====== Návrhy miest ====== */
 let selIndex=-1;
 let lastSuggest=[];
+
 function hideSuggest(){ el.suggest.classList.add('hidden'); el.suggest.innerHTML=''; selIndex=-1; lastSuggest=[]; }
 function showSuggest(){ el.suggest.classList.remove('hidden'); }
+
 function cityRow(c){
   const admin = c.admin1 || c.admin2 || c.admin3 || '';
   const country = c.country || '';
@@ -476,6 +469,7 @@ el.form.addEventListener('submit', (ev)=>{
 let startY=0, pulling=false, activated=false;
 const THRESH=72; // px
 function ptrReset(){ pulling=false; activated=false; startY=0; el.ptr.classList.remove('active'); }
+
 el.refreshContainer.addEventListener('touchstart',(e)=>{
   if(window.scrollY===0){ startY=e.touches[0].clientY; pulling=true; }
 },{passive:true});
@@ -488,141 +482,108 @@ el.refreshContainer.addEventListener('touchmove',(e)=>{
 el.refreshContainer.addEventListener('touchend', async ()=>{
   if(pulling && activated){
     const last=localStorage.getItem('lastCity');
-    const cityObj = last ? JSON.parse(last) : null;
-    if(cityObj){ try{ await run(cityObj); }catch{} }
+    const cityObj = last ? JSON.parse(last) : { name:'Bratislava', latitude:48.1486, longitude:17.1077 };
+    try{ await run(cityObj); }catch{}
   }
   ptrReset();
 });
-</script>
 
-<!-- ====== Geolokácia + Median Android Bridge ====== -->
-<script>
-/* Nastavenia geolokácie pre browser API */
-const locationOptions = { enableHighAccuracy: true, timeout: 15000, maximumAge: 0 };
+/* ====== (NOVÉ) Geolokácia (Median.io Android + Web Fallback) ====== */
 
-/* POMOCNÉ: spustenie behu z lat/lon s reverse geocodingom */
-async function runFromCoords(lat, lon){
-  try{
-    el.heroPlace.textContent = 'Načítavam údaje…';
-    const city = await reverseGeocode(lat, lon) || { name:`${lat.toFixed(3)}, ${lon.toFixed(3)}`, latitude:lat, longitude:lon };
-    // Uistíme sa, že objekt má polia name/latitude/longitude
-    const cityObj = {
-      name: city.name || cityLabel(city),
-      latitude: (city.latitude!=null)? city.latitude : lat,
-      longitude: (city.longitude!=null)? city.longitude : lon,
-      country: city.country || '',
-      admin1: city.admin1 || ''
-    };
-    await run(cityObj);
-  }catch(e){
-    console.error('Reverse geocoding/beh zlyhal', e);
-    el.err.classList.remove('hidden');
-  }
-}
+// Nastavenia pre geolokáciu
+const locationOptions = { enableHighAccuracy: true, timeout: 10000, maximumAge: 0 };
 
-/* === Median Android Bridge ===
-   Funkcia na požiadanie o povolenie na geolokáciu (z dokumentácie Median). */
+// Funkcia na požiadanie o povolenie na geolokáciu (Median)
 function requestAndroidLocationPermission() {
-  try{
-    if(window.median && median.android && median.android.geoLocation && typeof median.android.geoLocation.promptLocationServices==='function'){
-      median.android.geoLocation.promptLocationServices();
-    }
-  }catch(e){ console.warn('Median promptLocationServices zlyhal', e); }
+  console.log("Požiadavka na povolenie (Median)...");
+  // Požiadame o povolenie na geolokáciu
+  median.android.geoLocation.promptLocationServices();
 }
 
-/* Kontrola, či sú služby polohy povolené v aplikácii (Median). */
+// Funkcia na kontrolu, či sú služby polohy povolené (Median alebo Web)
 function checkAndroidLocationEnabled() {
-  try{
-    if(window.median && median.android && median.android.geoLocation && typeof median.android.geoLocation.isLocationServicesEnabled==='function'){
-      median.android.geoLocation.isLocationServicesEnabled({
-        callback: function(result) {
-          if (result && result.enabled) {
-            console.log("Geolokačné služby sú povolené (Median).");
-            getCurrentLocation();
-          } else {
-            console.log("Geolokačné služby nie sú povolené (Median). Pokúšam sa vyžiadať povolenie…");
-            requestAndroidLocationPermission();
-            // Po výzve skúsime neskôr znova:
-            setTimeout(()=>getCurrentLocation(), 1200);
-          }
+  // Skontrolujeme, či 'median' objekt vôbec existuje (pre prípad, že bežíme v prehliadači)
+  if (typeof median !== 'undefined' && median.android && median.android.geoLocation) {
+    // --- Bežíme v Median Android WebView ---
+    console.log("Detekované Median.io API.");
+    median.android.geoLocation.isLocationServicesEnabled({
+      callback: function(result) {
+        if (result.enabled) {
+          console.log("Geolokačné služby (Median) sú povolené.");
+          // Ak sú služby povolené, môžeme získať polohu (použijeme štandardné API)
+          getCurrentLocation();
+        } else {
+          console.log("Geolokačné služby (Median) nie sú povolené. Žiadam povolenie.");
+          // Služby nie sú povolené, skúsime ich vyžiadať
+          requestAndroidLocationPermission();
+          // Medzitým načítame predvolené mesto
+          loadDefaultCity();
         }
-      });
-      return;
+      }
+    });
+  } else {
+    // --- Bežíme v štandardnom webovom prehliadači ---
+    console.log("Median.io API nenájdené. Skúšam štandardnú webovú geolokáciu.");
+    if ('geolocation' in navigator) {
+      // Štandardné webové API je dostupné
+      getCurrentLocation();
+    } else {
+      // Geolokácia nie je podporovaná vôbec
+      console.log("Geolokácia nie je v tomto prehliadači podporovaná. Načítavam predvolené mesto.");
+      loadDefaultCity();
     }
-  }catch(e){ console.warn('Median isLocationServicesEnabled zlyhal', e); }
-  // Fallback: ak Median nie je k dispozícii, pokračujeme priamo cez navigator.geolocation
-  getCurrentLocation();
-}
-
-/* Ak app používa median_geolocation_ready hook (aby sa neotvorili dve výzvy): */
-if(typeof window.median_geolocation_ready === 'undefined'){
-  window.median_geolocation_ready = function(){
-    console.log('median_geolocation_ready: inicializované, štartujem zistenie polohy.');
-    getCurrentLocation();
   }
 }
 
-/* Získanie polohy cez štandardné browser API */
+// Funkcia na získanie aktuálnej polohy (používa štandardné Web API)
 function getCurrentLocation() {
-  if(!('geolocation' in navigator)){
-    console.warn('navigator.geolocation nie je dostupný.');
-    // Skúsime posledné mesto z localStorage, inak čakáme na manuálne vyhľadanie
-    const last = localStorage.getItem('lastCity');
-    if(last){ try{ run(JSON.parse(last)); }catch{} }
-    el.heroPlace.textContent = 'Zadaj mesto vyššie';
-    return;
-  }
+  console.log("Pokúšam sa získať aktuálnu polohu (navigator.geolocation)...");
   navigator.geolocation.getCurrentPosition(locationSuccess, locationError, locationOptions);
 }
 
-/* Úspech geolokácie */
+// Callback pri úspešnom získaní polohy
 function locationSuccess(position) {
   const latitude = position.coords.latitude;
   const longitude = position.coords.longitude;
-  console.log(`Aktuálna poloha: lat=${latitude}, lon=${longitude}`);
-  runFromCoords(latitude, longitude);
-}
+  console.log(`Aktuálna poloha získaná: Lat = ${latitude}, Lon = ${longitude}`);
 
-/* Chyba geolokácie */
-function locationError(error) {
-  console.error(`Chyba pri získavaní polohy: ${error && error.message ? error.message : error}`);
-  // Fallback: posledné mesto, inak necháme užívateľa zadať mesto
-  const last=localStorage.getItem('lastCity');
-  if(last){
-    try{ run(JSON.parse(last)); return; }catch{}
+  // Vytvoríme "city object" pre funkciu run()
+  const myLocation = {
+    name: "Vaša poloha",
+    latitude: latitude,
+    longitude: longitude,
+    country_code: "📍" // Pridáme emoji pre identifikáciu
+  };
+
+  // Spustíme načítanie počasia pre aktuálnu polohu
+  run(myLocation);
+
+  // Aktualizujeme aj text vo vyhľadávacom poli
+  if(el.input) {
+    el.input.value = "Vaša poloha";
   }
-  el.heroPlace.textContent = 'Povoliť polohu alebo zadať mesto';
 }
 
-/* Spúšť pri načítaní: najprv Median kontrola, potom browser geolokácia */
-window.addEventListener('load', ()=>{
-  checkAndroidLocationEnabled();
-});
-
-/* ====== SUGGEST/SEARCH väzba ====== */
-let selIndex=-1;
-let lastSuggest=[];
-function hideSuggest(){ el.suggest.classList.add('hidden'); el.suggest.innerHTML=''; selIndex=-1; lastSuggest=[]; }
-function showSuggest(){ el.suggest.classList.remove('hidden'); }
-function updateSel(items){
-  items.forEach((it,i)=> it.setAttribute('aria-selected', i===selIndex ? 'true':'false'));
-  const active=items[selIndex]; if(active){ active.scrollIntoView({block:'nearest'}); }
+// Callback pri chybe pri získavaní polohy
+function locationError(error) {
+  console.error(`Chyba pri získavaní polohy: ${error.message}. Načítavam predvolené mesto.`);
+  // Ak sa nepodarí získať polohu (napr. užívateľ zamietol), načítame Bratislavu
+  loadDefaultCity();
 }
-el.input.addEventListener('input', (e)=>{ suggest(e.target.value); });
-document.addEventListener('click',(e)=>{ if(!e.target.closest('.suggest-wrap')) hideSuggest(); });
-el.form.addEventListener('submit', (ev)=>{
-  ev.preventDefault();
-  const q=cityLabel(el.input.value);
-  if(q) run(q);
-});
-el.input.addEventListener('keydown',(e)=>{
-  const items=[...el.suggest.querySelectorAll('.suggest-item')];
-  if(e.key==='ArrowDown'){ if(items.length){ e.preventDefault(); selIndex=(selIndex+1)%items.length; updateSel(items); } }
-  else if(e.key==='ArrowUp'){ if(items.length){ e.preventDefault(); selIndex=(selIndex-1+items.length)%items.length; updateSel(items); } }
-  else if(e.key==='Enter'){ if(selIndex>=0 && lastSuggest[selIndex]){ e.preventDefault(); const c=lastSuggest[selIndex]; hideSuggest(); run(c); } }
-  else if(e.key==='Escape'){ hideSuggest(); }
-});
+
+// Pomocná funkcia na načítanie predvoleného mesta (Bratislava)
+function loadDefaultCity() {
+  console.log("Načítavam predvolené mesto: Bratislava");
+  if(el.input) {
+    el.input.value = 'Bratislava';
+  }
+  run('Bratislava');
+}
+
+/* ====== Štart – Geolokácia alebo predvolená Bratislava ====== */
+// Namiesto priameho načítania Bratislavy skúsime získať polohu
+checkAndroidLocationEnabled();
+
 </script>
-
 </body>
 </html>
