@@ -547,43 +547,37 @@ function locationSuccess(position) {
   const longitude = position.coords.longitude;
   console.log(`Aktuálna poloha získaná: Lat = ${latitude}, Lon = ${longitude}`);
 
-  // Vytvoríme "city object" pre funkciu run()
-  const myLocation = {
-    name: "Vaša poloha",
-    latitude: latitude,
-    longitude: longitude,
-    country_code: "📍" // Pridáme emoji pre identifikáciu
-  };
-
-  // Spustíme načítanie počasia pre aktuálnu polohu
-  run(myLocation);
-
-  // Aktualizujeme aj text vo vyhľadávacom poli
-  if(el.input) {
-    el.input.value = "Vaša poloha";
-  }
+  // Získať mesto podľa zemepisných údajov (geokódovanie)
+  fetch(`${GEO}/reverse?latitude=${latitude}&longitude=${longitude}&language=sk&format=json`)
+    .then(response => response.json())
+    .then(data => {
+      const city = data.results[0]?.address.city || "Neznáme mesto";
+      el.input.value = city;  // Nastavíme názov mesta do vstupného poľa
+      run({ name: city, latitude, longitude });
+    })
+    .catch(() => {
+      // Ak sa nepodarí získať mesto, nastavíme predvolené mesto
+      el.input.value = "Bratislava";
+      run("Bratislava");
+    });
 }
 
 // Callback pri chybe pri získavaní polohy
 function locationError(error) {
   console.error(`Chyba pri získavaní polohy: ${error.message}. Načítavam predvolené mesto.`);
-  // Ak sa nepodarí získať polohu (napr. užívateľ zamietol), načítame Bratislavu
   loadDefaultCity();
 }
 
 // Pomocná funkcia na načítanie predvoleného mesta (Bratislava)
 function loadDefaultCity() {
   console.log("Načítavam predvolené mesto: Bratislava");
-  if(el.input) {
-    el.input.value = 'Bratislava';
-  }
+  el.input.value = 'Bratislava';
   run('Bratislava');
 }
 
 /* ====== Štart – Geolokácia alebo predvolená Bratislava ====== */
 // Namiesto priameho načítania Bratislavy skúsime získať polohu
 checkAndroidLocationEnabled();
-
 </script>
 </body>
 </html>
