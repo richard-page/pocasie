@@ -9,27 +9,15 @@
   :root{
     --glass: rgba(255,255,255,.08);
     --glass-b: rgba(255,255,255,.18);
-    /* EXTRÉMNE ZNÍŽENIE MINIMÁLNEJ VÝŠKY */
-    --hero-h: 18vh; 
-    --hero-icon: 68px; /* mierne zníženie ikony */
-    --hero-temp: 5rem; /* mierne zníženie teploty */
-    --hero-pad-t: 1rem;
-    --hero-pad-b: 0.8rem;
-  }
-  @media (min-width:480px){
-    :root{ --hero-h: 20vh; --hero-icon: 76px; --hero-temp: 5.6rem; }
-  }
-  @media (min-width:768px){
-    :root{ --hero-h: 22vh; --hero-icon: 86px; --hero-temp: 6rem; }
+    /* ODSTRÁNENÁ min-height: Už ju nebudeme obmedzovať, nech sa prispôsobí obsahu */
+    --hero-icon: 60px; /* Ešte menšia ikona */
+    --hero-temp: 4.5rem; /* Ešte menšia teplota */
   }
   
   /* Nastavenie farby pozadia pre mobil */
   @media (max-width: 640px) {
     .glass { background:rgba(255,255,255,.12); border:none; }
     .card { background:rgba(255,255,255,.12); border:none; }
-    /* Zníženie medzier pre mobilné zariadenia */
-    .hero{ padding:1rem 1rem 0.5rem; }
-    #heroIcon{ margin:0.4rem auto 0.2rem; }
   }
 
   *{ box-sizing:border-box }
@@ -41,13 +29,16 @@
   }
   .glass{ background:var(--glass); border:1px solid var(--glass-b); backdrop-filter:blur(12px); border-radius:1rem }
   .mono{ font-feature-settings:"tnum" 1,"lnum" 1 }
+  
+  /* Kľúčová ZMENA: Odstránenie min-height a redukcia paddingu */
   .hero{
     position:relative; isolation:isolate;
     display:flex; flex-direction:column; align-items:center; justify-content:center;
-    min-height:var(--hero-h); width:100%;
-    padding:var(--hero-pad-t) 1rem var(--hero-pad-b);
+    width:100%;
+    padding:1rem 1rem 0.5rem; /* Zníženie vertikálneho paddingu */
     text-align:center; overflow:hidden
   }
+  
   body[data-mode="day"] .hero{ background:#176ea9 }
   body[data-mode="night"] .hero{ background:#08273b }
   body[data-mode="night"] .hero::after{
@@ -63,7 +54,7 @@
       radial-gradient(1.6px 1.6px at 44% 86%, #fff 45%, transparent 47%)
   }
   #heroPlace{ font-size:1.18rem; font-weight:600; opacity:.95; letter-spacing:.2px }
-  #heroIcon{ width:var(--hero-icon); height:var(--hero-icon); margin:.65rem auto .35rem; font-size:calc(var(--hero-icon) - 8px); line-height:var(--hero-icon) }
+  #heroIcon{ width:var(--hero-icon); height:var(--hero-icon); margin:.4rem auto .2rem; font-size:calc(var(--hero-icon) - 8px); line-height:var(--hero-icon) }
   #heroTemp{ font-size:var(--hero-temp); line-height:1; font-weight:700; letter-spacing:1px }
 
   .sticky-header{ position:sticky; top:0; z-index:40 }
@@ -137,7 +128,7 @@
 
 <div id="ptr"><div class="spinner"></div></div>
 
-<main id="refreshContainer" class="w-full px-2 md:px-4 lg:px-6 py-2 space-y-4">
+<main id="refreshContainer" class="w-full px-2 md:px-4 lg:px-6 py-2 space-y-2">
 
   <section class="glass p-3 lg:p-4">
     
@@ -167,7 +158,7 @@
 
   </section>
 
-  <section class="grid grid-cols-1 lg:grid-cols-2 gap-4">
+  <section class="grid grid-cols-1 lg:grid-cols-2 gap-2">
     
     <div class="glass">
       <div class="px-4 py-3 border-b border-white/20"><h2 class="text-lg font-semibold">Presne pred rokom</h2></div>
