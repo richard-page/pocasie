@@ -190,6 +190,9 @@
 const API='https://api.open-meteo.com/v1';
 const GEO='https://geocoding-api.open-meteo.com/v1';
 const ARCH='https://archive-api.open-meteo.com/v1/era5';
+// NOVÉ: Geonames API pre spoľahlivú reverznú geolokáciu
+const GN_USER = 'demo'; // Zmeňte na vlastné, ak potrebujete vyššie limity.
+const GN_API = 'https://secure.geonames.org/findNearestAddressJSON';
 
 /* ====== DOM refs ====== */
 const el={
@@ -245,17 +248,42 @@ async function geocodeAll(q,count=8){
   const j=await r.json();
   return j.results||[];
 }
-// OPRAVA: Pôvodne '/v1/reverse' (čo viedlo k 404). Zmenené na správne '/v1/reverse-geocode'.
+
+// NOVÁ FUNKCIA pre reverznú geolokáciu (používa Geonames)
 async function reverseGeocode(lat, lon) {
-    const url = `${GEO}/reverse-geocode?latitude=${lat}&longitude=${lon}&language=sk&limit=1`;
-    const r = await fetch(url);
-    if (!r.ok) {
-        // Pri 404 a iných chybách API sa vráti null, aby sa použila záložná hodnota "Vaša poloha"
-        console.warn(`Reverse Geocode API volanie zlyhalo s HTTP statusom ${r.status}`);
+    const url = `${GN_API}?lat=${lat}&lng=${lon}&username=${GN_USER}&lang=sk`;
+    try {
+        const r = await fetch(url);
+        if (!r.ok) {
+            console.error(`Geonames API volanie zlyhalo s HTTP statusom ${r.status}`);
+            return null;
+        }
+        const j = await r.json();
+
+        if (j.status?.value === 10) {
+            console.warn(`Geonames API: Demo limit prekročený.`)
+            return null;
+        }
+        
+        // Geonames vracia NearestAddress, z ktorého sa dá extrahovať obec (placename)
+        const address = j.address;
+        if (address && address.placename) {
+            // Vráti objekt v kompatibilnom formáte, aby ho mohol použiť run(city)
+            return {
+                name: address.placename, // Názov obce/mesta
+                latitude: lat,
+                longitude: lon,
+                country_code: address.countryCode,
+                admin1: address.adminName1 || '', // Názov regiónu
+            };
+        }
+        // Ak sa nepodarilo nájsť adresu/mesto, vrátime null
+        return null;
+        
+    } catch (e) {
+        console.error("Chyba pri volaní Geonames reverseGeocode:", e);
         return null;
     }
-    const j = await r.json();
-    return j.results?.[0] || null;
 }
 async function fetchWx(lat,lon){
   const url=`${API}/forecast?latitude=${lat}&longitude=${lon}`
@@ -573,12 +601,12 @@ async function locationSuccess(position) {
   
   console.log(`Aktuálna poloha získaná: Lat = ${latitude}, Lon = ${longitude}`);
 
-  // NOVÝ KROK: Reverzná geolokácia so SPRÁVNYM ENDPOINTOM
-  let locatedCity;
+  // NOVÝ KROK: Reverzná geolokácia (používa Geonames)
+  let locatedCity = null;
   try {
       locatedCity = await reverseGeocode(latitude, longitude);
   } catch (e) {
-      console.error("Chyba pri volaní reverseGeocode:", e);
+      console.error("Chyba pri volaní Geonames reverseGeocode:", e);
       locatedCity = null;
   }
 
@@ -588,7 +616,7 @@ async function locationSuccess(position) {
     cityToUse = locatedCity;
     // Nastavíme špeciálny flag, aby sme vedeli, že je to poloha zistená cez GPS/súradnice
     cityToUse.__isCurrentLocation = true; 
-    console.log("Mesto zistené z GPS súradníc:", cityToUse.name);
+    console.log("Mesto zistené z GPS súradníc (Geonames):", cityToUse.name);
 
     // Aktualizujeme aj text vo vyhľadávacom poli na zistené mesto
     if(el.input) {
