@@ -6,7 +6,23 @@
 <title>Predpoveď počasia</title>
 <script src="https://cdn.tailwindcss.com"></script>
 <style>
-  :root { --glass: rgba(255,255,255,.08); --glass-b: rgba(255,255,255,.18); }
+  :root{
+    --glass: rgba(255,255,255,.08);
+    --glass-b: rgba(255,255,255,.18);
+    /* >>> nové: kompaktná výška hero sekcie */
+    --hero-h: 34vh;          /* mobily */
+    --hero-icon: 76px;       /* veľkosť ikony */
+    --hero-temp: 5.6rem;     /* veľkosť čísla teploty */
+    --hero-pad-t: 1.6rem;    /* horný padding */
+    --hero-pad-b: 1.2rem;    /* spodný padding */
+  }
+  @media (min-width:480px){
+    :root{ --hero-h: 36vh; --hero-icon: 86px; --hero-temp: 6rem; }
+  }
+  @media (min-width:768px){
+    :root{ --hero-h: 38vh; --hero-icon: 96px; --hero-temp: 6.2rem; }
+  }
+
   *{ box-sizing:border-box }
   html,body{ width:100%; max-width:100%; overflow-x:hidden }
   body{
@@ -17,12 +33,13 @@
   .glass{ background:var(--glass); border:1px solid var(--glass-b); backdrop-filter:blur(12px); border-radius:1rem }
   .mono{ font-feature-settings:"tnum" 1,"lnum" 1 }
 
-  /* HERO – jednotná farba (nie gradient) */
+  /* HERO – kompaktné okno (bez gradientu) */
   .hero{
     position:relative; isolation:isolate;
     display:flex; flex-direction:column; align-items:center; justify-content:center;
-    min-height:56vh; width:100%;
-    padding:3.5rem 1rem 2rem; text-align:center; overflow:hidden
+    min-height:var(--hero-h); width:100%;
+    padding:var(--hero-pad-t) 1rem var(--hero-pad-b);
+    text-align:center; overflow:hidden
   }
   body[data-mode="day"] .hero{ background:#176ea9 }
   body[data-mode="night"] .hero{ background:#08273b }
@@ -38,9 +55,9 @@
       radial-gradient(1.8px 1.8px at 88% 78%, #fff 45%, transparent 47%),
       radial-gradient(1.6px 1.6px at 44% 86%, #fff 45%, transparent 47%)
   }
-  #heroPlace{ font-size:1.25rem; font-weight:600; opacity:.95; letter-spacing:.2px }
-  #heroIcon{ width:120px; height:120px; margin:1.2rem auto; font-size:92px; line-height:120px }
-  #heroTemp{ font-size:6.5rem; line-height:1; font-weight:700; letter-spacing:2px }
+  #heroPlace{ font-size:1.18rem; font-weight:600; opacity:.95; letter-spacing:.2px }
+  #heroIcon{ width:var(--hero-icon); height:var(--hero-icon); margin:.65rem auto .35rem; font-size:calc(var(--hero-icon) - 8px); line-height:var(--hero-icon) }
+  #heroTemp{ font-size:var(--hero-temp); line-height:1; font-weight:700; letter-spacing:1px }
 
   .sticky-header{ position:sticky; top:0; z-index:40 }
   .tbl th,.tbl td{ padding:.65rem .75rem; white-space:nowrap }
@@ -60,7 +77,7 @@
   .cols{ display:grid; grid-template-columns:1fr; gap:1rem }
   @media (min-width:1024px){ .cols{ display:flex; gap:1rem } .col-left,.col-right{ align-self:stretch } }
 
-  /* Návrhy miest (dropdown) */
+  /* Návrhy miest */
   .suggest-wrap{ position:relative; }
   .suggest{
     position:absolute; top:100%; left:0; right:0; margin-top:.35rem;
@@ -87,7 +104,7 @@
 </head>
 <body data-mode="day">
 
-<!-- HERO -->
+<!-- HERO (skrátené) -->
 <section class="hero">
   <div id="heroPlace">—</div>
   <div id="heroIcon" aria-hidden="true"></div>
@@ -469,14 +486,13 @@ el.refreshContainer.addEventListener('touchmove',(e)=>{
 el.refreshContainer.addEventListener('touchend', async ()=>{
   if(pulling && activated){
     const last=localStorage.getItem('lastCity');
-    // ak nič v storage, padneme späť na Bratislavu
     const cityObj = last ? JSON.parse(last) : { name:'Bratislava', latitude:48.1486, longitude:17.1077 };
     try{ await run(cityObj); }catch{}
   }
   ptrReset();
 });
 
-/* ====== Štart – predvolená BRATISLAVA ====== */
+/* ====== Štart – predvolená Bratislava ====== */
 el.input.value='Bratislava';
 run('Bratislava');
 </script>
