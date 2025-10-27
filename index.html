@@ -42,7 +42,7 @@
       radial-gradient(1.6px 1.6px at 44% 86%, #fff 45%, transparent 47%)
   }
   #heroPlace{ font-size:1.25rem; font-weight:600; opacity:.95; letter-spacing:.2px }
-  #heroIcon{ width:140px; height:140px; margin:1.2rem auto } /* väčší hero symbol */
+  #heroIcon{ width:140px; height:140px; margin:1.2rem auto }
   #heroTemp{ font-size:6.5rem; line-height:1; font-weight:700; letter-spacing:2px }
 
   .sticky-header{ position:sticky; top:0; z-index:40 }
@@ -62,7 +62,6 @@
   .cols{ display:grid; grid-template-columns:1fr; gap:1rem }
   @media (min-width:1024px){ .cols{ display:flex; gap:1rem } .col-left,.col-right{ align-self:stretch } }
 
-  /* Väčšie emoji ikonky počasia */
   .emo{ font-size:1.5em; line-height:1; display:inline-block; transform:translateY(1px) }
   @media (min-width:1024px){ .emo{ font-size:1.65em } }
 </style>
@@ -137,7 +136,7 @@
     <p class="mt-2">Načítavam…</p>
   </div>
   <div id="err" class="hidden glass p-4">
-    <div class="text-center text-red-200">Nepodarilo sa načítať údaje. Skús iné mesto.</div>
+    <div class="text-center text-red-200">Nepodarilo sa načítať údaje. Skús iné mesto alebo povoľ polohu.</div>
   </div>
 </main>
 
@@ -145,9 +144,6 @@
 const API='https://api.open-meteo.com/v1';
 const GEO='https://geocoding-api.open-meteo.com/v1';
 const ARCH='https://archive-api.open-meteo.com/v1/era5';
-
-const svgSun=`<svg viewBox="0 0 128 128" xmlns="http://www.w3.org/2000/svg"><defs><radialGradient id="g" cx="50%" cy="50%" r="50%"><stop offset="0%" stop-color="#ffe27a"/><stop offset="70%" stop-color="#ffd057"/><stop offset="100%" stop-color="#f7b538"/></radialGradient></defs><circle cx="64" cy="64" r="28" fill="url(#g)"/><g stroke="#ffd36a" stroke-width="6" stroke-linecap="round"><line x1="64" y1="8"  x2="64" y2="28"/><line x1="64" y1="100" x2="64" y2="120"/><line x1="8"  y1="64" x2="28" y2="64"/><line x1="100" y1="64" x2="120" y2="64"/><line x1="20" y1="20" x2="34" y2="34"/><line x1="94" y1="94" x2="108" y2="108"/><line x1="20" y1="108" x2="34" y2="94"/><line x1="94" y1="34" x2="108" y2="20"/></g></svg>`;
-const svgMoon=`<svg viewBox="0 0 128 128" xmlns="http://www.w3.org/2000/svg"><defs><radialGradient id="m" cx="40%" cy="35%" r="60%"><stop offset="0%" stop-color="#f4f4f6"/><stop offset="100%" stop-color="#cfd4da"/></radialGradient></defs><path d="M90 82c-29 0-52-23-52-52 0-7 1-14 4-20C25 16 16 32 16 50c0 30 24 54 54 54 18 0 34-9 40-26-6 3-13 4-20 4z" fill="url(#m)"/></svg>`;
 
 const el={
   form:document.getElementById('searchForm'),
@@ -164,6 +160,9 @@ const el={
   loading:document.getElementById('loading'),
   err:document.getElementById('err')
 };
+
+const svgSun=`<svg viewBox="0 0 128 128" xmlns="http://www.w3.org/2000/svg"><defs><radialGradient id="g" cx="50%" cy="50%" r="50%"><stop offset="0%" stop-color="#ffe27a"/><stop offset="70%" stop-color="#ffd057"/><stop offset="100%" stop-color="#f7b538"/></radialGradient></defs><circle cx="64" cy="64" r="28" fill="url(#g)"/><g stroke="#ffd36a" stroke-width="6" stroke-linecap="round"><line x1="64" y1="8"  x2="64" y2="28"/><line x1="64" y1="100" x2="64" y2="120"/><line x1="8"  y1="64" x2="28" y2="64"/><line x1="100" y1="64" x2="120" y2="64"/><line x1="20" y1="20" x2="34" y2="34"/><line x1="94" y1="94" x2="108" y2="108"/><line x1="20" y1="108" x2="34" y2="94"/><line x1="94" y1="34" x2="108" y2="20"/></g></svg>`;
+const svgMoon=`<svg viewBox="0 0 128 128" xmlns="http://www.w3.org/2000/svg"><defs><radialGradient id="m" cx="40%" cy="35%" r="60%"><stop offset="0%" stop-color="#f4f4f6"/><stop offset="100%" stop-color="#cfd4da"/></radialGradient></defs><path d="M90 82c-29 0-52-23-52-52 0-7 1-14 4-20C25 16 16 32 16 50c0 30 24 54 54 54 18 0 34-9 40-26-6 3-13 4-20 4z" fill="url(#m)"/></svg>`;
 
 function sanitizeCode(c){ c=Number(c); return (c===45||c===48)?3:c; }
 function iconFor(code){
@@ -186,15 +185,16 @@ function descFor(c){
            95:'Búrka',96:'Búrka s krúpami',99:'Silná búrka s krúpami'};
   return d[c]||'—';
 }
-function withIcon(code){
-  const e = iconFor(code);
-  return `<span class="emo">${e}</span> ${descFor(code)}`;
-}
+function withIcon(code){ return `<span class="emo">${iconFor(code)}</span> ${descFor(code)}`; }
 function dd2dir(dd){ if(dd==null||isNaN(dd)) return '—'; const deg=((dd%360)+360)%360; const dirs=['S','SV','V','JV','J','JZ','Z','SZ']; return dirs[Math.floor((deg+22.5)/45)%8]; }
 function fmtTime(iso){ const d=new Date(iso); return d.getHours().toString().padStart(2,'0')+':00'; }
 
 async function geocode(q){
   const r=await fetch(`${GEO}/search?name=${encodeURIComponent(q)}&count=1&language=sk`);
+  const j=await r.json(); if(!j.results||j.results.length===0) throw new Error('notfound'); return j.results[0];
+}
+async function geocodeByLatLon(lat,lon){
+  const r=await fetch(`${GEO}/reverse?latitude=${lat}&longitude=${lon}&language=sk`);
   const j=await r.json(); if(!j.results||j.results.length===0) throw new Error('notfound'); return j.results[0];
 }
 async function fetchWx(lat,lon){
@@ -217,11 +217,11 @@ async function fetchHistoryExact(lat,lon){
 }
 
 function renderHero(city, wx){
-  const isDay = !!wx.current.is_day;
-  document.body.setAttribute('data-mode', isDay ? 'day' : 'night');
-  el.heroPlace.textContent = `${city.name}${city.country?`, ${city.country}`:''}`;
-  el.heroTemp.textContent = Math.round(wx.current.temperature_2m)+'°';
-  el.heroIcon.innerHTML = isDay ? svgSun : svgMoon;
+  const isDay=!!wx.current.is_day;
+  document.body.setAttribute('data-mode',isDay?'day':'night');
+  el.heroPlace.textContent=`${city.name}${city.country?`, ${city.country}`:''}`;
+  el.heroTemp.textContent=Math.round(wx.current.temperature_2m)+'°';
+  el.heroIcon.innerHTML=isDay?svgSun:svgMoon;
 }
 
 function renderHourly(wx){
@@ -325,28 +325,94 @@ function renderUV(wx){
   el.uvMax.textContent = uvMax!=null ? uvMax.toFixed(1) : '—';
 }
 
+async function renderAllFor(lat,lon){
+  const [wx,hist]=await Promise.all([fetchWx(lat,lon), fetchHistoryExact(lat,lon)]);
+  const city=await geocodeByLatLon(lat,lon).catch(()=>({name:`${lat.toFixed(3)}, ${lon.toFixed(3)}`, country:''}));
+  renderHero(city,wx);
+  renderHourly(wx);
+  renderDaily(wx);
+  renderHistoryExact(hist);
+  renderUV(wx);
+}
+
 async function run(q){
   el.loading.classList.remove('hidden'); el.err.classList.add('hidden');
   try{
     const city=await geocode(q);
-    const wx=await fetchWx(city.latitude,city.longitude);
-    const hist=await fetchHistoryExact(city.latitude,city.longitude);
-
-    renderHero(city,wx);
-    renderHourly(wx);
-    renderDaily(wx);
-    renderHistoryExact(hist);
-    renderUV(wx);
+    await renderAllFor(city.latitude,city.longitude);
   }catch(e){ el.err.classList.remove('hidden'); }
   finally{ el.loading.classList.add('hidden'); }
 }
 
-document.getElementById('searchForm').addEventListener('submit', (ev)=>{ ev.preventDefault(); const q=el.input.value.trim(); if(q) run(q); });
+/* ===== Geolokácia: auto-init + watch + WebView hook ===== */
+let geoWatchId=null, geoReady=false, firstFixDone=false, geoTimeoutId=null;
 
-// Predvolená Bratislava, input prázdny a fokus
+function startGeoWatch(){
+  if(!('geolocation' in navigator)) return;
+  try{
+    geoWatchId = navigator.geolocation.watchPosition(onGeoSuccess, onGeoError, {
+      enableHighAccuracy:true, maximumAge:15000, timeout:10000
+    });
+  }catch{}
+}
+
+function onGeoSuccess(pos){
+  const {latitude:lat, longitude:lon} = pos.coords;
+  geoReady=true;
+  if(!firstFixDone){
+    firstFixDone=true;
+    el.loading.classList.remove('hidden'); el.err.classList.add('hidden');
+    renderAllFor(lat,lon).catch(()=>el.err.classList.remove('hidden')).finally(()=>el.loading.classList.add('hidden'));
+  }
+}
+
+function onGeoError(err){
+  // ak prvý fix nevyšiel do 4s, padni na Bratislavu
+  if(!firstFixDone) fallbackToBratislava();
+  console.warn('Geolocation error:', err?.code, err?.message);
+}
+
+function requestOneShot(){
+  if(!('geolocation' in navigator)) { fallbackToBratislava(); return; }
+  navigator.geolocation.getCurrentPosition(onGeoSuccess, onGeoError, {
+    enableHighAccuracy:true, timeout:8000, maximumAge:0
+  });
+}
+
+function fallbackToBratislava(){
+  if(firstFixDone) return;
+  firstFixDone=true;
+  run('Bratislava');
+}
+
+/* Hook pre tvoju WebView appku: zavolá to natív, keď sú služby lokácie pripravené */
+window.median_geolocation_ready = function(){
+  // ak WebView najprv inicializuje služby, skús hneď získať polohu
+  requestOneShot();
+  startGeoWatch();
+};
+
+/* Ak sa median_geolocation_ready nikdy nezavolá (čistý prehliadač), skús sám */
+function bootGeolocation(){
+  // malý timeout: ak do 4s nepríde fix, pustíme fallback
+  geoTimeoutId = setTimeout(()=>{ if(!firstFixDone) fallbackToBratislava(); }, 4000);
+  requestOneShot();
+  startGeoWatch();
+}
+
+/* ===== UI bindingy a štart ===== */
+document.getElementById('searchForm').addEventListener('submit',(ev)=>{
+  ev.preventDefault();
+  const q=el.input.value.trim();
+  if(q){ firstFixDone=true; run(q); } // manuálny výber mesta prepíše auto geo
+});
+
 el.input.value='';
 setTimeout(()=>el.input.focus(),0);
-run('Bratislava');
+
+// štart
+el.loading.classList.remove('hidden');
+bootGeolocation();
 </script>
 </body>
 </html>
