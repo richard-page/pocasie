@@ -19,22 +19,28 @@
     .card { background:rgba(255,255,255,.12); border:none; }
   }
 
-  /* FINÁLNE A AGRESÍVNE CSS PRE SKRYTIE SCROLL BAR */
-  body {
-    -ms-overflow-style: none;  /* IE and Edge */
-    scrollbar-width: none;     /* Firefox 19+ */
-    /* Niekedy je nutné pridať overflow-y: scroll, aby Firefox skutočne zobrazil 'none' */
-    overflow-y: scroll; 
-  }
-  body::-webkit-scrollbar {
-    display: none;             /* Chrome, Safari, Opera */
-    width: 0;                  /* Explicitne šírka 0 */
+  /* AGRESÍVNE CSS PRE SKRYTIE SCROLL BAR */
+  /* Skryje scrollbar pre WebKit (Chrome, Safari, nové Edge) */
+  body::-webkit-scrollbar, html::-webkit-scrollbar {
+    display: none;             
+    width: 0;                  
     background: transparent;
+  }
+  /* Skryje scrollbar pre IE a Firefox */
+  body, html {
+    -ms-overflow-style: none;  /* IE and Edge */
+    scrollbar-width: none;     /* Firefox */
+    /* Zabezpečí, že sa zobrazenie nescrolluje horizontálne */
+    overflow-x: hidden;
+  }
+  /* Pre zabezpečenie skrytia vertikálneho scrollbaru v niektorých prehliadačoch */
+  body {
+    overflow-y: scroll; 
   }
 
   /* Zabezpečenie, že žiadne elementy nespôsobujú horizontálny scroll */
   *{ box-sizing:border-box }
-  html,body{ width:100%; max-width:100%; overflow-x:hidden }
+  html,body{ width:100%; max-width:100%; } /* Odstránil som overflow-x:hidden z týchto riadkov, pretože to už riešime globálne vyššie */
   
   body{
     margin:0; color:#fff;
@@ -46,6 +52,7 @@
   
   .hero{
     position:relative; isolation:isolate;
+    /* Explicitné centrovánie pre Flexbox */
     display:flex; flex-direction:column; align-items:center; justify-content:center;
     width:100%;
     padding:0.75rem 1rem 0.5rem; 
@@ -209,7 +216,7 @@
     </div>
   </div>
   
-  <div class="text-center pt-2 pb-0 text-white/50 text-xs">
+  <div class="text-center pt-2 pb-0 text-white/50 text-xs flex justify-center items-center w-full">
     Údaje poskytuje <a href="https://open-meteo.com/" target="_blank" rel="noopener noreferrer" class="hover:text-white/80 underline">Open-Meteo</a>.
   </div>
   
