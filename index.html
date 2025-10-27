@@ -19,24 +19,36 @@
     .card { background:rgba(255,255,255,.12); border:none; }
   }
 
+  /* FINÁLNE CSS PRE SKRYTIE SCROLL BAR */
+  body {
+    -ms-overflow-style: none;  /* IE and Edge */
+    scrollbar-width: none;     /* Firefox */
+  }
+  body::-webkit-scrollbar {
+    display: none;             /* Chrome, Safari, Opera */
+  }
+  
+  /* Zabezpečenie, že žiadne elementy nespôsobujú horizontálny scroll */
   *{ box-sizing:border-box }
   html,body{ width:100%; max-width:100%; overflow-x:hidden }
+  
   body{
     margin:0; color:#fff;
     font-family:system-ui,-apple-system,Segoe UI,Roboto,sans-serif;
     background:#0e4d73;
-    /* DÔLEŽITÉ: Uistite sa, že body nemá min-height:100vh! */
   }
   .glass{ background:var(--glass); border:1px solid var(--glass-b); backdrop-filter:blur(12px); border-radius:1rem }
   .mono{ font-feature-settings:"tnum" 1,"lnum" 1 }
   
-  /* FINÁLNA REDUKCIA HERO SEKCIE */
+  /* ÚPRAVA PRE CENTROVANIE */
   .hero{
     position:relative; isolation:isolate;
+    /* DÔLEŽITÉ: Používame text-align: center, aby bol aj text centrován, hoci už sú elementy centrované Flexboxom */
     display:flex; flex-direction:column; align-items:center; justify-content:center;
     width:100%;
     padding:0.75rem 1rem 0.5rem; 
-    text-align:center; overflow:hidden
+    text-align:center; /* TOTO BY MALO VYCENTROVAŤ VŠETOK VNÚTORNÝ TEXT */
+    overflow:hidden
   }
   
   body[data-mode="day"] .hero{ background:#176ea9 }
@@ -53,7 +65,6 @@
       radial-gradient(1.8px 1.8px at 88% 78%, #fff 45%, transparent 47%),
       radial-gradient(1.6px 1.6px at 44% 86%, #fff 45%, transparent 47%)
   }
-  /* Cielená úprava pre názov miesta, aby nezaberal viac riadkov a mal pevné riadkovanie */
   #heroPlace{ 
       font-size:1.18rem; font-weight:600; opacity:.95; letter-spacing:.2px; 
       line-height:1.2; 
