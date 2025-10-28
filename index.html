@@ -85,8 +85,7 @@
       overflow:hidden; 
       text-overflow:ellipsis; 
       max-width:100%;
-      /* POSUNUTÉ NIŽŠIE */
-      margin-top: 1.5rem;
+      margin-bottom: 0.5rem; /* Medzera pod mestom */
   }
   #heroIcon{ width:var(--hero-icon); height:var(--hero-icon); margin:.3rem auto .1rem; font-size:calc(var(--hero-icon) - 8px); line-height:var(--hero-icon) }
   #heroTemp{ font-size:var(--hero-temp); line-height:1; font-weight:700; letter-spacing:1px } 
@@ -151,10 +150,10 @@
 <body data-mode="day">
 
 <section class="hero">
+  <!-- MESTO JE TERAZ PRVÉ -->
+  <div id="heroPlace">—</div>
   <div id="heroIcon" aria-hidden="true"></div>
   <div id="heroTemp" class="mono">--°</div>
-  <!-- NÁZOV MESTA POSUNUTÝ NIŽŠIE -->
-  <div id="heroPlace">—</div>
 </section>
 
 <header class="sticky-header w-full glass">
