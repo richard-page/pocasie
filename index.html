@@ -3,26 +3,26 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Weather App</title>
+    <title>Aplikácia počasia</title>
     <style>
         :root {
-            --bg-color: #f5f7fa;
-            --card-bg: #ffffff;
-            --text-color: #333333;
-            --secondary-text: #666666;
-            --accent-color: #4a6fa5;
-            --border-color: #e1e5eb;
-            --loading-bg: rgba(245, 247, 250, 0.9);
+            --pozadie-farba: #f5f7fa;
+            --karta-pozadie: #ffffff;
+            --text-farba: #333333;
+            --sekundarny-text: #666666;
+            --akcent-farba: #4a6fa5;
+            --okraj-farba: #e1e5eb;
+            --nacitanie-pozadie: rgba(245, 247, 250, 0.9);
         }
 
-        .dark-mode {
-            --bg-color: #1a1a2e;
-            --card-bg: #16213e;
-            --text-color: #e6e6e6;
-            --secondary-text: #b8b8b8;
-            --accent-color: #4a9fa5;
-            --border-color: #2d3748;
-            --loading-bg: rgba(26, 26, 46, 0.9);
+        .tmavy-rezim {
+            --pozadie-farba: #1a1a2e;
+            --karta-pozadie: #16213e;
+            --text-farba: #e6e6e6;
+            --sekundarny-text: #b8b8b8;
+            --akcent-farba: #4a9fa5;
+            --okraj-farba: #2d3748;
+            --nacitanie-pozadie: rgba(26, 26, 46, 0.9);
         }
 
         * {
@@ -34,14 +34,14 @@
 
         body {
             font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
-            background-color: var(--bg-color);
-            color: var(--text-color);
+            background-color: var(--pozadie-farba);
+            color: var(--text-farba);
             line-height: 1.6;
             padding: 20px;
             min-height: 100vh;
         }
 
-        .container {
+        .kontajner {
             max-width: 800px;
             margin: 0 auto;
             position: relative;
@@ -53,18 +53,18 @@
             align-items: center;
             margin-bottom: 30px;
             padding-bottom: 15px;
-            border-bottom: 1px solid var(--border-color);
+            border-bottom: 1px solid var(--okraj-farba);
         }
 
         h1 {
             font-size: 1.8rem;
-            color: var(--accent-color);
+            color: var(--akcent-farba);
         }
 
-        .theme-toggle {
-            background: var(--card-bg);
-            border: 1px solid var(--border-color);
-            color: var(--text-color);
+        .prepinac-temy {
+            background: var(--karta-pozadie);
+            border: 1px solid var(--okraj-farba);
+            color: var(--text-farba);
             padding: 8px 15px;
             border-radius: 20px;
             cursor: pointer;
@@ -74,188 +74,188 @@
             font-weight: 500;
         }
 
-        .theme-toggle:hover {
-            background-color: var(--accent-color);
+        .prepinac-temy:hover {
+            background-color: var(--akcent-farba);
             color: white;
         }
 
-        .weather-card {
-            background-color: var(--card-bg);
+        .karta-pocasia {
+            background-color: var(--karta-pozadie);
             border-radius: 15px;
             box-shadow: 0 4px 15px rgba(0, 0, 0, 0.1);
             padding: 25px;
             margin-bottom: 25px;
         }
 
-        .current-weather {
+        .aktualne-pocasie {
             display: flex;
             justify-content: space-between;
             align-items: center;
             margin-bottom: 20px;
         }
 
-        .temperature {
+        .teplota {
             font-size: 3.5rem;
             font-weight: 300;
-            color: var(--accent-color);
+            color: var(--akcent-farba);
         }
 
-        .weather-details {
+        .detaily-pocasia {
             display: grid;
             grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
             gap: 15px;
             margin-bottom: 25px;
         }
 
-        .detail-item {
+        .polozka-detailu {
             display: flex;
             flex-direction: column;
             align-items: center;
             text-align: center;
             padding: 15px;
-            background-color: var(--bg-color);
+            background-color: var(--pozadie-farba);
             border-radius: 10px;
-            border: 1px solid var(--border-color);
+            border: 1px solid var(--okraj-farba);
         }
 
-        .detail-value {
+        .hodnota-detailu {
             font-size: 1.2rem;
             font-weight: 600;
             margin-top: 5px;
         }
 
-        .detail-label {
+        .popis-detailu {
             font-size: 0.9rem;
-            color: var(--secondary-text);
+            color: var(--sekundarny-text);
         }
 
-        .hourly-forecast {
+        .hodinova-predpoved {
             margin-top: 25px;
         }
 
-        .hourly-title {
+        .nadpis-hodinovy {
             font-size: 1.2rem;
             margin-bottom: 15px;
-            color: var(--accent-color);
+            color: var(--akcent-farba);
         }
 
-        .hourly-container {
+        .kontajner-hodinovy {
             display: flex;
             overflow-x: auto;
             gap: 15px;
             padding-bottom: 10px;
         }
 
-        .hourly-item {
+        .polozka-hodinova {
             flex: 0 0 auto;
             display: flex;
             flex-direction: column;
             align-items: center;
             padding: 15px;
-            background-color: var(--bg-color);
+            background-color: var(--pozadie-farba);
             border-radius: 10px;
             min-width: 100px;
-            border: 1px solid var(--border-color);
+            border: 1px solid var(--okraj-farba);
         }
 
-        .hour-time {
+        .cas-hodina {
             font-weight: 600;
             margin-bottom: 5px;
         }
 
-        .hour-temp {
+        .teplota-hodina {
             font-size: 1.3rem;
             font-weight: 500;
             margin: 8px 0;
         }
 
-        .hour-details {
+        .detaily-hodina {
             font-size: 0.85rem;
-            color: var(--secondary-text);
+            color: var(--sekundarny-text);
             text-align: center;
         }
 
-        .historical-data {
+        .historicke-udaje {
             margin-top: 25px;
             padding-top: 20px;
-            border-top: 1px solid var(--border-color);
+            border-top: 1px solid var(--okraj-farba);
         }
 
-        .historical-title {
+        .nadpis-historicky {
             font-size: 1.2rem;
             margin-bottom: 15px;
-            color: var(--accent-color);
+            color: var(--akcent-farba);
         }
 
-        .historical-text {
+        .text-historicky {
             line-height: 1.7;
-            color: var(--secondary-text);
-            background-color: var(--bg-color);
+            color: var(--sekundarny-text);
+            background-color: var(--pozadie-farba);
             padding: 15px;
             border-radius: 10px;
-            border: 1px solid var(--border-color);
+            border: 1px solid var(--okraj-farba);
         }
 
-        .loading {
+        .nacitanie {
             position: fixed;
             top: 0;
             left: 0;
             width: 100%;
             height: 100%;
-            background-color: var(--loading-bg);
+            background-color: var(--nacitanie-pozadie);
             display: flex;
             justify-content: center;
             align-items: center;
             z-index: 1000;
             font-size: 1.2rem;
-            color: var(--accent-color);
+            color: var(--akcent-farba);
         }
 
-        .loading.hidden {
+        .nacitanie.skryte {
             opacity: 0;
             pointer-events: none;
         }
 
-        .footer {
+        .zapati {
             text-align: center;
             margin-top: 30px;
             padding-top: 15px;
-            border-top: 1px solid var(--border-color);
-            color: var(--secondary-text);
+            border-top: 1px solid var(--okraj-farba);
+            color: var(--sekundarny-text);
             font-size: 0.9rem;
         }
 
         @media (max-width: 600px) {
-            .current-weather {
+            .aktualne-pocasie {
                 flex-direction: column;
                 text-align: center;
             }
             
-            .temperature {
+            .teplota {
                 margin-bottom: 15px;
             }
             
-            .weather-details {
+            .detaily-pocasia {
                 grid-template-columns: 1fr 1fr;
             }
         }
     </style>
 </head>
 <body>
-    <div class="container">
+    <div class="kontajner">
         <header>
             <h1>Počasie dnes</h1>
-            <button class="theme-toggle" id="themeToggle">
-                <span id="themeIcon">🌙</span>
-                <span id="themeText">Tmavý režim</span>
+            <button class="prepinac-temy" id="prepinacTemy">
+                <span id="ikonaTemy">🌙</span>
+                <span id="textTemy">Tmavý režim</span>
             </button>
         </header>
 
         <main>
-            <div class="weather-card">
-                <div class="current-weather">
+            <div class="karta-pocasia">
+                <div class="aktualne-pocasie">
                     <div>
-                        <div class="temperature">15°C</div>
+                        <div class="teplota">15°C</div>
                         <div>Jasno</div>
                     </div>
                     <div>
@@ -264,59 +264,59 @@
                     </div>
                 </div>
 
-                <div class="weather-details">
-                    <div class="detail-item">
-                        <div class="detail-label">Vietor</div>
-                        <div class="detail-value">13 km/h</div>
+                <div class="detaily-pocasia">
+                    <div class="polozka-detailu">
+                        <div class="popis-detailu">Vietor</div>
+                        <div class="hodnota-detailu">13 km/h</div>
                     </div>
-                    <div class="detail-item">
-                        <div class="detail-label">Viditeľnosť</div>
-                        <div class="detail-value">13 km</div>
+                    <div class="polozka-detailu">
+                        <div class="popis-detailu">Viditeľnosť</div>
+                        <div class="hodnota-detailu">13 km</div>
                     </div>
-                    <div class="detail-item">
-                        <div class="detail-label">UV index</div>
-                        <div class="detail-value">0.0</div>
+                    <div class="polozka-detailu">
+                        <div class="popis-detailu">UV index</div>
+                        <div class="hodnota-detailu">0.0</div>
                     </div>
-                    <div class="detail-item">
-                        <div class="detail-label">Pocitová teplota</div>
-                        <div class="detail-value">15°C</div>
-                    </div>
-                </div>
-
-                <div class="hourly-forecast">
-                    <h3 class="hourly-title">Predpoveď na dnes</h3>
-                    <div class="hourly-container">
-                        <div class="hourly-item">
-                            <div class="hour-time">14:00</div>
-                            <div class="hour-temp">15°C</div>
-                            <div class="hour-details">0%<br>0 mm<br>13 km/h</div>
-                        </div>
-                        <div class="hourly-item">
-                            <div class="hour-time">15:00</div>
-                            <div class="hour-temp">15°C</div>
-                            <div class="hour-details">0%<br>0 mm<br>14 km/h</div>
-                        </div>
-                        <div class="hourly-item">
-                            <div class="hour-time">16:00</div>
-                            <div class="hour-temp">14°C</div>
-                            <div class="hour-details">0%<br>0 mm<br>12 km/h</div>
-                        </div>
-                        <div class="hourly-item">
-                            <div class="hour-time">17:00</div>
-                            <div class="hour-temp">13°C</div>
-                            <div class="hour-details">0%<br>0 mm<br>17 km/h</div>
-                        </div>
-                        <div class="hourly-item">
-                            <div class="hour-time">18:00</div>
-                            <div class="hour-temp">13°C</div>
-                            <div class="hour-details">0%<br>0 mm<br>20 km/h</div>
-                        </div>
+                    <div class="polozka-detailu">
+                        <div class="popis-detailu">Pocitová teplota</div>
+                        <div class="hodnota-detailu">15°C</div>
                     </div>
                 </div>
 
-                <div class="historical-data">
-                    <h3 class="historical-title">Počasie pred rokom</h3>
-                    <p class="historical-text">
+                <div class="hodinova-predpoved">
+                    <h3 class="nadpis-hodinovy">Predpoveď na dnes</h3>
+                    <div class="kontajner-hodinovy">
+                        <div class="polozka-hodinova">
+                            <div class="cas-hodina">14:00</div>
+                            <div class="teplota-hodina">15°C</div>
+                            <div class="detaily-hodina">0%<br>0 mm<br>13 km/h</div>
+                        </div>
+                        <div class="polozka-hodinova">
+                            <div class="cas-hodina">15:00</div>
+                            <div class="teplota-hodina">15°C</div>
+                            <div class="detaily-hodina">0%<br>0 mm<br>14 km/h</div>
+                        </div>
+                        <div class="polozka-hodinova">
+                            <div class="cas-hodina">16:00</div>
+                            <div class="teplota-hodina">14°C</div>
+                            <div class="detaily-hodina">0%<br>0 mm<br>12 km/h</div>
+                        </div>
+                        <div class="polozka-hodinova">
+                            <div class="cas-hodina">17:00</div>
+                            <div class="teplota-hodina">13°C</div>
+                            <div class="detaily-hodina">0%<br>0 mm<br>17 km/h</div>
+                        </div>
+                        <div class="polozka-hodinova">
+                            <div class="cas-hodina">18:00</div>
+                            <div class="teplota-hodina">13°C</div>
+                            <div class="detaily-hodina">0%<br>0 mm<br>20 km/h</div>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="historicke-udaje">
+                    <h3 class="nadpis-historicky">Počasie pred rokom</h3>
+                    <p class="text-historicky">
                         Pred rokom v tento deň bolo o niečo teplejšie, s priemernou teplotou 18°C. 
                         Počasie bolo podobne jasné, bez zrážok, ale s mierne vyššou vlhkosťou vzduchu. 
                         Vietor bol slabší, v priemere okolo 8 km/h. Celkovo bol deň príjemne jarný, 
@@ -327,57 +327,57 @@
             </div>
         </main>
 
-        <div class="loading" id="loadingIndicator">
+        <div class="nacitanie" id="indikatorNacitania">
             Načítavam údaje...
         </div>
 
-        <footer class="footer">
+        <footer class="zapati">
             Údaje poskytuje Open-Meteo
         </footer>
     </div>
 
     <script>
-        // Theme toggle functionality
-        const themeToggle = document.getElementById('themeToggle');
-        const themeIcon = document.getElementById('themeIcon');
-        const themeText = document.getElementById('themeText');
-        const body = document.body;
+        // Funkcionalita prepínača témy
+        const prepinacTemy = document.getElementById('prepinacTemy');
+        const ikonaTemy = document.getElementById('ikonaTemy');
+        const textTemy = document.getElementById('textTemy');
+        const telo = document.body;
         
-        // Check for saved theme preference or default to light
-        const currentTheme = localStorage.getItem('theme') || 'light';
+        // Skontroluj uložené preferencie témy alebo použij svetlý režim ako predvolený
+        const aktualnaTema = localStorage.getItem('tema') || 'light';
         
-        // Apply the saved theme on page load
-        if (currentTheme === 'dark') {
-            body.classList.add('dark-mode');
-            themeIcon.textContent = '☀️';
-            themeText.textContent = 'Svetlý režim';
+        // Aplikuj uloženú tému pri načítaní stránky
+        if (aktualnaTema === 'dark') {
+            telo.classList.add('tmavy-rezim');
+            ikonaTemy.textContent = '☀️';
+            textTemy.textContent = 'Svetlý režim';
         }
         
-        themeToggle.addEventListener('click', () => {
-            body.classList.toggle('dark-mode');
+        prepinacTemy.addEventListener('click', () => {
+            telo.classList.toggle('tmavy-rezim');
             
-            if (body.classList.contains('dark-mode')) {
-                themeIcon.textContent = '☀️';
-                themeText.textContent = 'Svetlý režim';
-                localStorage.setItem('theme', 'dark');
+            if (telo.classList.contains('tmavy-rezim')) {
+                ikonaTemy.textContent = '☀️';
+                textTemy.textContent = 'Svetlý režim';
+                localStorage.setItem('tema', 'dark');
             } else {
-                themeIcon.textContent = '🌙';
-                themeText.textContent = 'Tmavý režim';
-                localStorage.setItem('theme', 'light');
+                ikonaTemy.textContent = '🌙';
+                textTemy.textContent = 'Tmavý režim';
+                localStorage.setItem('tema', 'light');
             }
         });
         
-        // Improved loading data simulation
+        // Vylepšená simulácia načítania údajov
         document.addEventListener('DOMContentLoaded', function() {
-            const loadingIndicator = document.getElementById('loadingIndicator');
+            const indikatorNacitania = document.getElementById('indikatorNacitania');
             
-            // Hide loading indicator after a short delay (simulating data load)
+            // Skry indikátor načítania po krátkom oneskorení (simulácia načítania údajov)
             setTimeout(() => {
-                loadingIndicator.classList.add('hidden');
+                indikatorNacitania.classList.add('skryte');
                 
-                // Remove from DOM after animation completes
+                // Odstráň z DOM po dokončení animácie
                 setTimeout(() => {
-                    loadingIndicator.style.display = 'none';
+                    indikatorNacitania.style.display = 'none';
                 }, 300);
             }, 2000);
         });
