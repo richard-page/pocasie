@@ -1,3 +1,4 @@
+
 <!DOCTYPE html>
 <html lang="sk">
 <head>
@@ -34,6 +35,9 @@
       text-align: center !important;
       margin-left: auto !important;
       margin-right: auto !important;
+      display: flex;
+      justify-content: center;
+      align-items: center;
   }
 
   body{
@@ -133,12 +137,12 @@
   <div class="w-full px-3 md:px-6 py-3 flex items-center justify-center">
     <div class="suggest-wrap w-full sm:w-[560px] max-w-full mx-auto">
       <form id="searchForm" class="grid grid-cols-1 sm:grid-cols-[1fr_auto] gap-2" novalidate>
-        <input id="cityInput" placeholder="[translate:Zadaj mesto (napr. Levice)]"
+        <input id="cityInput" placeholder="Zadaj mesto (napr. Levice)"
                class="w-full px-4 py-2.5 rounded-lg bg-white/20 border border-white/20 placeholder-white/70 focus:outline-none focus:ring-2 focus:ring-white/50"
                autocomplete="off" inputmode="search" type="search" />
         <button id="searchBtn" type="submit"
                 class="w-full sm:w-auto inline-flex items-center justify-center px-4 md:px-5 py-2.5 rounded-lg bg-white/30 hover:bg-white/40 text-white font-medium">
-          [translate:Hľadať]
+          Hľadať
         </button>
       </form>
       <div id="citySuggestions" class="suggest hidden"></div>
@@ -153,8 +157,8 @@
   <section class="glass p-3 lg:p-4">
     
     <div class="tabs-nav mb-4">
-        <button id="tab24hBtn" class="tab-btn" aria-selected="true" data-tab="hourly">24 [translate:hodín]</button>
-        <button id="tab10dBtn" class="tab-btn" aria-selected="false" data-tab="daily">10 [translate:dní]</button>
+        <button id="tab24hBtn" class="tab-btn" aria-selected="true" data-tab="hourly">24 hodín</button>
+        <button id="tab10dBtn" class="tab-btn" aria-selected="false" data-tab="daily">10 dní</button>
     </div>
 
     <div id="hourlyContent" class="tab-content" data-tab-content="hourly">
@@ -162,8 +166,8 @@
             <table class="tbl w-full h-full min-w-[900px] text-sm">
                 <thead>
                     <tr class="text-white/90">
-                        <th>[translate:Čas]</th><th>[translate:Počasie]</th><th>[translate:Teplota]</th><th>[translate:Rosný bod]</th>
-                        <th>[translate:Zrážky]</th><th>[translate:Vietor]</th><th>[translate:Oblačnosť]</th><th>[translate:Tlak]</th>
+                        <th>Čas</th><th>Počasie</th><th>Teplota</th><th>Rosný bod</th>
+                        <th>Zrážky</th><th>Vietor</th><th>Oblačnosť</th><th>Tlak</th>
                     </tr>
                 </thead>
                 <tbody id="hourRows" class="divide-y divide-white/10"></tbody>
@@ -181,7 +185,7 @@
   <section class="grid grid-cols-1 lg:grid-cols-2 gap-1">
     
     <div class="glass">
-      <div class="px-4 py-3 border-b border-white/20"><h2 class="text-lg font-semibold">[translate:Presne pred rokom]</h2></div>
+      <div class="px-4 py-3 border-b border-white/20"><h2 class="text-lg font-semibold">Presne pred rokom</h2></div>
       <div id="historyExact" class="p-4"></div>
     </div>
 
@@ -189,8 +193,8 @@
       <div class="px-4 py-3 border-b border-white/20"><h2 class="text-lg font-semibold">UV index</h2></div>
       <div id="uvPanel" class="p-4">
         <div class="grid grid-cols-2 gap-3">
-          <div class="glass p-2 rounded-lg"><div class="text-white/70 text-sm">[translate:Aktuálne]</div><div id="uvNow" class="mono font-semibold">—</div></div>
-          <div class="glass p-2 rounded-lg"><div class="text-white/70 text-sm">[translate:Dnešné maximum]</div><div id="uvMax" class="mono font-semibold">—</div></div>
+          <div class="glass p-2 rounded-lg"><div class="text-white/70 text-sm">Aktuálne</div><div id="uvNow" class="mono font-semibold">—</div></div>
+          <div class="glass p-2 rounded-lg"><div class="text-white/70 text-sm">Dnešné maximum</div><div id="uvMax" class="mono font-semibold">—</div></div>
         </div>
       </div>
     </div>
@@ -198,18 +202,20 @@
 
   <div id="loading" class="hidden text-center py-10">
     <div class="inline-block w-8 h-8 border-4 border-white/30 border-t-white rounded-full animate-spin"></div>
-    <p class="mt-2">[translate:Načítavam…]</p>
+    <p class="mt-2">Načítavam…</p>
   </div>
   <div id="err" class="hidden glass p-4 border-red-500 border-2 bg-red-800/20">
     <div class="text-center text-red-100 font-medium flex items-center justify-center gap-2">
       <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="w-5 h-5"><circle cx="12" cy="12" r="10"></circle><line x1="12" y1="8" x2="12" y2="12"></line><line x1="12" y1="16" x2="12.01" y2="16"></line></svg>
-      [translate:Nepodarilo sa načítať údaje. Skús iné mesto.]
+      Nepodarilo sa načítať údaje. Skús iné mesto.
     </div>
   </div>
   
-  <div class="pt-2 pb-0 text-white/50 text-xs footer-force-center">
+ <div class="pt-2 pb-0 text-white/50 text-xs footer-force-center">
+  <div class="w-full text-center">
     Údaje poskytuje <a href="https://open-meteo.com/" target="_blank" rel="noopener noreferrer" class="hover:text-white/80 underline">Open-Meteo</a>.
   </div>
+</div>
   
 </main>
 
@@ -282,11 +288,17 @@ async function reverseGeocode(lat, lon) {
         const j = await r.json();
         const addr = j.address;
         if (!addr) return null;
+        // Primárne sa pokúsime získať mesto (city, town, village)
         const name = addr.city || addr.town || addr.village || addr.municipality || addr.county;
+        
+        // Ak máme nejaké meno, vrátime objekt
         if (name) {
             return { name: name, latitude: lat, longitude: lon, country_code: addr.country_code ? addr.country_code.toUpperCase() : 'SK', admin1: addr.state || '' };
         }
+        
+        // Inak skúsime aspoň okres/štát
         const fallbackName = addr.county || addr.state || 'Aktuálna poloha';
+
         return { 
             name: fallbackName, 
             latitude: lat, 
@@ -294,6 +306,7 @@ async function reverseGeocode(lat, lon) {
             country_code: addr.country_code ? addr.country_code.toUpperCase() : 'SK', 
             admin1: addr.state || ''
         };
+
     } catch (e) {
         console.error("Chyba pri volaní Nominatim reverseGeocode:", e);
         return null;
@@ -317,6 +330,7 @@ async function fetchHistoryExact(lat,lon){
     +`&timezone=auto`;
   const r=await fetch(url); if(!r.ok) throw new Error('arch1'); return await r.json();
 }
+
 
 function renderHero(city, wx){
   const isDay = !!wx.current.is_day;
@@ -602,21 +616,11 @@ function handleLocationFailure() {
         run(cityObj);
     } else {
         el.err.classList.remove('hidden');
-        el.heroPlace.textContent = '[translate:Poloha nezistená]';
+        el.heroPlace.textContent = 'Poloha nezistená';
         el.heroTemp.textContent  = '--°';
         el.heroIcon.textContent  = '❓';
     }
 }
-
-window.addEventListener('load', () => {
-  const footer = document.querySelector('.footer-force-center');
-  if (footer) {
-    footer.style.display = 'flex';
-    footer.style.justifyContent = 'center';
-    footer.style.alignItems = 'center';
-    footer.style.height = '40px'; // adjust height if needed for vertical centering
-  }
-});
 
 checkAndroidLocationEnabled();
 </script>
