@@ -26,10 +26,9 @@
             height: 100vh;
             display: flex;
             flex-direction: column;
-            overflow: hidden; /* Skryjeme scrollovanie hlavnej stránky */
+            overflow: hidden;
         }
 
-        /* --- NAVIGÁCIA (Pohyblivý pás) --- */
         .nav-container {
             background: var(--glass-bg);
             border-bottom: 1px solid var(--glass-border);
@@ -47,12 +46,11 @@
             padding: 5px 20px;
             max-width: 1200px;
             width: 100%;
-            scrollbar-width: none; /* Firefox */
-            -ms-overflow-style: none;  /* IE 10+ */
+            scrollbar-width: none;
         }
 
         .nav-scroll::-webkit-scrollbar { 
-            display: none; /* Chrome/Safari */
+            display: none;
         }
 
         .nav-btn {
@@ -85,7 +83,6 @@
             transform: translateY(-2px);
         }
 
-        /* Aktívny stav */
         .nav-btn.active {
             background: var(--primary-blue);
             color: #fff;
@@ -97,7 +94,6 @@
             transform: scale(1.2);
         }
 
-        /* --- HLAVNÉ OKNO (IFRAME) --- */
         .content-wrapper {
             flex: 1;
             width: 100%;
@@ -110,351 +106,62 @@
             height: 100%;
             border: none;
             display: block;
+            transition: opacity 0.3s ease-in-out;
         }
 
-        /* --- RESPONSIVE --- */
-        @media (max-width: 768px) {
-            .nav-btn {
-                min-width: 70px;
-                padding: 8px;
-                font-size: 11px;
-            }
-            .nav-btn i {
-                font-size: 18px;
-            }
-        }
     </style>
 
-
-
-  <style type="text/css" media="all">
-  
-          /* --- 
-        Globálne Premenné a Základné Nastavenia
-        --- */
-        :root {
-            --dark-blue: #002043;
-            --light-blue: #3b9af8;
-            --white: #ffffff;
-            --text-gray: #c5dff8;
-            --dark-accent: #001a36;
-            --font-family: 'Poppins', sans-serif;
-            --border-radius: 16px;
-            --transition-speed: 0.4s;
-        }
-        /* ---
-        Hlavička (Header)
-        --- */
-        .site-header {
-            padding: 1rem 0;
-            position: sticky;
-            top: 0;
-            height: auto;
-            z-index: 1000;
-            background-color: #3b9af8;
-            backdrop-filter: blur(12px);
-            -webkit-backdrop-filter: blur(12px);
-            border-bottom: 1px solid rgba(59, 154, 248, 0.2);
-        }
-
-
-         @media only screen and (max-width: 730px){
-.site-header {
-            padding: 1rem 0;
-            position: sticky;
-            top: 0;
-            width: auto;
-            height: 75px;
-            z-index: 1000;
-            padding: 1rem;
-            background-color: #3b9af8;
-            backdrop-filter: blur(12px);
-            -webkit-backdrop-filter: blur(12px);
-            border-bottom: 1px solid rgba(59, 154, 248, 0.2);
-        }
-         }
-
-        .header-container {
-            display: flex;
-            align-items: center;
-            justify-content: space-between;
-            width: auto;
-            margin-left: 10%;
-            margin-top: -1%;
-        }
-        
-        
-        @media only screen and (max-width: 730px){
-                    .header-container {
-            display: flex;
-            align-items: center;
-            justify-content: space-between;
-            width: 85%;
-            margin-left: 15%;
-            margin-top: -3%;
-        }
-        
-        }
-
-        .logo {
-            flex-shrink: 0;
-            margin-right: 3rem;
-            height: 60px; /* Set a fixed height for the logo container */
-            position: absolute;
-            left: 1%;
-            top: 5%;
-        }
-        .logo a {
-            display: flex;
-            align-items: center;
-            height: 100%;
-        }
-        
-        
-        .logo img {
-            height: 100%;
-            width: auto;
-            object-fit: contain;
-        }
-
-
-   @media only screen and(max-width: 730px) {
-  .logo {
-            flex-shrink: 0;
-            margin-right: 3rem;
-            height: 50px; /* Set a fixed height for the logo container */
-            position: absolute;
-            left: -5%;
-            top: 5%;
-        }
-        .logo a {
-            display: flex;
-            align-items: center;
-            height: 100%;
-        }
-        
-        
-        .logo img {
-            height: 100%;
-            width: auto;
-            object-fit: contain;
-        }
-
-   }
-        
-        
-            .logo-2 {
-            flex-shrink: 0;
-            margin-right: 3rem;
-            height: 50px; /* Set a fixed height for the logo container */
-        }
-        .logo-2 a {
-            display: flex;
-            align-items: center;
-            height: 100%;
-        }
-        .logo-2 img {
-            height: 100%;
-            width: auto;
-            object-fit: contain;
-        }   
-        
-
-        /* --- Horizontálne Posuvné Menu --- */
-        .main-menu-container {
-            display: flex;
-            align-items: center;
-            flex-grow: 1;
-            padding: 0 10px;
-            overflow: hidden;
-            position: relative;
-        }
-
-        .main-menu {
-            display: flex;
-            list-style: none;
-            gap: 1rem;
-            overflow-x: auto;
-            padding: 10px;
-            scrollbar-width: none; /* Firefox */
-            width: auto;
-        }
-        .main-menu::-webkit-scrollbar {
-            display: none; /* Chrome, Safari, Opera */
-        }
-
-        .main-menu li {
-            flex-shrink: 0;
-        }
-
-        .main-menu a {
-            display: flex;
-            align-items: center;
-            gap: 0.6rem;
-            padding: 0.6rem 1.2rem;
-            text-decoration: none;
-            color: var(--text-gray);
-            font-weight: 500;
-            border-radius: 25px;
-            white-space: nowrap;
-            background: var(--dark-blue);
-            transition: all var(--transition-speed) ease;
-        }
-        .main-menu a:hover, .main-menu a.active {
-            background-color: var(--dark-accent);
-            color: var(--white);
-            transform: translateY(-2px);
-            box-shadow: 0 5px 15px rgba(59, 154, 248, 0.3);
-        }
-        .main-menu a i {
-            font-size: 1.1rem;
-        }
-
-        .menu-arrow {
-            background: var(--dark-blue);
-            color: var(--white);
-            border: none;
-            border-radius: 50%;
-            width: 50px;
-            height: 40px;
-            font-size: 1.2rem;
-            cursor: pointer;
-            z-index: 10;
-            transition: all 0.3s ease;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            padding: 6px;
-        }
-        .menu-arrow:hover {
-            transform: scale(1.1);
-            box-shadow: 0 0 15px rgba(59, 154, 248, 0.5);
-        }
-        #scroll-left { margin-right: 0.5rem; }
-        #scroll-right { margin-left: 0.5rem; }
-
-  </style>
-
-<body>
-      <!-- ======================= HEADER ======================= -->
-    <header class="site-header">
- <div class="logo">
-                <a href="https://www.meteopocasie.sk/">
-                    <img src="https://www.meteopocasie.sk/wp-content/uploads/2024/01/Untitled49_20231209213754.png" alt="MeteoPočasie.sk Logo" onerror="this.onerror=null;this.src='https://placehold.co/200x50/002043/FFFFFF?text=MeteoPočasie.sk';">
-                </a>
-            </div>   
-        <div class="header-container">
-
-            <div class="main-menu-container">
-
-                <button id="scroll-left" class="menu-arrow"><i class="fa-solid fa-chevron-left"></i></button>
-                <ul class="main-menu" id="main-menu">
-                    
-                    <li><a href="https://www.meteopocasie.sk/" class="active"><i class="fa-solid fa-home"></i> Domov</a></li>
-                    <li><a href="https://www.meteopocasie.sk/pocasie/aktualne/index.html"><i class="fas fa-cloud-sun"></i> Aktuálne počasie</a></li>
-                    <li><a href="https://www.meteopocasie.sk/category/sledujeme"><i class="fas fa-bullhorn"></i> Sledujeme</a></li>
-                    <li><a href="https://www.meteopocasie.sk/pocasie/aktualne/index.html"><i class="fas fa-cloud-rain"></i> Úhrn zrážok</a></li>
-                    <li><a href="https://www.meteopocasie.sk/pocasie/aktualne/index.html"><i class="fas fa-snowflake"></i> Výška snehu</a></li>
-                    <li><a href="https://www.meteopocasie.sk/pocasie/predpoved/index.html"><i class="fas fa-chart-bar"></i> Predpoveď počasia</a></li>
-                    <li><a href="https://www.meteopocasie.sk/pocasie/predpoved/6-dni/index.html"><i class="fas fa-calendar-alt"></i> Predpoveď 16 dní</a></li>
-                    <li><a href="https://www.meteopocasie.sk/pocasie/predpoved/30-dni/index.html"><i class="fas fa-calendar-plus"></i> Predpoveď na 30 dní</a></li>
-                    <li><a href="https://www.meteopocasie.sk/meteoreporty/"><i class="fas fa-bolt-lightning"></i> Meteoreporty</a></li>
-                    <li><a href="https://www.meteopocasie.sk/storm_forecast/"><i class="fas fa-cloud-bolt"></i> Prognóza búrok</a></li>
-                    <li><a href="https://www.meteopocasie.sk/meteogram/graf_pocasia.html"><i class="fas fa-chart-line"></i> Meteogramy</a></li>
-                    <li><a href="https://www.meteopocasie.sk//rizikove-mapy/"><i class="fas fa-triangle-exclamation"></i> Riziká</a></li>
-                    <li><a href="https://www.meteopocasie.sk/meteoradar/radar.php"><i class="fa-solid fa-satellite-dish"></i> Meteoradar</a></li>
-                    <li><a href="https://www.meteopocasie.sk/meteoradar/radar.php"><i class="fa-solid fa-satellite"></i> Satelit</a></li>
-                    <li><a href="https://www.meteopocasie.sk/meteoradar/radar.php"><i class="fa-solid fa-bolt"></i> Blesky</a></li>
-                    <li><a href="https://www.meteopocasie.sk/3d-globe/"><i class="fas fa-globe"></i> 3D Globe mapa</a></li>
-                    <li><a href="https://www.meteopocasie.sk/clanky/article_feeds.php"><i class="fas fa-newspaper"></i> Články</a></li>
-                    <li><a href="https://www.meteopocasie.sk/pocasie/uv/index.html"><i class="fa-solid fa-sun"></i> UV index</a></li>
-                    <li><a href="https://www.meteopocasie.sk/pocasie/kvalita-ovzdusia/index.html"><i class="fas fa-smog"></i> Kvalita ovzdušia</a></li>
-                    <li><a href="https://www.meteopocasie.sk/pocasie/pelove-spravy/index.html"><i class="fa-solid fa-leaf"></i> Peľové správy</a></li>
-                    <li><a href="https://www.meteopocasie.sk/zemetrasenie/index.html"><i class="fa-solid fa-house-chimney-crack"></i> Zemetrasenia</a></li>
-                    <li><a href="https://www.meteopocasie.sk/spaceweather/index.html"><i class="fas fa-star"></i> Polárna žiara</a></li>
-                    <li><a href="https://www.meteopocasie.sk/pocasie/poziare.html"><i class="fas fa-fire"></i> Požiare</a></li>
-                    <li><a href="https://www.meteopocasie.sk/pocasie/sucho.html"><i class="fa-solid fa-hand-holding-droplet"></i> Sucho</a></li>
-                    <li><a href="https://www.meteopocasie.sk/pocasie/kamery.html"><i class="fas fa-video"></i> MeteoKamery</a></li>
-                    <li><a href="https://www.meteopocasie.sk/pocasie/aplikacia.html"><i class="fas fa-mobile"></i> Aplikácia</a></li>
-                    <li><a href="https://www.meteopocasie.sk/pocasie/predplatne.html"><i class="fas fa-plus"></i> Predplatné</a></li>
-                    <li><a href="https://www.meteopocasie.sk/pocasie/eshop.html"><i class="fas fa-shop"></i> Eshop</a></li>
-                    <li><a href="https://www.meteopocasie.sk/pocasie/fotka-tyzdna-mesiaca.html"><i class="fas fa-camera"></i> Fotka týždňa</a></li>
-                    <li><a href="https://www.meteopocasie.sk/pocasie/aktivity.html"><i class="fas fa-seedling"></i> Aktivity</a></li>
-                    <li><a href="https://www.meteopocasie.sk/pocasie/oblecenie.html"><i class="fas fa-shirt"></i> Oblečenie</a></li>
-                </ul>
-                <button id="scroll-right" class="menu-arrow"><i class="fa-solid fa-chevron-right"></i></button>
-            </div>
-        </div>
-    </header>
-    <script>
-                // --- 2. Funkcionalita pre horizontálne posuvné menu ---
-        const menu = document.getElementById('main-menu');
-        const scrollLeftBtn = document.getElementById('scroll-left');
-        const scrollRightBtn = document.getElementById('scroll-right');
-        const scrollAmount = 300;
-
-        scrollLeftBtn.addEventListener('click', () => {
-            menu.scrollBy({ left: -scrollAmount, behavior: 'smooth' });
-        });
-
-        scrollRightBtn.addEventListener('click', () => {
-            menu.scrollBy({ left: scrollAmount, behavior: 'smooth' });
-        });
-        
-
-    </script>
 </head>
 <body>
 
-
-
-
     <div class="nav-container">
         <div class="nav-scroll">
-            <button class="nav-btn active" onclick="changeMap('/rizikove-mapy/snezenie/', this)">
+            <button class="nav-btn active" onclick="changeMap('rizikove-mapy/snezenie/index.html', this)">
                 <i class="fa-solid fa-snowflake"></i>
                 Sneh
             </button>
             
-            <button class="nav-btn" onclick="changeMap('/rizikove-mapy/dazd/', this)">
+            <button class="nav-btn" onclick="changeMap('rizikove-mapy/dazd/index.html', this)">
                 <i class="fa-solid fa-cloud-rain"></i>
                 Dážď
             </button>
             
-            <button class="nav-btn" onclick="changeMap('/rizikove-mapy/vietor/', this)">
+            <button class="nav-btn" onclick="changeMap('rizikove-mapy/vietor/index.html', this)">
                 <i class="fa-solid fa-wind"></i>
                 Vietor
             </button>
             
-            <button class="nav-btn" onclick="changeMap('/rizikove-mapy/hmla/', this)">
+            <button class="nav-btn" onclick="changeMap('rizikove-mapy/hmla/index.html', this)">
                 <i class="fa-solid fa-smog"></i>
                 Hmla
             </button>
             
-            <button class="nav-btn" onclick="changeMap('/rizikove-mapy/burky/', this)">
+            <button class="nav-btn" onclick="changeMap('rizikove-mapy/burky/index.html', this)">
                 <i class="fa-solid fa-cloud-bolt"></i>
                 Búrky
             </button>
 
-            <button class="nav-btn" onclick="changeMap('/rizikove-mapy/poladovica/', this)">
+            <button class="nav-btn" onclick="changeMap('rizikove-mapy/poladovica/index.html', this)">
                 <i class="fa-solid fa-road-spikes"></i>
                 Poľadovica
             </button>
 
-            <button class="nav-btn" onclick="changeMap('/rizikove-mapy/teplo/', this)">
+            <button class="nav-btn" onclick="changeMap('rizikove-mapy/teplo/index.html', this)">
                 <i class="fa-solid fa-temperature-arrow-up"></i>
                 Teplo
             </button>
             
-            <button class="nav-btn" onclick="changeMap('/rizikove-mapy/zima/', this)">
+            <button class="nav-btn" onclick="changeMap('rizikove-mapy/zima/index.html', this)">
                 <i class="fa-solid fa-temperature-arrow-down"></i>
                 Zima
             </button>
-<button class="nav-btn" onclick="changeMap('/rizikove-mapy/uv/', this)">
+
+            <button class="nav-btn" onclick="changeMap('rizikove-mapy/uv/index.html', this)">
                 <i class="fa-solid fa-sun"></i>
                 UV index
             </button>
-<button class="nav-btn" onclick="changeMap('/rizikove-mapy/aqi/', this)">
+
+            <button class="nav-btn" onclick="changeMap('rizikove-mapy/aqi/index.html', this)">
                 <i class="fa-solid fa-lungs"></i>
                 K. ovzdušia
             </button>
@@ -462,63 +169,51 @@
     </div>
 
     <div class="content-wrapper">
-        <iframe id="mapFrame" src="/rizikove-mapy/snezenie/" title="Riziková mapa"></iframe>
+        <iframe id="mapFrame" src="rizikove-mapy/snezenie/index.html" title="Riziková mapa"></iframe>
     </div>
 
     <script>
+
         function changeMap(url, element) {
-            // 1. Zmena zdroja Iframe (načítanie inej mapy)
             const iframe = document.getElementById('mapFrame');
-            
-            // Pridanie efektu prechodu (fade out/in)
+
             iframe.style.opacity = 0;
-            
+
             setTimeout(() => {
                 iframe.src = url;
                 iframe.onload = () => {
                     iframe.style.opacity = 1;
                 };
-            }, 200); // Krátke čakanie pre efekt
+            }, 200);
 
-            // 2. Zmena aktívneho tlačidla
-            // Odstrániť triedu 'active' zo všetkých tlačidiel
             const buttons = document.querySelectorAll('.nav-btn');
             buttons.forEach(btn => btn.classList.remove('active'));
-
-            // Pridať triedu 'active' kliknutému tlačidlu
             element.classList.add('active');
 
-            // 3. (Voliteľné) Zmena URL v prehliadači bez reloadu
-            // Toto umožní ľuďom poslať link napr. index.html?mapa=vietor
-            const mapName = url.split('.')[0]; // zoberie názov pred .html
-            const newUrl = window.location.protocol + "//" + window.location.host + window.location.pathname + '?mapa=' + mapName;
+            const newUrl = '?mapa=' + url;
             window.history.pushState({path: newUrl}, '', newUrl);
         }
 
-        // Funkcia na načítanie mapy podľa URL parametra pri štarte
-        // Napr. ak niekto otvorí index.html?mapa=vietor
         document.addEventListener('DOMContentLoaded', () => {
-            const urlParams = new URLSearchParams(window.location.search);
-            const mapParam = urlParams.get('mapa');
+            const params = new URLSearchParams(window.location.search);
+            const map = params.get('mapa');
 
-            if (mapParam) {
-                const targetUrl = mapParam + '.html';
+            if (map) {
+                const iframe = document.getElementById('mapFrame');
+                iframe.src = map;
+
                 const buttons = document.querySelectorAll('.nav-btn');
-                
-                // Nájdeme tlačidlo, ktoré má v onclick tento súbor
                 buttons.forEach(btn => {
-                    if (btn.getAttribute('onclick').includes(targetUrl)) {
-                        changeMap(targetUrl, btn);
+                    if (btn.getAttribute('onclick').includes(map)) {
+                        btn.classList.add('active');
+                    } else {
+                        btn.classList.remove('active');
                     }
                 });
             }
-            
-            // Animácia fade-in pre iframe pri prvom načítaní
-            const iframe = document.getElementById('mapFrame');
-            iframe.style.transition = 'opacity 0.3s ease-in-out';
         });
+
     </script>
 
 </body>
 </html>
-
