@@ -1,1 +1,2993 @@
 
+
+<!DOCTYPE html>
+<html lang="sk">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Meteo Slovensko - Výstrahy</title>
+    <!-- Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <!-- Google Fonts - Poppins -->
+    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <!-- Lucide Icons -->
+    <script src="https://unpkg.com/lucide@latest"></script>
+    <!-- Leaflet CSS (Mapa) -->
+    <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
+    <!-- Leaflet MarkerCluster CSS -->
+    <link rel="stylesheet" href="https://unpkg.com/leaflet.markercluster@1.4.1/dist/MarkerCluster.css" />
+    <link rel="stylesheet" href="https://unpkg.com/leaflet.markercluster@1.4.1/dist/MarkerCluster.Default.css" />
+   
+    <!-- HTML2Canvas (Screenshot) -->
+    <script src="https://html2canvas.hertzen.com/dist/html2canvas.min.js"></script>
+
+    <style>
+        body {
+            font-family: 'Poppins', sans-serif;
+            background-color: #002043;
+            color: #e2e8f0;
+            background-image: linear-gradient(180deg, #002043 0%, #001226 100%);
+            min-height: 100vh;
+        }
+        /* Global Font Enforcement */
+        * { font-family: 'Poppins', sans-serif; }
+
+        .rounded-custom {
+            border-radius: 25px;
+        }
+        /* Glassmorphism Dark */
+        .glass-panel {
+            background: rgba(15, 23, 42, 0.6);
+            backdrop-filter: blur(12px);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            box-shadow: 0 4px 30px rgba(0, 0, 0, 0.5);
+        }
+        .hover-scale {
+            transition: all 0.2s ease;
+        }
+        .hover-scale:hover {
+            transform: translateY(-2px);
+            background: rgba(30, 41, 59, 0.8);
+            border-color: rgba(255, 255, 255, 0.2);
+        }
+       
+        /* Maps */
+        #map, #admin-map {
+            width: 100%;
+            border-radius: 25px;
+            z-index: 1;
+            background: #002043;
+        }
+        #map { height: 400px; }
+        #admin-map { height: 400px; }
+
+        /* --- MODERN ZOOM CONTROLS --- */
+        .leaflet-touch .leaflet-bar {
+            border: none;
+            box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.3);
+        }
+        .leaflet-touch .leaflet-bar a {
+            background-color: #1e293b !important; /* Slate-800 */
+            color: white !important;
+            border: 1px solid rgba(255,255,255,0.1) !important;
+            width: 36px;
+            height: 36px;
+            line-height: 36px;
+            font-weight: bold;
+            transition: background-color 0.2s;
+        }
+        /* Top button (Zoom In) */
+        .leaflet-touch .leaflet-bar a:first-child {
+            border-top-left-radius: 12px !important;
+            border-top-right-radius: 12px !important;
+            border-bottom-left-radius: 0 !important;
+            border-bottom-right-radius: 0 !important;
+            border-bottom: none !important;
+        }
+        /* Bottom button (Zoom Out) */
+        .leaflet-touch .leaflet-bar a:last-child {
+            border-top-left-radius: 0 !important;
+            border-top-right-radius: 0 !important;
+            border-bottom-left-radius: 12px !important;
+            border-bottom-right-radius: 12px !important;
+            margin-top: 0;
+            border-top: 1px solid rgba(255,255,255,0.1) !important;
+        }
+        .leaflet-touch .leaflet-bar a:hover {
+            background-color: #3b82f6 !important; /* Blue-500 */
+        }
+
+        /* Hide Attribution */
+        .leaflet-control-attribution {
+            display: none !important;
+        }
+
+        .leaflet-popup-content-wrapper {
+            background: #0f172a;
+            color: white;
+            border-radius: 15px;
+            border: 1px solid rgba(255,255,255,0.1);
+            font-family: 'Poppins', sans-serif;
+        }
+        .leaflet-popup-tip {
+            background: #0f172a;
+        }
+        .map-icon-container {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            width: 100%;
+            height: 100%;
+            filter: drop-shadow(0px 2px 2px rgba(0,0,0,0.8));
+        }
+
+        /* Marker Cluster Customization */
+        .marker-cluster-small, .marker-cluster-medium, .marker-cluster-large {
+            background-color: rgba(30, 41, 59, 0.6) !important; /* Slate-800 with opacity */
+        }
+        .marker-cluster-small div, .marker-cluster-medium div, .marker-cluster-large div {
+            background-color: rgba(59, 130, 246, 0.8) !important; /* Blue-500 */
+            color: white !important;
+            font-family: 'Poppins', sans-serif;
+            font-weight: bold;
+        }
+
+        /* Filter Checkbox styling */
+        .filter-checkbox:checked + div {
+            background-color: #3b82f6;
+            border-color: #60a5fa;
+            color: white;
+        }
+       
+        /* Date Input styling */
+        input[type="datetime-local"]::-webkit-calendar-picker-indicator {
+            filter: invert(1);
+            cursor: pointer;
+        }
+
+.map-logo-overlay {
+    position: absolute;
+    bottom: 30%; /* Vzdialenosť od spodného okraja MAPY */
+    right: 0;  /* Vzdialenosť od pravého okraja MAPY */
+    width: 160px; /* Upravená šírka pre lepšiu mierku */
+    z-index: 1000; /* Musí byť vyššie ako vrstvy mapy */
+    pointer-events: none;
+    opacity: 0.95;
+    filter: drop-shadow(0 2px 4px rgba(0,0,0,0.5));
+}
+
+@media only screen and (max-width: 730px){
+    .map-logo-overlay {
+    position: absolute;
+    bottom: 35%; /* Vzdialenosť od spodného okraja MAPY */
+    right: -2%;  /* Vzdialenosť od pravého okraja MAPY */
+    width: 160px; /* Upravená šírka pre lepšiu mierku */
+    z-index: 1000; /* Musí byť vyššie ako vrstvy mapy */
+    pointer-events: none;
+    opacity: 0.95;
+    filter: drop-shadow(0 2px 4px rgba(0,0,0,0.5));
+}
+}
+
+
+
+
+/* --- NOVÁ HORIZONTÁLNA LEGENDA --- */
+.map-legend-horizontal {
+    background: rgba(15, 23, 42, 0.6);
+    backdrop-filter: blur(12px);
+    padding: 12px 24px;
+    border-radius: 25px;
+    border: 1px solid rgba(255, 255, 255, 0.1);
+    display: flex;
+    flex-wrap: wrap;
+    justify-content: center;
+    align-items: center;
+    gap: 20px;
+    margin-top: 15px; /* Priestor pod mapou */
+    width: 100%;
+    box-shadow: 0 4px 15px rgba(0, 0, 0, 0.3);
+}
+
+.legend-item-h {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    font-size: 11px;
+    font-weight: 600;
+    text-transform: uppercase;
+    color: #e2e8f0;
+    white-space: nowrap;
+}
+
+.legend-dot {
+    width: 12px;
+    height: 12px;
+    border-radius: 3px;
+    box-shadow: 0 0 5px rgba(0,0,0,0.5);
+}
+        
+        
+        
+        
+        .legend-color {
+            width: 12px;
+            height: 12px;
+            border-radius: 3px;
+            margin-right: 8px;
+        }
+
+        /* --- SUMMARY OVERLAY (AKTUALNE VYSTRAHY) --- */
+        .map-summary-overlay {
+            position: absolute;
+            top: 90px; /* POSUNUTÉ NIŽŠIE (pod zoom tlačidlá) */
+            left: 12px;
+            z-index: 998;
+            background: rgba(15, 23, 42, 0.95);
+            backdrop-filter: blur(10px);
+            padding: 12px;
+            border-radius: 15px;
+            border: 1px solid rgba(255,255,255,0.1);
+            width: 260px; /* Fixed width when expanded */
+            font-family: 'Poppins', sans-serif !important; /* FORCE POPPINS */
+            transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+            box-shadow: 0 4px 15px rgba(0,0,0,0.3);
+            display: block;
+        }
+
+        /* Collapsed State */
+        .map-summary-overlay.collapsed {
+            width: 48px;
+            height: 48px;
+            padding: 0;
+            border-radius: 12px;
+            overflow: hidden;
+            background: rgba(15, 23, 42, 0.9);
+            cursor: pointer;
+            border-color: rgba(255,255,255,0.2);
+        }
+
+        /* Hide internal elements when collapsed */
+        .map-summary-overlay.collapsed #summary-header,
+        .map-summary-overlay.collapsed #map-summary-content {
+            display: none !important;
+        }
+
+        /* Show collapsed view trigger when collapsed */
+        .map-summary-overlay.collapsed #summary-collapsed-view {
+            display: flex !important;
+        }
+        
+/* --- ZÁKLADNÝ ŠTÝL SPODNEJ LIŠTY (Bežný režim) --- */
+.map-bottom-ui {
+    background: transparent !important; /* Odstráni tmavý box */
+    border-top: 1px solid rgba(255, 255, 255, 0.05);
+    padding: 1rem;
+}
+
+/* --- FULLSCREEN REŽIM (Tu pozadie vrátime kvôli čitateľnosti) --- */
+#map-wrapper:fullscreen .map-bottom-ui {
+    position: absolute;
+    bottom: 0;
+    left: 0;
+    width: 100%;
+    background: linear-gradient(to top, #001226 90%, transparent) !important;
+    border-top: none;
+    padding-bottom: 30px; /* Extra miesto pre mobily */
+}
+
+/* Skrytie boxov dňa v mape mimo fullscreen */
+#day-selector-fullscreen {
+    display: none;
+}
+
+/* Zobrazenie boxov dňa v mape len vo Fullscreen */
+#map-wrapper:fullscreen #day-selector-fullscreen {
+    display: block !important;
+    position: absolute;
+    bottom: 180px; /* Vyššie nad legendu */
+    left: 0;
+    width: 100%;
+}
+
+/* TLAČIDLÁ DNÍ - STAVY */
+.day-btn-normal { @apply flex flex-col items-center px-4 py-3 rounded-[20px] bg-slate-900/50 text-slate-400 border border-white/5 transition-all min-w-[150px]; }
+.day-btn-normal.active { @apply bg-blue-600 text-white shadow-lg border-blue-400; }
+
+.day-btn-fs { @apply flex flex-col items-center px-3 py-2 rounded-xl bg-slate-900/90 text-slate-400 border border-white/10 min-w-[110px] transition-all; }
+.day-btn-fs.active { @apply bg-blue-600 text-white border-blue-400; }
+        
+
+        /* Toggle Button in Summary */
+        .summary-toggle-btn {
+            background: rgba(255, 255, 255, 0.05);
+            border-radius: 8px;
+            width: 24px;
+            height: 24px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+        .summary-toggle-btn:hover {
+            background: rgba(255, 255, 255, 0.15);
+        }
+
+        /* --- SCREENSHOT STATE OVERRIDES --- */
+        .capturing .leaflet-control-zoom {
+            display: none !important;
+        }
+        .capturing .no-capture {
+            display: none !important;
+        }
+        /* Force Expand on Screenshot */
+        .capturing .map-summary-overlay {
+            display: block !important;
+            width: 260px !important;
+            height: auto !important;
+            padding: 12px !important;
+            top: 20px !important; /* Move back up for nice screenshot layout */
+            left: 20px !important;
+        }
+        .capturing #summary-header,
+        .capturing #map-summary-content {
+            display: block !important;
+        }
+        .capturing #summary-collapsed-view {
+            display: none !important;
+        }
+        .capturing .summary-toggle-btn {
+            display: none !important; /* Hide collapse button in screenshot */
+        }
+       
+        /* Ensure screenshot fonts are correct */
+        .capturing * {
+            font-family: 'Poppins', sans-serif !important;
+        }
+       
+        /* Modal for editing */
+        .edit-modal-overlay {
+            position: fixed;
+            inset: 0;
+            background: rgba(0,0,0,0.8);
+            backdrop-filter: blur(4px);
+            z-index: 2000;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            padding: 1rem;
+        }
+       
+        /* Mini Map Canvas */
+        .mini-map-canvas {
+            width: 160px;  
+            height: 80px;
+            margin-top: 8px;
+            background-color: transparent;
+        }
+       
+        /* Indicator Dot in Date Selector */
+        .day-indicator-dot {
+            width: 8px;
+            height: 8px;
+            border-radius: 50%;
+            display: inline-block;
+            margin-left: 6px;
+            background-color: #22c55e; /* Default green */
+            box-shadow: 0 0 5px rgba(0,0,0,0.5);
+        }
+        
+        
+        /* --- OPRAVA PRE MOBILY: SKRYTIE SCROLLBARU --- */
+.no-scrollbar::-webkit-scrollbar {
+    display: none;
+}
+.no-scrollbar {
+    -ms-overflow-style: none;  /* IE a Edge */
+    scrollbar-width: none;  /* Firefox */
+}
+
+/* Zabezpečíme, aby sa boxy nezmenšovali (flex-shrink-0) */
+.day-selector-container button {
+    flex-shrink: 0;
+}
+
+
+
+
+              /* ---
+        Päta (Footer)
+        --- */
+        .site-footer {
+            margin-top: 4rem;
+            width:  auto;
+            max-width: auto;
+            padding: 1rem 0;
+            background-color: #002043;
+            text-align: center;
+            border-top: 1px solid rgba(59, 154, 248, 0.2);
+        }
+
+
+
+        @media only screen and (max-width: 730px) {
+             .site-footer {
+            margin-top: 4rem;
+            width:  auto;
+            max-width: 1600px;
+            padding: 3rem 0;
+            background-color: #002043;
+            text-align: center;
+            border-top: 1px solid rgba(59, 154, 248, 0.2);
+        }
+        }
+        
+        .footer-content {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 1.5rem;
+           
+        }
+
+        .footer-collaboration {
+            font-size: 1.1rem;
+            font-weight: 500;
+            color: var(--text-gray);
+        }
+
+        .footer-logos {
+            display: flex;
+            gap: 2rem;
+        }
+
+        .logo-placeholder-footer {
+            height: 40px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: var(--text-gray);
+        }
+        .logo-placeholder-footer img {
+            height: 100%;
+            width: auto;
+        }
+
+        .copyright {
+            font-size: 0.9rem;
+            color: #88a1b9;
+        }
+
+        /* ---
+        Responzívny Dizajn
+        --- */
+        @media (max-width: 1200px) {
+            .logo {
+                margin-right: 1rem;
+            }
+        }
+        
+        @media (max-width: 992px) {
+            .header-container {
+                flex-wrap: wrap;
+                justify-content: center;
+                gap: 1rem;
+            }
+            .main-menu-container {
+                width: 100%;
+                order: 3;
+            }
+            .logo {
+                order: 1;
+            }
+            h2.section-title {
+                font-size: 1.8rem;
+            }
+        } 
+
+
+
+
+
+
+
+    </style>
+    
+    
+    
+    <style>
+              /* --- 
+        Globálne Premenné a Základné Nastavenia
+        --- */
+        :root {
+            --dark-blue: #002043;
+            --light-blue: #3b9af8;
+            --white: #ffffff;
+            --text-gray: #c5dff8;
+            --dark-accent: #001a36;
+            --font-family: 'Poppins', sans-serif;
+            --border-radius: 16px;
+            --transition-speed: 0.4s;
+        }
+
+
+
+        /* --- Pomocné triedy --- */
+        .container {
+            width: auto;
+            max-width: 1600px;
+            margin: 0 auto;
+            padding: 10px;
+            
+        }
+
+        h2.section-title {
+            font-size: 2.2rem;
+            font-weight: 700;
+            color: var(--white);
+            margin-bottom: 2rem;
+            text-align: center;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 1rem;
+        }
+        
+        h2.section-title i {
+            color: var(--light-blue);
+        }
+
+        /* ---
+        Hlavička (Header)
+        --- */
+        .site-header {
+            padding: 1rem 0;
+            position: sticky;
+            top: 0;
+            height: auto;
+            z-index: 1000;
+            background-color: #3b9af8;
+            backdrop-filter: blur(12px);
+            -webkit-backdrop-filter: blur(12px);
+            border-bottom: 1px solid rgba(59, 154, 248, 0.2);
+        }
+
+
+         @media only screen and (max-width: 730px){
+.site-header {
+            padding: 1rem 0;
+            position: sticky;
+            top: 0;
+            width: auto;
+            height: 75px;
+            z-index: 1000;
+            padding: 1rem;
+            background-color: #3b9af8;
+            backdrop-filter: blur(12px);
+            -webkit-backdrop-filter: blur(12px);
+            border-bottom: 1px solid rgba(59, 154, 248, 0.2);
+        }
+         }
+
+        .header-container {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            width: auto;
+            margin-left: 10%;
+            margin-top: -1%;
+        }
+        
+        
+        @media only screen and (max-width: 730px){
+                    .header-container {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            width: 85%;
+            margin-left: 15%;
+            margin-top: -3%;
+        }
+        
+        }
+
+        .logo {
+            flex-shrink: 0;
+            margin-right: 3rem;
+            height: 60px; /* Set a fixed height for the logo container */
+            position: absolute;
+            left: 1%;
+            top: 5%;
+        }
+        .logo a {
+            display: flex;
+            align-items: center;
+            height: 100%;
+        }
+        
+        
+        .logo img {
+            height: 100%;
+            width: auto;
+            object-fit: contain;
+        }
+
+
+   @media only screen and(max-width: 730px) {
+  .logo {
+            flex-shrink: 0;
+            margin-right: 3rem;
+            height: 50px; /* Set a fixed height for the logo container */
+            position: absolute;
+            left: -5%;
+            top: 5%;
+        }
+        .logo a {
+            display: flex;
+            align-items: center;
+            height: 100%;
+        }
+        
+        
+        .logo img {
+            height: 100%;
+            width: auto;
+            object-fit: contain;
+        }
+
+   }
+        
+        
+            .logo-2 {
+            flex-shrink: 0;
+            margin-right: 3rem;
+            height: 50px; /* Set a fixed height for the logo container */
+        }
+        .logo-2 a {
+            display: flex;
+            align-items: center;
+            height: 100%;
+        }
+        .logo-2 img {
+            height: 100%;
+            width: auto;
+            object-fit: contain;
+        }   
+        
+
+        /* --- Horizontálne Posuvné Menu --- */
+        .main-menu-container {
+            display: flex;
+            align-items: center;
+            flex-grow: 1;
+            padding: 0 10px;
+            overflow: hidden;
+            position: relative;
+        }
+
+        .main-menu {
+            display: flex;
+            list-style: none;
+            gap: 1rem;
+            overflow-x: auto;
+            padding: 10px;
+            scrollbar-width: none; /* Firefox */
+            width: auto;
+        }
+        .main-menu::-webkit-scrollbar {
+            display: none; /* Chrome, Safari, Opera */
+        }
+
+        .main-menu li {
+            flex-shrink: 0;
+        }
+
+        .main-menu a {
+            display: flex;
+            align-items: center;
+            gap: 0.6rem;
+            padding: 0.6rem 1.2rem;
+            text-decoration: none;
+            color: var(--text-gray);
+            font-weight: 500;
+            border-radius: 25px;
+            white-space: nowrap;
+            background: var(--dark-blue);
+            transition: all var(--transition-speed) ease;
+        }
+        .main-menu a:hover, .main-menu a.active {
+            background-color: var(--dark-accent);
+            color: var(--white);
+            transform: translateY(-2px);
+            box-shadow: 0 5px 15px rgba(59, 154, 248, 0.3);
+        }
+        .main-menu a i {
+            font-size: 1.1rem;
+        }
+
+        .menu-arrow {
+            background: var(--dark-blue);
+            color: var(--white);
+            border: none;
+            border-radius: 50%;
+            width: 50px;
+            height: 40px;
+            font-size: 1.2rem;
+            cursor: pointer;
+            z-index: 10;
+            transition: all 0.3s ease;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            padding: 6px;
+        }
+        .menu-arrow:hover {
+            transform: scale(1.1);
+            box-shadow: 0 0 15px rgba(59, 154, 248, 0.5);
+        }
+        #scroll-left { margin-right: 0.5rem; }
+        #scroll-right { margin-left: 0.5rem; }
+
+        /* ---
+        Sekcia Prehľad (Navigačné Boxy s fotkami)
+        --- */
+        .overview-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+            gap: 1.5rem;
+        }
+        
+        
+        /* Štýlovanie posuvníka pre zoznam výstrah */
+.custom-scrollbar::-webkit-scrollbar {
+    width: 4px;
+}
+.custom-scrollbar::-webkit-scrollbar-track {
+    background: rgba(255, 255, 255, 0.05);
+    border-radius: 10px;
+}
+.custom-scrollbar::-webkit-scrollbar-thumb {
+    background: rgba(59, 130, 246, 0.5); /* Modrá farba */
+    border-radius: 10px;
+}
+.custom-scrollbar::-webkit-scrollbar-thumb:hover {
+    background: rgba(59, 130, 246, 0.8);
+}
+
+
+/* FIX: Správanie štvorčeka výstrah */
+#map-summary-overlay.collapsed {
+    width: 48px !important;
+    height: 48px !important;
+    display: flex !important;
+}
+#map-summary-overlay.collapsed #summary-collapsed-view {
+    display: flex !important;
+}
+#map-summary-overlay:not(.collapsed) {
+    position: fixed !important;
+    top: 50% !important;
+    left: 50% !important;
+    transform: translate(-50%, -50%) !important;
+    z-index: 9999;
+    width: 90% !important;
+    max-width: 350px !important;
+    height: auto !important;
+}
+
+/* Skrytie ikony, keď je zoznam otvorený */
+#map-summary-overlay:not(.collapsed) #summary-collapsed-view {
+    display: none !important;
+}
+
+    </style>
+
+    
+    
+    
+</head>
+
+
+
+    <!-- ======================= HEADER ======================= -->
+    <header class="site-header">
+ <div class="logo">
+                <a href="https://www.meteopocasie.sk/">
+                    <img src="https://www.meteopocasie.sk/wp-content/uploads/2024/01/Untitled49_20231209213754.png" alt="MeteoPočasie.sk Logo" onerror="this.onerror=null;this.src='https://placehold.co/200x50/002043/FFFFFF?text=MeteoPočasie.sk';">
+                </a>
+            </div>   
+        <div class="header-container">
+
+            <div class="main-menu-container">
+
+                <button id="scroll-left" class="menu-arrow"><i class="fa-solid fa-chevron-left"></i></button>
+                <ul class="main-menu" id="main-menu">
+                    
+                    <li><a href="https://www.meteopocasie.sk/" class="active"><i class="fa-solid fa-home"></i> Domov</a></li>
+                    <li><a href="https://www.meteopocasie.sk/pocasie/aktualne/index.html"><i class="fas fa-cloud-sun"></i> Aktuálne počasie</a></li>
+                    <li><a href="https://www.meteopocasie.sk/category/sledujeme"><i class="fas fa-bullhorn"></i> Sledujeme</a></li>
+                    <li><a href="https://www.meteopocasie.sk/pocasie/aktualne/index.html"><i class="fas fa-cloud-rain"></i> Úhrn zrážok</a></li>
+                    <li><a href="https://www.meteopocasie.sk/pocasie/aktualne/index.html"><i class="fas fa-snowflake"></i> Výška snehu</a></li>
+                    <li><a href="https://www.meteopocasie.sk/pocasie/predpoved/index.html"><i class="fas fa-chart-bar"></i> Predpoveď počasia</a></li>
+                    <li><a href="https://www.meteopocasie.sk/pocasie/predpoved/6-dni/index.html"><i class="fas fa-calendar-alt"></i> Predpoveď 16 dní</a></li>
+                    <li><a href="https://www.meteopocasie.sk/pocasie/predpoved/30-dni/index.html"><i class="fas fa-calendar-plus"></i> Predpoveď na 30 dní</a></li>
+                    <li><a href="https://www.meteopocasie.sk/meteoreporty/"><i class="fas fa-bolt-lightning"></i> Meteoreporty</a></li>
+                    <li><a href="https://www.meteopocasie.sk/storm_forecast/"><i class="fas fa-cloud-bolt"></i> Prognóza búrok</a></li>
+                    <li><a href="https://www.meteopocasie.sk/meteogram/graf_pocasia.html"><i class="fas fa-chart-line"></i> Meteogramy</a></li>
+                    <li><a href="https://www.meteoslovensko.eu/rizikove-mapy/zoznam.html"><i class="fas fa-triangle-exclamation"></i> Riziká</a></li>
+                    <li><a href="https://www.meteopocasie.sk/meteoradar/radar.php"><i class="fa-solid fa-satellite-dish"></i> Meteoradar</a></li>
+                    <li><a href="https://www.meteopocasie.sk/meteoradar/radar.php"><i class="fa-solid fa-satellite"></i> Satelit</a></li>
+                    <li><a href="https://www.meteopocasie.sk/meteoradar/radar.php"><i class="fa-solid fa-bolt"></i> Blesky</a></li>
+                    <li><a href="https://www.meteopocasie.sk/pocasie/predpoved/map_forecast/index.html"><i class="fas fa-globe"></i> 3D Globálna mapa</a></li>
+                    <li><a href="https://www.meteopocasie.sk/clanky/article_feeds.php"><i class="fas fa-newspaper"></i> Články</a></li>
+                    <li><a href="https://www.meteopocasie.sk/pocasie/uv/index.html"><i class="fa-solid fa-sun"></i> UV index</a></li>
+                    <li><a href="https://www.meteopocasie.sk/pocasie/kvalita-ovzdusia/index.html"><i class="fas fa-smog"></i> Kvalita ovzdušia</a></li>
+                    <li><a href="https://www.meteopocasie.sk/pocasie/pelove-spravy/index.html"><i class="fa-solid fa-leaf"></i> Peľové správy</a></li>
+                    <li><a href="https://www.meteopocasie.sk/zemetrasenie/index.html"><i class="fa-solid fa-house-chimney-crack"></i> Zemetrasenia</a></li>
+                    <li><a href="https://www.meteopocasie.sk/spaceweather/index.html"><i class="fas fa-star"></i> Polárna žiara</a></li>
+                    <li><a href="https://www.meteo-slovensko.sk/pocasie/poziare.html"><i class="fas fa-fire"></i> Požiare</a></li>
+                    <li><a href="https://www.meteo-slovensko.sk/pocasie/sucho.html"><i class="fa-solid fa-hand-holding-droplet"></i> Sucho</a></li>
+                    <li><a href="https://www.meteopocasie.sk/pocasie/kamery.html"><i class="fas fa-video"></i> MeteoKamery</a></li>
+                    <li><a href="https://www.meteo-slovensko.sk/pocasie/aplikacia.html"><i class="fas fa-mobile"></i> Aplikácia</a></li>
+                    <li><a href="https://www.meteo-slovensko.sk/pocasie/predplatne.html"><i class="fas fa-plus"></i> Predplatné</a></li>
+                    <li><a href="https://www.meteo-slovensko.sk/pocasie/eshop.html"><i class="fas fa-shop"></i> Eshop</a></li>
+                    <li><a href="https://www.meteo-slovensko.sk/pocasie/fotka-tyzdna-mesiaca.html"><i class="fas fa-camera"></i> Fotka týždňa</a></li>
+                    <li><a href="https://www.meteo-slovensko.sk/pocasie/aktivity.html"><i class="fas fa-seedling"></i> Aktivity</a></li>
+                    <li><a href="https://www.meteo-slovensko.sk/pocasie/oblecenie.html"><i class="fas fa-shirt"></i> Oblečenie</a></li>
+                </ul>
+                <button id="scroll-right" class="menu-arrow"><i class="fa-solid fa-chevron-right"></i></button>
+            </div>
+        </div>
+    </header>
+    <script>
+    
+    document.addEventListener('DOMContentLoaded', function() {
+        
+        // --- 1. Funkcionalita pre navigačné boxy ---
+        const navBoxes = document.querySelectorAll('.nav-box');
+        const iframe = document.getElementById('content-iframe');
+        const iframeContainer = document.querySelector('.iframe-container');
+        const contentDisplaySection = document.getElementById('content-display');
+
+        navBoxes.forEach(box => {
+            box.addEventListener('click', () => {
+                const url = box.dataset.url;
+                
+                if (url) {
+                    iframeContainer.style.opacity = '0.5';
+                    
+                    setTimeout(() => {
+                        iframe.src = url;
+                        iframeContainer.style.opacity = '1';
+                    }, 400);
+
+                    contentDisplaySection.scrollIntoView({ behavior: 'smooth', block: 'start' });
+                } else {
+                    console.log("URL pre tento box nie je definované:", box.querySelector('.nav-box-title').innerText);
+                }
+            });
+        });
+    
+    
+                // --- 2. Funkcionalita pre horizontálne posuvné menu ---
+        const menu = document.getElementById('main-menu');
+        const scrollLeftBtn = document.getElementById('scroll-left');
+        const scrollRightBtn = document.getElementById('scroll-right');
+        const scrollAmount = 300;
+
+        scrollLeftBtn.addEventListener('click', () => {
+            menu.scrollBy({ left: -scrollAmount, behavior: 'smooth' });
+        });
+
+        scrollRightBtn.addEventListener('click', () => {
+            menu.scrollBy({ left: scrollAmount, behavior: 'smooth' });
+        });
+        
+        // --- 3. Animácia pri načítaní ---
+        const animatedElements = document.querySelectorAll('.overview-grid, .content-display-section');
+        const observer = new IntersectionObserver((entries) => {
+            entries.forEach(entry => {
+                if (entry.isIntersecting) {
+                    entry.target.style.animation = `fadeInUp 1s ${entry.target.dataset.delay || '0s'} forwards`;
+                    observer.unobserve(entry.target);
+                }
+            });
+        }, { threshold: 0.1 });
+
+        animatedElements.forEach(el => {
+            observer.observe(el);
+        });
+
+        // --- 4. Aktívny stav menu ---
+        const menuLinks = document.querySelectorAll('.main-menu a');
+        menuLinks.forEach(link => {
+            link.addEventListener('click', function(e) {
+                // Ak nechcete, aby sa stránka prenačítavala pri kliku na odkaz, ktorý len mení iframe
+                // e.preventDefault(); 
+                
+                menuLinks.forEach(l => l.classList.remove('active'));
+                this.classList.add('active');
+            });
+        });
+    });
+
+    const styleSheet = document.createElement("style");
+    styleSheet.type = "text/css";
+    styleSheet.innerText = `
+        @keyframes fadeInUp {
+            from {
+                opacity: 0;
+                transform: translateY(30px);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+        .overview-grid, .content-display-section {
+            opacity: 0;
+        }
+    `;
+    document.head.appendChild(styleSheet);
+ 
+    </script>
+
+
+<body class="pb-10 font-poppins">
+
+    <!-- DISCLAIMER BAR -->
+    <div class="bg-yellow-500/10 border-b border-yellow-500/20 text-yellow-200 text-xs text-center py-2 px-4 font-medium">
+        <i data-lucide="alert-triangle" class="w-3 h-3 inline mr-1 mb-0.5"></i>
+        Upozornenie: Tieto výstrahy nie sú oficiálne. Sú vydávané meteorológmi portálu <strong>Meteo Slovensko</strong> a <strong>MeteoPočasie.sk</strong> a nenahrádzajú oficiálne výstrahy SHMÚ.
+    </div>
+
+    <div class="p-4 sm:p-6 max-w-7xl mx-auto space-y-8">
+       
+        <!-- HEADER -->
+        <header class="glass-panel p-6 rounded-custom flex flex-col xl:flex-row justify-between items-center gap-6">
+            <div class="flex items-center gap-4">
+                <div class="relative">
+                    <div class="absolute inset-0 bg-blue-600 blur-xl opacity-30 rounded-full"></div>
+                </div>
+                <div>
+                    <h1 class="text-3xl font-bold text-white tracking-tight">Centrum Výstrah<span class="text-blue-500"></span></h1>
+                    <p class="text-sm text-slate-400">
+                        Monitoring výstrah pre 79 okresov
+                    </p>
+                </div>
+            </div>
+
+
+
+            <!-- View Switcher -->
+            <div class="flex gap-3" style="display: none;">
+                 <div class="flex bg-slate-900/50 p-1.5 rounded-[25px] border border-white/5">
+                    <button onclick="switchTab('public')" id="btn-public" class="px-6 py-3 rounded-[25px] text-sm font-medium transition-all text-white bg-slate-700" style="display: none;">Prehľad</button>
+                    <button onclick="switchTab('admin')" id="btn-admin" class="px-6 py-3 rounded-[25px] text-sm font-medium transition-all text-slate-400 hover:text-white" style="display: none;">Admin</button>
+                </div>
+            </div>
+        </header>
+
+        <!-- PUBLIC VIEW -->
+        <div id="view-public" class="space-y-6 animate-fade-in">
+           
+            <!-- Map Section -->
+            <div class="relative">
+                <div class="absolute top-4 right-4 z-20 flex flex-col gap-2 no-capture">
+                    <button onclick="window.downloadMapOnly()" class="bg-slate-800/90 hover:bg-blue-600 text-white p-3 rounded-[25px] border border-white/10 transition-colors shadow-lg backdrop-blur">
+                        <i data-lucide="camera" class="w-5 h-5"></i>
+                    </button>
+                    
+                    <button id="btn-fs" onclick="window.toggleMapFullscreen()" class="bg-slate-800/90 hover:bg-blue-600 text-white p-3 rounded-[25px] border border-white/10 transition-colors shadow-lg backdrop-blur">
+                        <i id="fs-icon" data-lucide="maximize" class="w-5 h-5"></i>
+                    </button>
+                </div>
+
+<div id="map-wrapper" class="glass-panel p-1 rounded-custom overflow-hidden shadow-2xl relative group bg-[#002043] flex flex-col">
+    <div id="map" class="flex-grow min-h-[450px] z-10"></div>
+    
+    <img src="https://i.postimg.cc/pTmsQHrN/image.png" class="map-logo-overlay z-[1001] pointer-events-none" alt="Logo">
+
+    <div id="map-click-info" class="absolute top-4 left-1/2 transform -translate-x-1/2 z-[1001] bg-slate-900/90 backdrop-blur-md px-4 py-2.5 rounded-2xl text-[7px] text-slate-300 pointer-events-none border border-white/10 shadow-2xl flex flex-col items-center min-w-[180px]" style="margin-left:-1%;">
+        <div class="flex items-center gap-2">
+            <span id="map-info-date" class="font-bold text-blue-400 uppercase tracking-wider">--:--</span>
+            <span class="w-1 h-1 bg-slate-600 rounded-full"></span>
+            <span id="map-info-phenomena" class="text-white font-medium uppercase">Bez výstrah</span>
+        </div>
+        <div class="flex items-center gap-2 text-slate-400 border-t border-white/5 pt-1 w-full justify-center">
+            <i data-lucide="mouse-pointer-2" class="w-3 h-3"></i>
+            <span class="whitespace-nowrap uppercase font-bold tracking-tighter">Kliknite na okres</span>
+        </div>
+    </div>
+
+<div id="day-selector-fullscreen" class="hidden no-capture">
+    <div class="fs-scroll-mask">
+        <div class="flex items-center gap-3 overflow-x-auto no-scrollbar scroll-container-inner py-4">
+            <button onclick="setDay(0)" id="fs-day-btn-0" class="day-btn-unified active rounded-[20px]">
+                <span class="text-[11px] font-bold uppercase tracking-wider mb-1">Dnes</span>
+                <canvas id="mini-map-fs-0" width="140" height="70"></canvas>
+            </button>
+            <button onclick="setDay(1)" id="fs-day-btn-1" class="day-btn-unified rounded-[20px]">
+                <span class="text-[11px] font-bold uppercase tracking-wider mb-1">Zajtra</span>
+                <canvas id="mini-map-fs-1" width="140" height="70"></canvas>
+            </button>
+            <button onclick="setDay(2)" id="fs-day-btn-2" class="day-btn-unified rounded-[20px]">
+                <span class="text-[11px] font-bold uppercase tracking-wider mb-1">Pozajtra</span>
+                <canvas id="mini-map-fs-2" width="140" height="70"></canvas>
+            </button>
+        </div>
+    </div>
+</div>
+
+
+    <div class="map-bottom-ui z-[1001] p-4 bg-[#001226]/90 border-t border-white/5 no-capture">
+        <div class="map-legend-horizontal flex flex-wrap justify-center items-center gap-x-6 gap-y-2 mb-4">
+            <div class="legend-item-h"><div class="legend-dot" style="background:#9333ea"></div><span>4. Extrém</span></div>
+            <div class="legend-item-h"><div class="legend-dot" style="background:#dc2626"></div><span>3. Stupeň</span></div>
+            <div class="legend-item-h"><div class="legend-dot" style="background:#f97316"></div><span>2. Stupeň</span></div>
+            <div class="legend-item-h"><div class="legend-dot" style="background:#facc15"></div><span class="text-yellow-400">1. Stupeň</span></div>
+            <div class="legend-item-h"><div class="legend-dot" style="background:#22c55e"></div><span>Bez výstrahy</span></div>
+        </div>
+        <div class="flex items-center justify-center gap-4">
+            <div class="w-[48px] h-[48px] relative flex-shrink-0">
+                <div id="map-summary-overlay" class="map-summary-overlay collapsed !static border border-white/20">
+                    <div id="summary-header" class="flex justify-between items-center mb-2 pb-2 border-b border-white/10 font-poppins">
+                        <h4 class="text-sm text-white uppercase font-bold">Aktuálne výstrahy</h4>
+                        <button onclick="toggleSummary()" class="summary-toggle-btn"><i data-lucide="minus" class="w-4 h-4"></i></button>
+                    </div>
+                    <div id="map-summary-content" class="flex flex-col gap-3 text-xs max-h-[250px] overflow-y-auto pr-2 custom-scrollbar"></div>
+                    <div id="summary-collapsed-view" class="hidden absolute inset-0 items-center justify-center cursor-pointer" onclick="toggleSummary()">
+                        <div class="relative">
+                            <i data-lucide="alert-circle" class="w-6 h-6 text-yellow-400"></i>
+                            <span class="absolute -top-1 -right-1 flex h-3 w-3"><span class="animate-ping absolute h-full w-full rounded-full bg-red-400 opacity-75"></span><span class="relative h-3 w-3 bg-red-500 rounded-full"></span></span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <div class="h-[48px] px-5 py-2 bg-slate-900/60 border border-white/10 rounded-xl text-slate-400 flex items-center gap-3">
+                <i data-lucide="refresh-cw" class="w-4 h-4 text-blue-400"></i>
+                <div class="flex flex-col justify-center">
+                    <span class="text-[8px] uppercase font-bold opacity-50">Aktualizované</span>
+                    <span id="last-update-time-new" class="text-white font-bold text-sm leading-none">--:--</span>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+
+
+<div id="meteo-notify" class="fixed inset-0 z-[5000] hidden flex items-center justify-center bg-black/60 backdrop-blur-sm p-4 animate-fade-in">
+    <div class="glass-panel p-6 rounded-[30px] max-w-sm w-full border border-white/20 shadow-2xl text-center">
+        <div id="notify-icon-bg" class="w-16 h-16 rounded-full mx-auto mb-4 flex items-center justify-center">
+            <i id="notify-icon" data-lucide="info" class="w-8 h-8 text-white"></i>
+        </div>
+        <h3 id="notify-title" class="text-xl font-bold text-white mb-2 font-poppins"></h3>
+        <p id="notify-message" class="text-sm text-slate-300 mb-6 font-poppins"></p>
+        <button onclick="document.getElementById('meteo-notify').classList.add('hidden')" class="w-full py-3 rounded-full bg-white/10 text-white font-bold transition-all">Rozumiem</button>
+    </div>
+</div>
+
+
+                   
+
+                </div>
+            </div>
+            
+            
+            
+            <div class="w-full overflow-x-auto no-scrollbar py-2">
+                
+    <div class="flex items-center gap-2 min-w-max day-selector-container  rounded-[25px] border border-white/5">
+        
+        <button onclick="setDay(0)" id="day-btn-0" class="flex flex-col items-center px-4 py-3 rounded-[20px] text-sm font-medium transition-all text-white shadow-lg min-w-[150px]">
+            <span class="flex items-center leading-none mb-1">
+                <span id="date-label-0" class="text-xs font-bold tracking-wider uppercase">Dnes</span>
+                <span id="day-dot-0" class="day-indicator-dot"></span>
+            </span>
+            <canvas id="mini-map-0" class="mini-map-canvas" width="160" height="80"></canvas>
+        </button>
+        
+        <button onclick="setDay(1)" id="day-btn-1" class="flex flex-col items-center px-4 py-3 rounded-[20px] text-sm font-medium transition-all text-slate-400 hover:text-white hover:bg-white/5 min-w-[150px]">
+            <span class="flex items-center leading-none mb-1">
+                <span id="date-label-1" class="text-xs font-bold tracking-wider uppercase">Zajtra</span>
+                <span id="day-dot-1" class="day-indicator-dot bg-slate-600"></span>
+            </span>
+            <canvas id="mini-map-1" class="mini-map-canvas" width="160" height="80"></canvas>
+        </button>
+        
+        <button onclick="setDay(2)" id="day-btn-2" class="flex flex-col items-center px-4 py-3 rounded-[20px] text-sm font-medium transition-all text-slate-400 hover:text-white hover:bg-white/5 min-w-[150px]">
+            <span class="flex items-center leading-none mb-1">
+                <span id="date-label-2" class="text-xs font-bold tracking-wider uppercase">Pozajtra</span>
+                <span id="day-dot-2" class="day-indicator-dot bg-slate-600"></span>
+            </span>
+            <canvas id="mini-map-2" class="mini-map-canvas" width="160" height="80"></canvas>
+        </button>
+        
+    </div>
+</div>
+
+            <!-- Stats Bar -->
+<div class="grid grid-cols-2 md:grid-cols-5 gap-4">
+    <div class="p-4 rounded-[25px] flex flex-col items-center justify-center bg-purple-600 text-white shadow-lg shadow-purple-900/20 text-center">
+        <span class="text-white/80 text-[10px] font-bold uppercase mb-1">4. Extrém</span>
+        <span id="stat-lvl-4" class="text-2xl font-bold leading-none">0</span>
+        <div id="stat-lvl-4-pct" class="text-[10px] opacity-80 font-medium mt-1 uppercase">0,0% územia</div>
+        <div id="stat-lvl-4-phenomena" class="mt-2 w-full flex flex-col gap-1 border-t border-white/10 pt-2"></div>
+    </div>
+    <div class="p-4 rounded-[25px] flex flex-col items-center justify-center bg-red-600 text-white shadow-lg shadow-red-900/20 text-center">
+        <span class="text-white/80 text-[10px] font-bold uppercase mb-1">3. Stupeň</span>
+        <span id="stat-lvl-3" class="text-2xl font-bold leading-none">0</span>
+        <div id="stat-lvl-3-pct" class="text-[10px] opacity-80 font-medium mt-1 uppercase">0,0% územia</div>
+        <div id="stat-lvl-3-phenomena" class="mt-2 w-full flex flex-col gap-1 border-t border-white/10 pt-2"></div>
+    </div>
+    <div class="p-4 rounded-[25px] flex flex-col items-center justify-center bg-orange-500 text-white shadow-lg shadow-orange-900/20 text-center">
+        <span class="text-white/80 text-[10px] font-bold uppercase mb-1">2. Stupeň</span>
+        <span id="stat-lvl-2" class="text-2xl font-bold leading-none">0</span>
+        <div id="stat-lvl-2-pct" class="text-[10px] opacity-80 font-medium mt-1 uppercase">0,0% územia</div>
+        <div id="stat-lvl-2-phenomena" class="mt-2 w-full flex flex-col gap-1 border-t border-white/10 pt-2"></div>
+    </div>
+    <div class="p-4 rounded-[25px] flex flex-col items-center justify-center bg-yellow-400 text-slate-900 shadow-lg shadow-yellow-900/20 text-center">
+        <span class="text-slate-900 text-[10px] font-bold uppercase mb-1">1. Stupeň</span>
+        <span id="stat-lvl-1" class="text-2xl font-bold leading-none">0</span>
+        <div id="stat-lvl-1-pct" class="text-[10px] opacity-80 font-bold mt-1 uppercase">0,0% územia</div>
+        <div id="stat-lvl-1-phenomena" class="mt-2 w-full flex flex-col gap-1 border-t border-white/10 pt-2"></div>
+    </div>
+    <div class="p-4 rounded-[25px] flex flex-col items-center justify-center bg-green-500 text-white shadow-lg shadow-green-900/20 text-center">
+        <span class="text-white/80 text-[10px] font-bold uppercase mb-1">Bez výstrahy</span>
+        <span id="stat-lvl-0" class="text-2xl font-bold leading-none">0</span>
+        <div id="stat-lvl-0-pct" class="text-[10px] opacity-80 font-medium mt-1 uppercase">0,0% územia</div>
+        <div id="stat-lvl-0-phenomena" class="mt-2 w-full flex flex-col gap-1 border-t border-white/10 pt-2"></div>
+    </div>
+</div>
+
+            <!-- Filters -->
+            <div class="glass-panel p-6 rounded-custom space-y-4">
+                <div class="flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
+                    <h3 class="text-lg font-bold flex items-center gap-2"><i data-lucide="filter" class="w-5 h-5 text-blue-400"></i> Filtrácia a Nastavenia</h3>
+                    <div class="flex gap-2 items-center">
+                         <div class="flex items-center gap-2 mr-4 bg-slate-900/50 px-3 py-1.5 rounded-[20px] border border-white/5">
+                            <input type="checkbox" id="toggle-green-districts" class="w-4 h-4 rounded border-slate-600 bg-slate-800 text-blue-600 focus:ring-blue-500" checked onchange="toggleGreenDistricts()">
+                            <label for="toggle-green-districts" class="text-xs text-slate-300 cursor-pointer select-none">Zobraziť zelené okresy</label>
+                         </div>
+                         <button onclick="resetFilters()" class="text-xs text-slate-400 hover:text-white underline">Resetovať filtre</button>
+                    </div>
+                </div>
+               
+                <div class="grid md:grid-cols-2 gap-6">
+                    <!-- Jav Filter -->
+                    <div>
+                        <p class="text-xs font-bold uppercase text-slate-500 mb-2">Javy</p>
+                        <div class="flex flex-wrap gap-2" id="filter-types-container"></div>
+                    </div>
+                    <!-- Level Filter -->
+                    <div>
+                        <p class="text-xs font-bold uppercase text-slate-500 mb-2">Stupne</p>
+                        <div class="flex flex-wrap gap-2" id="filter-levels-container"></div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Search Bar -->
+            <div class="relative">
+                 <i data-lucide="search" class="absolute left-4 top-1/2 transform -translate-y-1/2 text-slate-400 w-5 h-5"></i>
+                 <input type="text" id="search-input" placeholder="Hľadať konkrétny okres v zozname..." class="w-full pl-12 pr-4 py-4 bg-slate-900/50 border border-white/10 rounded-[25px] text-white placeholder-slate-500 focus:ring-2 focus:ring-blue-500 outline-none transition-all">
+            </div>
+
+            <!-- Grid -->
+            <div id="districts-grid" class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4"></div>
+           
+            <div id="no-results" class="hidden text-center py-20">
+                <p class="text-slate-400">Žiadne okresy nevyhovujú filtrom.</p>
+            </div>
+        </div>
+
+        <!-- ADMIN VIEW -->
+        <div id="view-admin" class="hidden grid lg:grid-cols-12 gap-8">
+            <!-- Form -->
+            <div class="lg:col-span-5 space-y-6 order-2 lg:order-1">
+                <div class="glass-panel p-8 rounded-custom">
+                    <div class="flex items-center justify-between mb-6">
+                        <h2 class="text-xl font-bold text-white flex items-center gap-2">
+                            <i data-lucide="settings-2" class="text-blue-400"></i>
+                            Editor
+                        </h2>
+                        <span id="admin-current-day-label" class="text-xs uppercase font-bold tracking-wider bg-blue-500/20 text-blue-300 px-3 py-1 rounded-full">
+                            Upravujete: Dnes
+                        </span>
+                    </div>
+                   
+                    <div class="space-y-6">
+                        <!-- Selection Info -->
+                        <div class="bg-slate-900/50 p-4 rounded-[25px] border border-white/10">
+                            <div class="flex justify-between items-center mb-1">
+                                <label class="block text-xs font-bold text-slate-400 uppercase tracking-wider">Vybrané okresy</label>
+                                <button onclick="selectAllDistricts()" class="text-xs bg-blue-600 hover:bg-blue-500 text-white px-2 py-0.5 rounded transition-colors">Označiť všetko</button>
+                            </div>
+                            <div id="selected-districts-list" class="text-sm text-white font-medium break-words min-h-[24px]">
+                                <span class="text-slate-500 italic">Kliknite na mapu vpravo pre výber...</span>
+                            </div>
+                            <button onclick="clearSelection()" class="text-xs text-red-400 hover:text-red-300 mt-2 underline">Zrušiť výber</button>
+                        </div>
+
+                        <!-- Type -->
+                        <div>
+                            <label class="block text-xs font-bold text-slate-400 uppercase tracking-wider mb-2">Jav</label>
+                            <div class="grid grid-cols-3 sm:grid-cols-4 gap-2" id="type-buttons"></div>
+                        </div>
+
+                        <!-- Level -->
+                        <div>
+                            <label class="block text-xs font-bold text-slate-400 uppercase tracking-wider mb-4">Stupeň</label>
+                            <div class="grid grid-cols-5 gap-2" id="level-buttons"></div>
+                        </div>
+
+                        <!-- Validity (Date & Time Picker) -->
+                        <div>
+                            <label class="block text-xs font-bold text-slate-400 uppercase tracking-wider mb-2">Platnosť (Dátum a čas)</label>
+                            <div class="flex flex-col gap-2">
+                                <div class="w-full">
+                                    <label class="text-[10px] text-slate-500 uppercase">Od</label>
+                                    <input type="datetime-local" id="admin-datetime-start" class="w-full p-3 bg-slate-900 border border-slate-700 rounded-[25px] text-sm text-white focus:border-blue-500 outline-none">
+                                </div>
+                                <div class="w-full">
+                                    <label class="text-[10px] text-slate-500 uppercase">Do</label>
+                                    <input type="datetime-local" id="admin-datetime-end" class="w-full p-3 bg-slate-900 border border-slate-700 rounded-[25px] text-sm text-white focus:border-blue-500 outline-none">
+                                </div>
+                            </div>
+                            <p class="text-[10px] text-blue-300 mt-2 italic">
+                                * Výstraha sa automaticky uloží pre všetky dni v zvolenom rozsahu (max +2 dni).
+                            </p>
+                        </div>
+
+                        <!-- Message -->
+                        <div>
+                            <label class="block text-xs font-bold text-slate-400 uppercase mb-2">Popis</label>
+                            <textarea id="admin-message" placeholder="Detaily o výstrahe..." class="w-full p-4 bg-slate-900 border border-slate-700 rounded-[25px] h-24 text-sm text-white focus:border-blue-500 outline-none resize-none"></textarea>
+                        </div>
+
+                        <!-- Add/Update Button -->
+                        <div class="pt-2">
+                            <input type="hidden" id="admin-editing-id">
+                            <button id="btn-add-warning" class="w-full bg-gradient-to-r from-blue-600 to-blue-500 hover:from-blue-500 hover:to-blue-400 text-white py-4 rounded-[25px] font-bold shadow-lg shadow-blue-900/50 transition-all disabled:opacity-50 disabled:cursor-not-allowed">
+                                Pridať výstrahu
+                            </button>
+                        </div>
+                        <div id="status-message" class="hidden text-center text-sm font-medium py-3 rounded-[25px] animate-pulse"></div>
+
+                        <!-- Existing Warnings List -->
+                        <div class="border-t border-white/10 pt-4 mt-2">
+                            <label class="block text-xs font-bold text-slate-400 uppercase tracking-wider mb-3">
+                                Aktuálne výstrahy pre vybrané okresy
+                            </label>
+                            <div id="admin-existing-warnings" class="space-y-2 max-h-60 overflow-y-auto pr-1">
+                                <p class="text-xs text-slate-500 italic">Vyberte okres na mape pre zobrazenie výstrah.</p>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Admin Map -->
+            <div class="lg:col-span-7 space-y-6 order-1 lg:order-2">
+                <div class="glass-panel p-1 rounded-custom overflow-hidden border-2 border-dashed border-slate-700">
+                    <div id="admin-map"></div>
+                </div>
+                <p class="text-center text-xs text-slate-400 uppercase tracking-widest font-bold">
+                    Klikaním na okresy vyberte oblasť (Multi-select)
+                </p>
+            </div>
+        </div>
+
+    </div>
+
+    <!-- DETAIL MODAL -->
+    <div id="detail-modal" class="fixed inset-0 z-[1000] hidden flex items-center justify-center bg-black/80 backdrop-blur-sm p-4 animate-fade-in">
+        <div class="glass-panel p-8 rounded-custom max-w-lg w-full relative border-t-8" id="modal-panel">
+            <button onclick="closeModal()" class="absolute top-4 right-4 text-slate-400 hover:text-white bg-slate-800 p-2 rounded-full">
+                <i data-lucide="x" class="w-6 h-6"></i>
+            </button>
+           
+            <h2 id="modal-title" class="text-3xl font-bold text-white mb-1"></h2>
+            <p id="modal-day" class="text-slate-400 text-sm font-bold uppercase mb-6"></p>
+
+            <div id="modal-warnings-list" class="space-y-4 max-h-[60vh] overflow-y-auto pr-2">
+                <!-- Warnings injected here -->
+            </div>
+        </div>
+    </div>
+   
+    <!-- EDIT WARNING MODAL -->
+    <div id="edit-warning-modal" class="edit-modal-overlay hidden">
+        <div class="glass-panel p-6 rounded-custom max-w-md w-full relative border border-blue-500/30 shadow-2xl">
+            <button onclick="closeEditModal()" class="absolute top-4 right-4 text-slate-400 hover:text-white bg-slate-800 p-2 rounded-full">
+                <i data-lucide="x" class="w-5 h-5"></i>
+            </button>
+           
+            <h3 class="text-xl font-bold text-white mb-4">Upraviť výstrahu</h3>
+            <p id="edit-modal-subtitle" class="text-sm text-blue-300 mb-4 font-bold"></p>
+           
+            <div class="space-y-4">
+                <!-- Type Select -->
+                <div>
+                    <label class="block text-xs font-bold text-slate-400 uppercase mb-1">Jav</label>
+                    <select id="edit-type-select" class="w-full p-2 bg-slate-900 border border-slate-700 rounded-[15px] text-white text-sm outline-none focus:border-blue-500">
+                        <!-- Populated by JS -->
+                    </select>
+                </div>
+               
+                <!-- Level Select -->
+                <div>
+                    <label class="block text-xs font-bold text-slate-400 uppercase mb-1">Stupeň</label>
+                    <select id="edit-level-select" class="w-full p-2 bg-slate-900 border border-slate-700 rounded-[15px] text-white text-sm outline-none focus:border-blue-500">
+                        <!-- Populated by JS -->
+                    </select>
+                </div>
+
+                <!-- Times -->
+                <div class="grid grid-cols-2 gap-2">
+                    <div>
+                        <label class="block text-[10px] text-slate-500 uppercase mb-1">Od</label>
+                        <input type="datetime-local" id="edit-time-start" class="w-full p-2 bg-slate-900 border border-slate-700 rounded-[15px] text-xs text-white outline-none focus:border-blue-500">
+                    </div>
+                    <div>
+                        <label class="block text-[10px] text-slate-500 uppercase mb-1">Do</label>
+                        <input type="datetime-local" id="edit-time-end" class="w-full p-2 bg-slate-900 border border-slate-700 rounded-[15px] text-xs text-white outline-none focus:border-blue-500">
+                    </div>
+                </div>
+
+                <!-- Message -->
+                <div>
+                    <label class="block text-xs font-bold text-slate-400 uppercase mb-1">Popis</label>
+                    <textarea id="edit-message-input" class="w-full p-3 bg-slate-900 border border-slate-700 rounded-[15px] h-20 text-sm text-white focus:border-blue-500 outline-none resize-none"></textarea>
+                </div>
+
+                <button onclick="saveEditModal()" class="w-full bg-blue-600 hover:bg-blue-500 text-white py-3 rounded-[20px] font-bold shadow-lg transition-all mt-2">
+                    Uložiť zmeny
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Logic -->
+    <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+    <!-- Leaflet Marker Cluster JS -->
+    <script src="https://unpkg.com/leaflet.markercluster@1.4.1/dist/leaflet.markercluster.js"></script>
+   
+    <script type="module">
+        // --- KONFIGURÁCIA WORDPRESS ---
+// --- KONFIGURÁCIA WORDPRESS ---
+const WP_SETTINGS = {
+    baseUrl: 'https://www.meteopocasie.sk/wp-json/wp/v2/vystraha',
+    user: 'ncikala',
+    // Predpripravený autorizačný kľúč
+    auth: btoa('ncikala:EbdO b1xB UoVo kbbh UMF3 0Ci6') 
+};
+
+        // DATA CONSTANTS
+        const KRAJE_A_OKRESY = {
+            "Bratislavský": ["Bratislava I", "Bratislava II", "Bratislava III", "Bratislava IV", "Bratislava V", "Malacky", "Pezinok", "Senec"],
+            "Trnavský": ["Dunajská Streda", "Galanta", "Hlohovec", "Piešťany", "Senica", "Skalica", "Trnava"],
+            "Trenčiansky": ["Bánovce nad Bebravou", "Ilava", "Myjava", "Nové Mesto nad Váhom", "Partizánske", "Považská Bystrica", "Prievidza", "Púchov", "Trenčín"],
+            "Nitriansky": ["Komárno", "Levice", "Nitra", "Nové Zámky", "Šaľa", "Topoľčany", "Zlaté Moravce"],
+            "Žilinský": ["Bytča", "Čadca", "Dolný Kubín", "Kysucké Nové Mesto", "Liptovský Mikuláš", "Martin", "Námestovo", "Ružomberok", "Turčianske Teplice", "Tvrdošín", "Žilina"],
+            "Banskobystrický": ["Banská Bystrica", "Banská Štiavnica", "Brezno", "Detva", "Krupina", "Lučenec", "Poltár", "Revúca", "Rimavská Sobota", "Veľký Krtíš", "Zvolen", "Žarnovica", "Žiar nad Hronom"],
+            "Prešovský": ["Bardejov", "Humenné", "Kežmarok", "Levoča", "Medzilaborce", "Poprad", "Prešov", "Sabinov", "Snina", "Stará Ľubovňa", "Stropkov", "Svidník", "Vranov nad Topľou"],
+            "Košický": ["Gelnica", "Košice I", "Košice II", "Košice III", "Košice IV", "Košice-okolie", "Michalovce", "Rožňava", "Sobrance", "Spišská Nová Ves", "Trebišov"]
+        };
+        const ALL_DISTRICTS = Object.values(KRAJE_A_OKRESY).flat().sort();
+
+        const WARNING_TYPES = [
+            { id: 'none', label: 'Bez výstrahy', icon: 'check-circle-2', color: 'text-green-400' },
+            { id: 'wind', label: 'Vietor', icon: 'wind', color: 'text-yellow-400' },
+            { id: 'mountain_wind', label: 'Vietor na horách', icon: 'mountain', color: 'text-slate-300' },
+            { id: 'rain', label: 'Dážď', icon: 'cloud-rain', color: 'text-blue-400' },
+            { id: 'storm', label: 'Búrky', icon: 'cloud-lightning', color: 'text-purple-400' },
+            { id: 'snow', label: 'Sneženie', icon: 'cloud-snow', color: 'text-cyan-200' },
+            { id: 'ice', label: 'Poľadovica', icon: 'snowflake', color: 'text-cyan-400' },
+            { id: 'snow_drifts', label: 'Snehové jazyky', icon: 'wind', color: 'text-white' },
+            { id: 'fog', label: 'Hmla', icon: 'cloud-fog', color: 'text-gray-400' },
+            { id: 'hail', label: 'Krupobitie', icon: 'cloud-hail', color: 'text-indigo-400' },
+            { id: 'tornado', label: 'Tornáda', icon: 'tornado', color: 'text-red-500' },
+            { id: 'heat', label: 'Vysoké teploty', icon: 'thermometer-sun', color: 'text-orange-500' },
+            { id: 'cold', label: 'Nízke teploty', icon: 'thermometer-snowflake', color: 'text-blue-600' },
+            { id: 'smog', label: 'Kvalita ovzdušia', icon: 'factory', color: 'text-amber-600' },
+            { id: 'pollen', label: 'Peľ', icon: 'flower-2', color: 'text-yellow-300' },
+        ];
+
+        const SEVERITY_LEVELS = [
+            { level: 0, label: 'Žiadna', class: 'bg-green-500/20 text-green-400 border-green-500/50', border: 'border-green-500', hex: '#22c55e' },
+            { level: 1, label: '1. Stupeň', class: 'bg-yellow-500/20 text-yellow-400 border-yellow-500/50', border: 'border-yellow-400', hex: '#facc15' },
+            { level: 2, label: '2. Stupeň', class: 'bg-orange-500/20 text-orange-400 border-orange-500/50', border: 'border-orange-500', hex: '#f97316' },
+            { level: 3, label: '3. Stupeň', class: 'bg-red-600/20 text-red-500 border-red-600/50', border: 'border-red-600', hex: '#dc2626' },
+            { level: 4, label: '4. Extrém', class: 'bg-purple-600/20 text-purple-400 border-purple-600/50', border: 'border-purple-600', hex: '#9333ea' }
+        ];
+
+        // STATE
+        let state = {
+            warnings: {},
+            user: null,
+            dayOffset: 0,
+            showGreenDistricts: true,
+            geoJsonData: null,
+            summaryExpanded: false,
+           
+            // Admin
+            adminSelectedDistricts: new Set(),
+            adminType: 'none',
+            adminLevel: 0,
+            adminMessage: '',
+            adminDatetimeStart: '',
+            adminDatetimeEnd: '',
+            adminEditingId: null,
+
+            // Single Edit Modal State
+            editModalData: null,
+
+            // Filters
+            filterRegion: '',
+            filterSearch: '',
+            filterTypes: new Set(),
+            filterLevels: new Set(),
+
+            // Maps
+            publicMap: null,
+            adminMap: null,
+            geojsonLayer: null,
+            adminGeojsonLayer: null,
+            publicMarkersLayer: null
+        };
+
+async function init() {
+    state.user = { isLogged: true };
+    updateDayLabels();
+    populateUI();
+    
+    // 1. Príprava máp
+    switchTab('public');
+    
+    // 2. Načítanie GeoJSON s cache-busterom
+    const jsonUrl = `okresy-hq.json`;
+    
+    try {
+        const response = await fetch(jsonUrl);
+        if (!response.ok) throw new Error(`HTTP ${response.status}`);
+        const data = await response.json();
+        
+        state.geoJsonData = data;
+        console.log("GeoJSON pripravený.");
+        
+        // Vykreslenie do máp
+        if (state.publicMap) renderGeoJsonToMap(state.publicMap, false);
+        if (state.adminMap) renderGeoJsonToMap(state.adminMap, true);
+        
+        renderMiniMaps();
+        updateMapBadge();
+    } catch (err) {
+        console.error("Kritická chyba GeoJSON:", err);
+        if (typeof window.showMeteoNotify === 'function') {
+            window.showMeteoNotify("Chyba mapy", "Nepodarilo sa načítať hranice okresov.", "error");
+        }
+    }
+    
+    // 3. Spustenie synchronizácie výstrah
+    setupRealtimeListener();
+    lucide.createIcons();
+    setDay(0);
+}
+// Pomocná funkcia na premenu ISO dátumu na slovenský formát
+function formatDisplayDate(isoStr) {
+    if (!isoStr || isoStr === "") return "Nenastavené";
+    const d = new Date(isoStr);
+    if (isNaN(d.getTime())) return isoStr; // Ak to nie je platný dátum, vráti pôvodný text
+    
+    const day = String(d.getDate()).padStart(2, '0');
+    const month = String(d.getMonth() + 1).padStart(2, '0');
+    const year = d.getFullYear();
+    const hours = String(d.getHours()).padStart(2, '0');
+    const minutes = String(d.getMinutes()).padStart(2, '0');
+    
+    return `${day}.${month}.${year} o ${hours}:${minutes}`;
+}
+
+// Pomocná funkcia pre názov dňa v badge
+// Pomocná funkcia pre názov dňa v badge
+function getShortDayLabel(offset) {
+    const today = new Date();
+    today.setDate(today.getDate() + offset);
+    const days = ['Ne', 'Po', 'Ut', 'St', 'Št', 'Pi', 'So'];
+    const dayName = days[today.getDay()];
+    const dateStr = today.getDate().toString().padStart(2, '0') + '.' + (today.getMonth() + 1).toString().padStart(2, '0') + '.';
+    const prefix = ["Dnes", "Zajtra", "Pozajtra"][offset];
+    return `${prefix}, ${dayName} ${dateStr}`;
+}
+
+
+        // DATE LOGIC (Format: Dnes, NE 08.01.)
+        function formatDayLabel(date, offset) {
+            const daysShort = ['NE', 'PO', 'UT', 'ST', 'ŠT', 'PI', 'SO'];
+            const relative = ["Dnes", "Zajtra", "Pozajtra"][offset]; // Title Case
+            const dayName = daysShort[date.getDay()];
+            const dayDate = date.getDate().toString().padStart(2, '0') + '.' + (date.getMonth()+1).toString().padStart(2, '0') + '.';
+            return `${relative}, ${dayName} ${dayDate}`;
+        }
+
+        function updateDayLabels() {
+            const today = new Date();
+            for(let i=0; i<3; i++) {
+                const d = new Date(today);
+                d.setDate(today.getDate() + i);
+                const label = document.getElementById(`date-label-${i}`);
+                if(label) label.innerText = formatDayLabel(d, i);
+            }
+        }
+       
+        function getDayName(dayIndex) {
+            const today = new Date();
+            today.setDate(today.getDate() + dayIndex);
+            return formatDayLabel(today, dayIndex);
+        }
+
+        // --- 1. PREPÍNANIE DNÍ (OPRAVA NULL CHYBY) ---
+window.setDay = function(dayIndex) {
+    state.dayOffset = dayIndex;
+    const configs = [
+        { prefix: 'day-btn-', active: 'active' },
+        { prefix: 'fs-day-btn-', active: 'active' }
+    ];
+    [0, 1, 2].forEach(i => {
+        configs.forEach(cfg => {
+            const btn = document.getElementById(`${cfg.prefix}${i}`);
+            if (btn) {
+                if (i === dayIndex) btn.classList.add(cfg.active);
+                else btn.classList.remove(cfg.active);
+            }
+        });
+    });
+    renderPublicGrid(); updateStats(); generateMapSummary(); updateMapBadge();
+    if (state.publicMap) updateMapColors(state.publicMap, state.geojsonLayer, false);
+};
+
+// --- 2. SYNCHRONIZÁCIA DÁT (OPRAVA UNEXPECTED TOKEN) ---
+async function setupRealtimeListener() {
+    try {
+        const res = await fetch(`${WP_SETTINGS.baseUrl}?per_page=100&status=publish&_cb=${Date.now()}`);
+        if (!res.ok) throw new Error("WP Offline");
+        const posts = await res.json();
+        const data = {};
+        const today = new Date(); today.setHours(0, 0, 0, 0);
+        
+        posts.forEach(post => {
+            const m = post.meta;
+            if (!m || !m.okres || !m.plati_od || !m.plati_do) return;
+            const start = new Date(m.plati_od); const end = new Date(m.plati_do);
+            for (let i = 0; i < 3; i++) {
+                const dStart = new Date(today); dStart.setDate(today.getDate() + i);
+                const dEnd = new Date(dStart); dEnd.setHours(23, 59, 59, 999);
+                if (start <= dEnd && end >= dStart) {
+                    const key = `${m.okres}_${i}`;
+                    if (!data[key]) data[key] = { warnings: [] };
+                    data[key].warnings.push({
+                        id: post.id, type: m.jav || 'none', level: parseInt(m.stupen) || 0,
+                        message: m.popis || '', validity: `Platnosť: ${formatDisplayDate(m.plati_od)} - ${formatDisplayDate(m.plati_do)}`,
+                        expiryTimestamp: end.getTime()
+                    });
+                }
+            }
+        });
+        state.warnings = data;
+        const now = new Date();
+        const timeStr = now.getDate().toString().padStart(2, '0') + "." + (now.getMonth()+1).toString().padStart(2, '0') + "." + now.getFullYear().toString().padStart(2, '0') + " o " + now.getHours().toString().padStart(2, '0') + ":" + now.getMinutes().toString().padStart(2, '0');
+        const updateEl = document.getElementById('last-update-time-new');
+        if (updateEl) updateEl.innerText = timeStr;
+        updateMapBadge(); renderPublicGrid(); updateStats(); generateMapSummary(); renderMiniMaps();
+        if (state.publicMap) updateMapColors(state.publicMap, state.geojsonLayer, false);
+    } catch (e) {
+        console.error("Sync error:", e);
+        if (typeof showMeteoNotify === 'function') showMeteoNotify("Chyba spojenia", "Dáta sa nepodarilo načítať.", "error");
+    }
+}
+
+
+
+
+
+
+        function getFilteredWarningsData(district, day) {
+    const raw = state.warnings[`${district}_${day}`];
+    if (!raw || !raw.warnings) return { maxLevel: 0, list: [] };
+    
+    const now = Date.now();
+    
+    // AUTOMATICKÝ FILTER: Zobraziť len tie, ktoré ešte neexpirovali
+    let activeWarnings = raw.warnings.filter(w => {
+        return !w.expiryTimestamp || w.expiryTimestamp > now;
+    });
+    
+    if (activeWarnings.length === 0) return { maxLevel: 0, list: [] };
+    
+    // Filtre podľa typu a stupňa (z UI)
+    if (state.filterTypes.size > 0) {
+        activeWarnings = activeWarnings.filter(w => state.filterTypes.has(w.type));
+    }
+    if (state.filterLevels.size > 0) {
+        activeWarnings = activeWarnings.filter(w => state.filterLevels.has(w.level));
+    }
+    
+    if (activeWarnings.length === 0) return { maxLevel: 0, list: [] };
+    
+    const max = Math.max(...activeWarnings.map(w => w.level));
+    return { maxLevel: max, list: activeWarnings };
+}
+
+        // OPRAVENÁ FUNKCIA: Teraz filtruje expirované výstrahy aj pre modálne okno
+function getAllWarningsData(district, day) {
+    const raw = state.warnings[`${district}_${day}`];
+    if (!raw || !raw.warnings) return { maxLevel: 0, list: [] };
+
+    const now = Date.now();
+    
+    // FILTRÁCIA: Do modalu pustíme len tie, ktoré ešte nevypršali
+    const activeWarnings = raw.warnings.filter(w => {
+        return !w.expiryTimestamp || w.expiryTimestamp > now;
+    });
+
+    if (activeWarnings.length === 0) return { maxLevel: 0, list: [] };
+
+    const max = Math.max(...activeWarnings.map(w => w.level));
+    return { maxLevel: max, list: activeWarnings };
+}
+
+        function projectLatLonToCanvas(lat, lon, width, height) {
+            const minLon = 16.83;
+            const maxLon = 22.57;
+            const minLat = 47.73;
+            const maxLat = 49.61;
+           
+            const nLon = (lon - minLon) / (maxLon - minLon);
+            const nLat = (lat - minLat) / (maxLat - minLat);
+           
+            const x = nLon * width;
+            const y = height - (nLat * height);
+           
+            return [x, y];
+        }
+
+        // --- 3. RENDEROVANIE MINI MÁP DO OBOCH SÁD ---
+function renderMiniMaps() {
+    if (!state.geoJsonData) return;
+    [0, 1, 2].forEach(dayIdx => {
+        const ids = [`mini-map-${dayIdx}`, `mini-map-fs-${dayIdx}`];
+        ids.forEach(id => {
+            const canvas = document.getElementById(id);
+            if (!canvas) return;
+            const ctx = canvas.getContext('2d');
+            ctx.clearRect(0, 0, canvas.width, canvas.height);
+            state.geoJsonData.features.forEach(f => {
+                const d = getAllWarningsData(f.properties.NM3 || f.properties.NAZOV, dayIdx);
+                ctx.fillStyle = d.maxLevel > 0 ? SEVERITY_LEVELS.find(l => l.level === d.maxLevel).hex : '#22c55e';
+                ctx.beginPath();
+                const coords = f.geometry.coordinates;
+                if (f.geometry.type === 'Polygon') drawPolygon(ctx, coords, canvas.width, canvas.height);
+                else coords.forEach(p => drawPolygon(ctx, p, canvas.width, canvas.height));
+                ctx.fill();
+            });
+        });
+    });
+}
+
+        function drawPolygon(ctx, rings, w, h) {
+            const outer = rings[0];
+            if(!outer) return;
+           
+            const start = projectLatLonToCanvas(outer[0][1], outer[0][0], w, h);
+            ctx.moveTo(start[0], start[1]);
+           
+            for(let i=1; i<outer.length; i++) {
+                const p = projectLatLonToCanvas(outer[i][1], outer[i][0], w, h);
+                ctx.lineTo(p[0], p[1]);
+            }
+            ctx.closePath();
+        }
+
+      async function saveWarning() {
+    if (state.adminSelectedDistricts.size === 0) return alert("Vyberte aspoň jeden okres!");
+    
+    const btn = document.getElementById('btn-add-warning');
+    btn.innerText = "ODOSIELAM DO WP...";
+    btn.disabled = true;
+    
+    try {
+        const promises = Array.from(state.adminSelectedDistricts).map(async (district) => {
+            const response = await fetch(WP_SETTINGS.baseUrl, {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'Authorization': `Basic ${WP_SETTINGS.auth}`
+                },
+                body: JSON.stringify({
+                    title: `Výstraha: ${district}`,
+                    status: 'publish',
+                    // WordPress vyžaduje meta polia v samostatnom objekte meta:
+                    meta: {
+                        okres: district,
+                        stupen: state.adminLevel.toString(),
+                        jav: state.adminType,
+                        plati_od: document.getElementById('admin-datetime-start').value,
+                        plati_do: document.getElementById('admin-datetime-end').value,
+                        popis: state.adminMessage
+                    }
+                })
+            });
+            
+            if (!response.ok) {
+                const errorData = await response.json();
+                throw new Error(errorData.message || "Chyba servera");
+            }
+            return response.json();
+        });
+        
+        await Promise.all(promises);
+        alert("VÝSTRAHY SÚ SKUTOČNE NA SERVERI!");
+        await setupRealtimeListener(); // Osviežime mapu
+        clearSelection();
+    } catch (e) {
+        alert("CHYBA PRI UKLADANÍ: " + e.message);
+        console.error("WP Save Error:", e);
+    } finally {
+        btn.innerText = "Pridať výstrahu";
+        btn.disabled = false;
+    }
+}
+// Pomocná funkcia pre čas
+function formatTimeRange(s, e) {
+    if(!s || !e) return "Celý deň";
+    const d1 = new Date(s);
+    const d2 = new Date(e);
+    return `${d1.getHours()}:${String(d1.getMinutes()).padStart(2,'0')} - ${d2.getDate()}.${d2.getMonth()+1}. ${d2.getHours()}:${String(d2.getMinutes()).padStart(2,'0')}`;
+}
+       
+// --- MAZANIE Z WORDPRESSU ---
+async function deleteSpecificWarning(district, day, warningId, btnElement) {
+    if (!confirm("Naozaj odstrániť túto výstrahu?")) return;
+    if (btnElement) btnElement.innerText = "...";
+    
+    try {
+        const res = await fetch(`${WP_SETTINGS.baseUrl}/${warningId}`, {
+            method: 'DELETE',
+            headers: { 'Authorization': `Basic ${WP_SETTINGS.auth}` }
+        });
+        
+        if (res.ok) {
+            await setupRealtimeListener(); // Osviežime mapu
+        }
+    } catch (e) {
+        alert("Chyba pri mazaní.");
+    }
+}
+
+// --- ÚPRAVA VO WORDPRESSE ---
+window.saveEditModal = async function() {
+    if (!state.editModalData) return;
+    const { warningId } = state.editModalData;
+    
+    try {
+        const res = await fetch(`${WP_SETTINGS.baseUrl}/${warningId}`, {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+                'Authorization': `Basic ${WP_SETTINGS.auth}`
+            },
+            body: JSON.stringify({
+                meta: {
+                    stupen: document.getElementById('edit-level-select').value,
+                    jav: document.getElementById('edit-type-select').value,
+                    popis: document.getElementById('edit-message-input').value
+                }
+            })
+        });
+        
+        if (res.ok) {
+            alert("Upravené!");
+            closeEditModal();
+            await setupRealtimeListener();
+        }
+    } catch (e) { alert("Chyba pri ukladaní zmien."); }
+};
+
+// --- ÚPRAVA VO WORDPRESSE ---
+window.saveEditModal = async function() {
+    if (!state.editModalData) return;
+    const { warningId } = state.editModalData;
+    
+    try {
+        const res = await fetch(`${WP_SETTINGS.baseUrl}/${warningId}`, {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+                'Authorization': `Basic ${WP_SETTINGS.auth}`
+            },
+            body: JSON.stringify({
+                meta: {
+                    stupen: document.getElementById('edit-level-select').value,
+                    jav: document.getElementById('edit-type-select').value,
+                    popis: document.getElementById('edit-message-input').value
+                }
+            })
+        });
+        
+        if (res.ok) {
+            alert("Upravené!");
+            closeEditModal();
+            await setupRealtimeListener();
+        }
+    } catch (e) { alert("Chyba pri ukladaní zmien."); }
+};
+       
+        window.deleteWarningWrapper = function(district, day, warningId, btn) {
+            deleteSpecificWarning(district, day, warningId, btn);
+        };
+       
+        window.openEditModal = function(district, day, warningId) {
+            const data = getAllWarningsData(district, day);
+            const warning = data.list.find(w => w.id === warningId);
+            if(!warning) return;
+           
+            state.editModalData = { district, day, warningId, warning };
+           
+            document.getElementById('edit-modal-subtitle').innerText = `${district} - ${getDayName(day)}`;
+            document.getElementById('edit-message-input').value = warning.message || '';
+           
+            const typeSel = document.getElementById('edit-type-select');
+            typeSel.innerHTML = WARNING_TYPES.map(t => `<option value="${t.id}" ${t.id === warning.type ? 'selected' : ''}>${t.label}</option>`).join('');
+           
+            const lvlSel = document.getElementById('edit-level-select');
+            lvlSel.innerHTML = SEVERITY_LEVELS.filter(l => l.level > 0).map(l => `<option value="${l.level}" ${l.level === warning.level ? 'selected' : ''}>${l.label}</option>`).join('');
+           
+            document.getElementById('edit-time-start').value = '';
+            document.getElementById('edit-time-end').value = '';
+           
+            document.getElementById('edit-warning-modal').classList.remove('hidden');
+        };
+       
+        window.closeEditModal = function() {
+            document.getElementById('edit-warning-modal').classList.add('hidden');
+            state.editModalData = null;
+        };
+       
+        window.saveEditModal = async function() {
+            if(!state.editModalData) return;
+            const { district, day, warningId, warning } = state.editModalData;
+           
+            const newType = document.getElementById('edit-type-select').value;
+            const newLevel = parseInt(document.getElementById('edit-level-select').value);
+            const newMessage = document.getElementById('edit-message-input').value;
+           
+            const dStart = document.getElementById('edit-time-start').value;
+            const dEnd = document.getElementById('edit-time-end').value;
+           
+            let newValidity = warning.validity;
+           
+            if(dStart && dEnd) {
+                 const start = new Date(dStart);
+                 const end = new Date(dEnd);
+                 const daysShort = ['NE', 'PO', 'UT', 'ST', 'ŠT', 'PI', 'SO'];
+                 const sStr = `${daysShort[start.getDay()]} ${start.getDate().toString().padStart(2,'0')}.${(start.getMonth()+1).toString().padStart(2,'0')}. ${start.getHours().toString().padStart(2,'0')}:${start.getMinutes().toString().padStart(2,'0')}`;
+                 const eStr = `${daysShort[end.getDay()]} ${end.getDate().toString().padStart(2,'0')}.${(end.getMonth()+1).toString().padStart(2,'0')}. ${end.getHours().toString().padStart(2,'0')}:${end.getMinutes().toString().padStart(2,'0')}`;
+                 newValidity = `${sStr} - ${eStr}`;
+            }
+           
+            try {
+                 const key = `${district}_${day}`;
+                 const docRef = doc(db, 'artifacts', appId, 'public', 'data', 'weather_warnings_v2', key);
+                 const currentData = getAllWarningsData(district, day);
+                 
+                 const newList = currentData.list.map(w => {
+                     if(w.id === warningId) {
+                         return {
+                             ...w,
+                             type: newType,
+                             level: newLevel,
+                             message: newMessage,
+                             validity: newValidity
+                         };
+                     }
+                     return w;
+                 });
+                 
+                 await setDoc(docRef, {
+                     district: district,
+                     day: day,
+                     warnings: newList,
+                     updatedAt: serverTimestamp()
+                 });
+                 
+                 closeEditModal();
+                 alert("Výstraha upravená!");
+                 
+            } catch(e) {
+                console.error(e);
+                alert("Chyba pri ukladaní.");
+            }
+        };
+       
+        function resetAdminForm() {
+            state.adminEditingId = null;
+            state.adminMessage = '';
+            document.getElementById('admin-message').value = '';
+        }
+
+        // --- UI POPULATION ---
+        function populateUI() {
+            const typeContainer = document.getElementById('type-buttons');
+            WARNING_TYPES.forEach(t => {
+                const btn = document.createElement('button');
+                btn.id = `type-btn-${t.id}`;
+                btn.className = "p-3 rounded-[25px] border border-slate-700 hover:bg-slate-800 flex flex-col items-center gap-2 transition-all";
+                btn.innerHTML = `<i data-lucide="${t.icon}" class="w-5 h-5 ${t.color}"></i><span class="text-[10px] uppercase font-bold text-slate-400 text-center leading-tight">${t.label}</span>`;
+                btn.onclick = () => { state.adminType = t.id; renderAdminControls(); };
+                typeContainer.appendChild(btn);
+            });
+
+            const levelContainer = document.getElementById('level-buttons');
+            SEVERITY_LEVELS.forEach(l => {
+                const btn = document.createElement('button');
+                btn.id = `lvl-btn-${l.level}`;
+                btn.className = "p-3 rounded-[25px] border border-slate-700 hover:bg-slate-800 text-xs font-bold uppercase transition-all";
+                btn.innerText = l.label.replace(' Stupeň', '').replace(' (Extrém)', '');
+                btn.onclick = () => { state.adminLevel = l.level; renderAdminControls(); };
+                levelContainer.appendChild(btn);
+            });
+            renderFilterUI();
+        }
+
+        function renderFilterUI() {
+            const ftc = document.getElementById('filter-types-container');
+            ftc.innerHTML = '';
+            WARNING_TYPES.forEach(t => {
+                if(t.id === 'none') return;
+                const active = state.filterTypes.has(t.id);
+                const btn = document.createElement('button');
+                btn.className = `px-3 py-1.5 rounded-[20px] text-xs font-bold uppercase border transition-all flex items-center gap-1 ${active ? 'bg-blue-600 border-blue-500 text-white' : 'bg-slate-900 border-slate-700 text-slate-400'}`;
+                btn.innerHTML = `<i data-lucide="${t.icon}" class="w-3 h-3"></i> ${t.label}`;
+                btn.onclick = () => toggleFilterType(t.id);
+                ftc.appendChild(btn);
+            });
+
+            const flc = document.getElementById('filter-levels-container');
+            flc.innerHTML = '';
+            SEVERITY_LEVELS.forEach(l => {
+                if(l.level === 0) return;
+                const active = state.filterLevels.has(l.level);
+                const btn = document.createElement('button');
+                btn.className = `px-3 py-1.5 rounded-[20px] text-xs font-bold uppercase border transition-all ${active ? 'text-white' : 'bg-slate-900 border-slate-700 text-slate-400 opacity-60'}`;
+                if(active) {
+                    btn.style.backgroundColor = l.hex;
+                    btn.style.borderColor = l.hex;
+                    if(l.level === 1) btn.style.color = 'black';
+                }
+                btn.innerText = `Stupeň ${l.level}`;
+                btn.onclick = () => toggleFilterLevel(l.level);
+                flc.appendChild(btn);
+            });
+            lucide.createIcons();
+        }
+
+        window.toggleFilterType = function(id) {
+            if(state.filterTypes.has(id)) state.filterTypes.delete(id); else state.filterTypes.add(id);
+            renderFilterUI(); renderPublicGrid();
+            generateMapSummary(); // Update Summary
+            if(state.publicMap) updateMapColors(state.publicMap, state.geojsonLayer, false);
+            updateMapBadge();
+        };
+        
+        window.toggleFilterLevel = function(lvl) {
+            if(state.filterLevels.has(lvl)) state.filterLevels.delete(lvl); else state.filterLevels.add(lvl);
+            renderFilterUI(); renderPublicGrid();
+            generateMapSummary(); // Update Summary
+            if(state.publicMap) updateMapColors(state.publicMap, state.geojsonLayer, false);
+        };
+        window.resetFilters = function() {
+            state.filterTypes.clear(); state.filterLevels.clear();
+            renderFilterUI(); renderPublicGrid();
+            generateMapSummary(); // Update Summary
+            if(state.publicMap) updateMapColors(state.publicMap, state.geojsonLayer, false);
+        };
+
+        function renderAdminControls() {
+            WARNING_TYPES.forEach(t => {
+                const btn = document.getElementById(`type-btn-${t.id}`);
+                if (state.adminType === t.id) btn.className = "p-3 rounded-[25px] border-2 border-blue-500 bg-blue-500/10 flex flex-col items-center gap-2 transition-all shadow-lg";
+                else btn.className = "p-3 rounded-[25px] border border-slate-700 bg-slate-900 hover:bg-slate-800 flex flex-col items-center gap-2 transition-all opacity-70";
+            });
+            SEVERITY_LEVELS.forEach(l => {
+                const btn = document.getElementById(`lvl-btn-${l.level}`);
+                if (state.adminLevel === l.level) {
+                    btn.className = `p-3 rounded-[25px] border-2 text-white shadow-lg`;
+                    btn.style.backgroundColor = l.hex + '33';
+                    btn.style.borderColor = l.hex;
+                    if(l.level === 1) btn.style.color = '#facc15';
+                } else {
+                    btn.className = "p-3 rounded-[25px] border border-slate-700 bg-slate-900 text-slate-400 hover:bg-slate-800 hover:text-white transition-all";
+                    btn.style.borderColor = '';
+                    btn.style.backgroundColor = '';
+                    btn.style.color = '';
+                }
+            });
+            lucide.createIcons();
+        }
+
+        function renderPublicGrid() {
+            const grid = document.getElementById('districts-grid');
+            grid.innerHTML = '';
+           
+            let list = ALL_DISTRICTS.filter(d => {
+                if(state.filterSearch && !d.toLowerCase().includes(state.filterSearch.toLowerCase())) return false;
+                // Use getFilteredWarningsData to honor filters visually in Grid
+                const data = getFilteredWarningsData(d, state.dayOffset);
+                if(data.maxLevel === 0) return true;
+                return true;
+            });
+
+            if(list.length === 0) document.getElementById('no-results').classList.remove('hidden');
+            else document.getElementById('no-results').classList.add('hidden');
+
+            list.forEach(district => {
+                const data = getFilteredWarningsData(district, state.dayOffset);
+                const sevInfo = SEVERITY_LEVELS.find(l => l.level === data.maxLevel) || SEVERITY_LEVELS[0];
+               
+                let typeInfo = WARNING_TYPES[0];
+                let countBadge = '';
+               
+                if(data.list.length > 0) {
+                    const sorted = [...data.list].sort((a,b) => b.level - a.level);
+                    typeInfo = WARNING_TYPES.find(t => t.id === sorted[0].type) || WARNING_TYPES[0];
+                    if(data.list.length > 1) {
+                         countBadge = `<span class="ml-2 text-xs bg-slate-700 px-2 py-0.5 rounded-full text-white">+${data.list.length - 1} ďalšie</span>`;
+                    }
+                }
+
+                const div = document.createElement('div');
+                div.className = `glass-panel p-5 rounded-[25px] border-l-4 hover-scale cursor-pointer flex flex-col justify-between h-full`;
+                div.style.borderLeftColor = sevInfo.hex;
+                div.onclick = () => openModal(district);
+
+                let badgeClass = "text-white";
+                if(data.maxLevel === 1) badgeClass = "text-black";
+
+                div.innerHTML = `
+                    <div>
+                        <div class="flex justify-between items-start mb-3">
+                            <h3 class="font-bold text-lg text-white truncate pr-2">${district}</h3>
+                            <span class="px-2 py-1 rounded text-[10px] font-bold uppercase ${badgeClass}" style="background-color: ${sevInfo.hex}">${sevInfo.level === 0 ? 'OK' : 'Stupeň ' + sevInfo.level}</span>
+                        </div>
+                        <div class="flex items-center gap-3 mb-3">
+                            <div class="p-2 rounded-lg bg-white/5">
+                                <i data-lucide="${typeInfo.icon}" class="w-5 h-5 ${typeInfo.color}"></i>
+                            </div>
+                            <div>
+                                <p class="text-xs font-bold uppercase text-slate-400">Situácia</p>
+                                <div class="flex items-center">
+                                    <p class="text-sm font-medium text-white">${typeInfo.label}</p>
+                                    ${countBadge}
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                `;
+                grid.appendChild(div);
+            });
+            lucide.createIcons();
+        }
+       
+function updateStats() {
+    let severityCounts = [0, 0, 0, 0, 0];
+    let levelPhenomena = { 1: {}, 2: {}, 3: {}, 4: {} };
+    const totalDistricts = 79; // Fixný počet okresov SR
+    
+    // Pomocné pole pre debug
+    let debugCount = { 1: [], 2: [], 3: [], 4: [] };
+    
+    ALL_DISTRICTS.forEach(district => {
+        const data = getAllWarningsData(district, state.dayOffset);
+        
+        // Započítame okres do jeho najvyššieho stupňa
+        severityCounts[data.maxLevel]++;
+        
+        if (data.maxLevel > 0) {
+            debugCount[data.maxLevel].push(district);
+        }
+        
+        // Spracovanie javov (unikátne v rámci stupňa)
+        data.list.forEach(w => {
+            if (w.level > 0) {
+                if (!levelPhenomena[w.level][w.type]) {
+                    levelPhenomena[w.level][w.type] = new Set();
+                }
+                levelPhenomena[w.level][w.type].add(district);
+            }
+        });
+    });
+    
+    // VÝSTUP DO KONZOLY PRE KONTROLU (Stlačte F12 v prehliadači)
+    console.log("--- KONTROLA POČTOV ---");
+    console.log("Okresy v 2. stupni:", debugCount[2]);
+    console.log("Okresy v 1. stupni:", debugCount[1]);
+    
+    // AKTUALIZÁCIA UI
+    [0, 1, 2, 3, 4].forEach(lvl => {
+        const countEl = document.getElementById(`stat-lvl-${lvl}`);
+        const percentEl = document.getElementById(`stat-lvl-${lvl}-pct`);
+        const phenoContainer = document.getElementById(`stat-lvl-${lvl}-phenomena`);
+        
+        if (countEl) countEl.innerText = severityCounts[lvl];
+        
+        if (percentEl) {
+            // Používame Math.round na 1 desatinné miesto pre presnosť
+            const pct = ((severityCounts[lvl] / totalDistricts) * 100).toFixed(1);
+            percentEl.innerText = `${pct.replace('.', ',')}% územia`;
+        }
+        
+        if (phenoContainer && lvl > 0) {
+            phenoContainer.innerHTML = '';
+            const activePhenos = levelPhenomena[lvl];
+            
+            Object.keys(activePhenos).forEach(typeId => {
+                const count = activePhenos[typeId].size;
+                const typeInfo = WARNING_TYPES.find(t => t.id === typeId);
+                if (typeInfo && count > 0) {
+                    const pPct = ((count / totalDistricts) * 100).toFixed(1);
+                    const item = document.createElement('div');
+                    item.className = "flex items-center justify-between text-[9px] uppercase tracking-tighter w-full";
+                    const color = (lvl === 1) ? 'text-slate-900' : 'text-white';
+                    
+                    item.innerHTML = `
+                        <div class="flex items-center gap-1 truncate ${color}">
+                            <i data-lucide="${typeInfo.icon}" class="w-2.5 h-2.5"></i>
+                            <span class="font-medium">${typeInfo.label}:</span>
+                            <span class="font-bold">${count}</span>
+                        </div>
+                        <span class="font-bold ml-1 ${color}">(${pPct.replace('.', ',')}%)</span>
+                    `;
+                    phenoContainer.appendChild(item);
+                }
+            });
+            phenoContainer.style.display = (phenoContainer.innerHTML === '') ? 'none' : 'flex';
+        }
+    });
+    lucide.createIcons();
+}
+
+
+
+        // --- MAP SUMMARY TOGGLE ---
+        window.toggleSummary = function() {
+            state.summaryExpanded = !state.summaryExpanded;
+            const overlay = document.getElementById('map-summary-overlay');
+            const chevron = document.getElementById('summary-chevron');
+           
+            if(state.summaryExpanded) {
+                overlay.classList.remove('collapsed');
+                // Icon for expanding state (in header) is Minus
+                // But header logic is handled by CSS display none
+            } else {
+                overlay.classList.add('collapsed');
+            }
+            lucide.createIcons();
+        }; 
+        function generateMapSummary() {
+            const summarySet = new Set();
+            const summaryData = [];
+
+            ALL_DISTRICTS.forEach(d => {
+                const data = getFilteredWarningsData(d, state.dayOffset);
+                data.list.forEach(w => {
+                    const key = `${w.type}-${w.level}-${w.validity}`;
+                    if(!summarySet.has(key)) {
+                        summarySet.add(key);
+                        summaryData.push(w);
+                    }
+                });
+            });
+
+            summaryData.sort((a,b) => b.level - a.level);
+
+            const container = document.getElementById('map-summary-content');
+            container.innerHTML = '';
+           
+            if(summaryData.length === 0) {
+                container.innerHTML = '<p class="text-slate-400 italic font-poppins">Žiadne aktívne výstrahy.</p>';
+            } else {
+                // Útržok z funkcie generateMapSummary
+summaryData.forEach(w => {
+    const type = WARNING_TYPES.find(t => t.id === w.type);
+    const sev = SEVERITY_LEVELS.find(l => l.level === w.level);
+    
+    const div = document.createElement('div');
+    // Flex-shrink-0 zabezpečí, že sa položky v zozname nebudú stláčať
+    div.className = "flex-shrink-0 border-l-4 pl-3 py-1 bg-white/5 rounded-r-lg";
+    div.style.borderLeftColor = sev.hex;
+    div.innerHTML = `
+        <div class="flex items-center gap-2">
+            <i data-lucide="${type.icon}" class="w-3.5 h-3.5 ${type.color}"></i>
+            <span class="font-bold text-white uppercase tracking-tighter">${type.label}</span>
+            <span class="text-[9px] px-1.5 py-0.5 rounded bg-white/10 text-white font-bold">${sev.level}.st</span>
+        </div>
+        <p class="text-[10px] text-slate-400 mt-1 leading-tight">${w.validity}</p>
+    `;
+    container.appendChild(div);
+});
+            }
+            lucide.createIcons();
+        }
+
+        // --- SCREENSHOT ---
+        window.downloadMapOnly = function() {
+            const element = document.getElementById('map-wrapper');
+            
+            // 1. Force View - Zoom Level 7
+            if (state.publicMap) state.publicMap.setView([48.7, 19.7], 6);
+            
+            // 2. Ensure Summary is up to date and VISIBLE
+            generateMapSummary();
+            
+            // 3. Toggle Class
+            element.classList.add('capturing');
+            
+            setTimeout(() => {
+                html2canvas(element, {
+                    backgroundColor: '#002043',
+                    scale: 2,
+                    useCORS: true
+                }).then(canvas => {
+                    const link = document.createElement('a');
+                    link.download = `MeteoAlert_Mapa_${new Date().toISOString().slice(0,10)}.png`;
+                    link.href = canvas.toDataURL();
+                    link.click();
+                    
+                    // Restore
+                    element.classList.remove('capturing');
+                    if (state.publicMap) state.publicMap.setView([48.7, 19.7], 8);
+                });
+            }, 1000);
+        };
+        
+        // --- LOGIKA PRE FULLSCREEN ---
+        window.toggleMapFullscreen = function() {
+            const mapWrapper = document.getElementById('map-wrapper');
+            const iconEl = document.getElementById('fs-icon');
+            
+            if (!document.fullscreenElement) {
+                // Vstup do Fullscreenu
+                if (mapWrapper.requestFullscreen) {
+                    mapWrapper.requestFullscreen();
+                } else if (mapWrapper.webkitRequestFullscreen) {
+                    /* Safari */
+                    mapWrapper.webkitRequestFullscreen();
+                }
+                
+                if (iconEl) iconEl.setAttribute('data-lucide', 'minimize');
+            } else {
+                // Odchod z Fullscreenu
+                if (document.exitFullscreen) {
+                    document.exitFullscreen();
+                }
+                
+                if (iconEl) iconEl.setAttribute('data-lucide', 'maximize');
+            }
+            
+            // Prekreslenie ikon a opravu veľkosti mapy po zmene
+            setTimeout(() => {
+                if (state.publicMap) state.publicMap.invalidateSize();
+                lucide.createIcons();
+            }, 300);
+        };
+        
+        // Sledovanie zmeny fullscreenu (napr. cez klávesu ESC) pre aktualizáciu ikon
+        document.addEventListener('fullscreenchange', () => {
+            const iconEl = document.getElementById('fs-icon');
+            if (!document.fullscreenElement && iconEl) {
+                iconEl.setAttribute('data-lucide', 'maximize');
+                lucide.createIcons();
+            }
+        });
+        
+        
+// Globálna konštanta pre zoom
+const ZOOM_THRESHOLD = 8;
+
+// --- 3. KONTROLA VIDITEĽNOSTI IKON PODĽA ZOOMU ---
+function checkIconsZoomVisibility(mapInstance) {
+    if (!mapInstance || !state.publicMarkersLayer) return;
+    const currentZoom = mapInstance.getZoom();
+    const layer = state.publicMarkersLayer;
+    
+    if (currentZoom < 7) { // ZOOM_THRESHOLD
+        if (mapInstance.hasLayer(layer)) mapInstance.removeLayer(layer);
+    } else {
+        if (!mapInstance.hasLayer(layer)) {
+            mapInstance.addLayer(layer);
+            setTimeout(() => lucide.createIcons(), 10);
+        }
+    }
+}
+
+function initMap(isAdmin) {
+    const mapId = isAdmin ? 'admin-map' : 'map';
+    const instanceName = isAdmin ? 'adminMap' : 'publicMap';
+    
+    if (state[instanceName]) {
+        setTimeout(() => state[instanceName].invalidateSize(), 100);
+        return;
+    }
+
+    const isMobile = window.innerWidth < 768;
+    const initialZoom = isMobile ? 6.4 : 7.5; 
+
+    const map = L.map(mapId, {
+        preferCanvas: true,
+        minZoom: 5,
+        maxBounds: [[46.5, 15.5], [50.5, 23.5]],
+        maxBoundsViscosity: 1.0,
+        zoomControl: true // Ponecháme základný zoom vľavo
+    }).setView([48.7, 19.7], initialZoom);
+
+    L.tileLayer('https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png', {
+        attribution: '&copy; CARTO',
+        subdomains: 'abcd',
+        maxZoom: 19
+    }).addTo(map);
+            
+    if (!isAdmin) {
+        state.publicMap = map;
+        state.publicMarkersLayer = L.featureGroup().addTo(map);
+        map.on('zoomend', () => checkIconsZoomVisibility(map));
+    } else {
+        state.adminMap = map;
+    }
+
+    // Vykreslenie GeoJSON dát, ak už sú v pamäti
+    if (state.geoJsonData) {
+        renderGeoJsonToMap(map, isAdmin);
+    }
+    
+    // !!! TU BOL PREDTÝM DUPLICITNÝ FULLSCREEN KÓD - ODSTRÁNENÝ !!!
+}
+        function stylePublicFeature(feature) {
+            const name = feature.properties.NM3 || feature.properties.NAZOV || '';
+            const data = getFilteredWarningsData(name, state.dayOffset);
+           
+            if (!state.showGreenDistricts && data.maxLevel === 0) {
+                 return { fillColor: '#1e293b', weight: 1, color: '#334155', fillOpacity: 0.1 };
+            }
+           
+            if (data.maxLevel === 0) {
+                return { fillColor: '#22c55e', weight: 1, color: '#334155', fillOpacity: 0.6 };
+            }
+
+            const color = SEVERITY_LEVELS.find(l => l.level === data.maxLevel).hex;
+            return {
+                fillColor: color,
+                weight: 1,
+                opacity: 1,
+                color: '#334155',
+                fillOpacity: 0.7
+            };
+        }
+
+        function onEachPublicFeature(feature, layer) {
+            const name = feature.properties.NM3 || feature.properties.NAZOV;
+            layer.on('click', () => openModal(name));
+            layer.on('mouseover', (e) => {
+                e.target.setStyle({ weight: 2, color: 'white', fillOpacity: 0.9 });
+                e.target.bringToFront();
+            });
+            layer.on('mouseout', (e) => { state.geojsonLayer.resetStyle(e.target); });
+        }
+        
+
+
+// --- 1. FUNKCIA PRE VYKRESLENIE OKRESOV NA MAPU ---
+function renderGeoJsonToMap(map, isAdmin) {
+    if (!state.geoJsonData) return;
+    const instanceLayer = isAdmin ? 'adminGeojsonLayer' : 'geojsonLayer';
+    
+    if (state[instanceLayer]) {
+        map.removeLayer(state[instanceLayer]);
+    }
+    
+    state[instanceLayer] = L.geoJson(state.geoJsonData, {
+        style: isAdmin ? (f => styleAdminFeature(f)) : stylePublicFeature,
+        onEachFeature: isAdmin ? onEachAdminFeature : onEachPublicFeature
+    }).addTo(map);
+    
+    if (!isAdmin) {
+        updateMapColors(map, state[instanceLayer], false);
+    }
+}
+
+// --- 2. AKTUALIZÁCIA ČASU POD LEGENDOU ---
+
+
+
+// Dynamický text nad mapou (Badge)
+function updateMapBadge() {
+    const dateEl = document.getElementById('map-info-date');
+    const phenoEl = document.getElementById('map-info-phenomena');
+    
+    if (dateEl) {
+        const today = new Date();
+        today.setDate(today.getDate() + state.dayOffset);
+        const days = ['Ne', 'Po', 'Ut', 'St', 'Št', 'Pi', 'So'];
+        dateEl.innerText = `${["Dnes", "Zajtra", "Pozajtra"][state.dayOffset]}, ${days[today.getDay()]} ${today.getDate().toString().padStart(2, '0')}.${(today.getMonth() + 1).toString().padStart(2, '0')}.`;
+    }
+    
+    if (phenoEl) {
+        const activeTypes = new Set();
+        ALL_DISTRICTS.forEach(d => {
+            const data = getFilteredWarningsData(d, state.dayOffset);
+            data.list.forEach(w => { if (w.level > 0) activeTypes.add(w.type); });
+        });
+        
+        if (state.filterTypes.size > 0) {
+            const names = Array.from(state.filterTypes).map(id => WARNING_TYPES.find(t => t.id === id)?.label || id);
+            phenoEl.innerText = `Zobrazujete: ${names.join(', ')}`;
+        } else {
+            const names = Array.from(activeTypes).map(id => WARNING_TYPES.find(t => t.id === id)?.label || id);
+            phenoEl.innerText = names.length > 0 ?
+                `${names.length > 1 ? "Viaceré javy" : names[0]}` :
+                "Bez výstrah";
+        }
+    }
+}
+
+// 2. DIZAJNOVÉ NOTIFIKÁCIE (Nahradia alert)
+window.showMeteoNotify = function(title, message, type = "success") {
+    const modal = document.getElementById('meteo-notify');
+    if (!modal) return;
+    
+    const colors = {
+        success: { bg: 'bg-green-500', icon: 'check-circle' },
+        error: { bg: 'bg-red-500', icon: 'x-circle' },
+        info: { bg: 'bg-blue-500', icon: 'info' }
+    };
+    
+    document.getElementById('notify-icon-bg').className = `w-16 h-16 rounded-full mx-auto mb-4 flex items-center justify-center ${colors[type].bg}`;
+    document.getElementById('notify-icon').setAttribute('data-lucide', colors[type].icon);
+    document.getElementById('notify-title').innerText = title;
+    document.getElementById('notify-message').innerText = message;
+    
+    modal.classList.remove('hidden');
+    lucide.createIcons();
+};
+
+
+
+
+// Systém Notifikácií (Rovnaký ako v Adminovi)
+window.showMeteoNotify = function(title, message, type = "success") {
+    const modal = document.getElementById('meteo-notify');
+    const iconBg = document.getElementById('notify-icon-bg');
+    const icon = document.getElementById('notify-icon');
+    
+    const colors = {
+        success: { bg: 'bg-green-500', icon: 'check-circle' },
+        error: { bg: 'bg-red-500', icon: 'x-circle' },
+        info: { bg: 'bg-blue-500', icon: 'info' }
+    };
+
+    iconBg.className = `w-16 h-16 rounded-full mx-auto mb-4 flex items-center justify-center ${colors[type].bg}`;
+    icon.setAttribute('data-lucide', colors[type].icon);
+    document.getElementById('notify-title').innerText = title;
+    document.getElementById('notify-message').innerText = message;
+    
+    modal.classList.remove('hidden');
+    lucide.createIcons();
+};
+
+function updateMapColors(map, geoLayer, isAdmin) {
+    if (!geoLayer) return;
+    
+    // 1. Farbenie okresov (vždy viditeľné)
+    geoLayer.setStyle(isAdmin ? (f => styleAdminFeature(f)) : stylePublicFeature);
+    
+    // 2. Generovanie ikon a plus indikátorov (len pre verejnú mapu)
+    if (!isAdmin && state.publicMarkersLayer) {
+        state.publicMarkersLayer.clearLayers();
+        
+        geoLayer.eachLayer(layer => {
+            const name = layer.feature.properties.NM3 || layer.feature.properties.NAZOV;
+            const data = getFilteredWarningsData(name, state.dayOffset);
+            
+            // Ak nie je výstraha, nepokračujeme
+            if (!data || data.maxLevel === 0 || !data.list || data.list.length === 0) return;
+            
+            // Výber dominantnej výstrahy (podľa najvyššieho stupňa)
+            const sorted = [...data.list].sort((a, b) => b.level - a.level);
+            const topWarning = sorted[0];
+            const typeInfo = WARNING_TYPES.find(t => t.id === topWarning.type) || WARNING_TYPES[0];
+            const iconColorClass = topWarning.level === 1 ? 'text-slate-900' : 'text-white';
+            
+            // --- LOGIKA PRE ČERVENÝ KRÚŽOK (+) ---
+            // Ak je v zozname viac ako jedna výstraha, vytvoríme HTML pre červený krúžok
+            const plusIndicator = data.list.length > 1 ?
+                `<span class="absolute -top-1.5 -right-1.5 bg-red-600 text-[8px] w-3.5 h-3.5 rounded-full flex items-center justify-center text-white border border-white font-bold shadow-sm z-20">+</span>` :
+                '';
+            
+            const center = layer.getBounds().getCenter();
+            
+            const markerIcon = L.divIcon({
+                className: 'map-icon-container',
+                html: `<div class="relative flex items-center justify-center pointer-events-none" style="filter: drop-shadow(0 1px 2px rgba(0,0,0,0.6))">
+                        <i data-lucide="${typeInfo.icon}" class="w-5 h-5 ${iconColorClass} relative z-10"></i>
+                        ${plusIndicator}
+                      </div>`,
+                iconSize: [20, 20],
+                iconAnchor: [10, 10]
+            });
+            
+            const marker = L.marker(center, { icon: markerIcon, interactive: false });
+            state.publicMarkersLayer.addLayer(marker);
+        });
+        
+        // Okamžitá kontrola viditeľnosti podľa aktuálneho zoomu
+        checkIconsZoomVisibility(map);
+    }
+}
+        // --- ADMIN MAP ---
+        function styleAdminFeature(feature) {
+            const name = feature.properties.NM3 || feature.properties.NAZOV || '';
+            const isSelected = state.adminSelectedDistricts.has(name);
+            return {
+                fillColor: isSelected ? '#3b82f6' : '#1e293b',
+                weight: isSelected ? 2 : 1,
+                opacity: 1,
+                color: isSelected ? '#60a5fa' : '#475569',
+                fillOpacity: isSelected ? 0.8 : 0.4
+            };
+        }
+        function onEachAdminFeature(feature, layer) {
+            const name = feature.properties.NM3 || feature.properties.NAZOV;
+            layer.on('click', () => {
+                if (state.adminSelectedDistricts.has(name)) state.adminSelectedDistricts.delete(name);
+                else state.adminSelectedDistricts.add(name);
+                updateAdminUI();
+            });
+        }
+       
+        function updateAdminUI() {
+            if(state.adminGeojsonLayer) state.adminGeojsonLayer.setStyle(styleAdminFeature);
+            const listEl = document.getElementById('selected-districts-list');
+            const existList = document.getElementById('admin-existing-warnings');
+           
+            if (state.adminSelectedDistricts.size === 0) {
+                listEl.innerHTML = '<span class="text-slate-500 italic">Kliknite na mapu vpravo pre výber...</span>';
+                document.getElementById('btn-add-warning').disabled = true;
+                existList.innerHTML = '<p class="text-xs text-slate-500 italic">Vyberte okres na mape pre zobrazenie výstrah.</p>';
+            } else {
+                const arr = Array.from(state.adminSelectedDistricts).sort();
+                listEl.innerHTML = arr.map(d => `<span class="inline-block bg-blue-600 px-2 py-1 rounded-full text-xs mr-1 mb-1">${d}</span>`).join('');
+                document.getElementById('btn-add-warning').disabled = false;
+               
+                existList.innerHTML = '';
+                arr.forEach(dist => {
+                    const data = getAllWarningsData(dist, state.dayOffset);
+                    if(data.list.length === 0) return;
+                   
+                    data.list.forEach(w => {
+                        const typeInfo = WARNING_TYPES.find(t => t.id === w.type);
+                        const sevInfo = SEVERITY_LEVELS.find(l => l.level === w.level);
+                       
+                        const row = document.createElement('div');
+                        row.className = "flex items-center justify-between bg-slate-800 p-2 rounded-xl border border-white/5 text-xs";
+                        row.innerHTML = `
+                            <div class="flex-1 truncate mr-2">
+                                <span class="font-bold text-blue-300">${dist}</span>: ${typeInfo.label} (${sevInfo.level}.st)
+                            </div>
+                            <div class="flex gap-1">
+                                <button onclick="openEditModal('${dist}', ${state.dayOffset}, '${w.id}')" class="p-1 bg-blue-600/20 text-blue-400 hover:text-white rounded">Upraviť</button>
+                                <button onclick="deleteWarningWrapper('${dist}', ${state.dayOffset}, '${w.id}', this)" class="p-1 bg-red-600/20 text-red-400 hover:text-white rounded">Zmazať</button>
+                            </div>
+                        `;
+                        existList.appendChild(row);
+                    });
+                });
+               
+                if(existList.innerHTML === '') {
+                     existList.innerHTML = '<p class="text-xs text-slate-500 italic">Žiadne výstrahy pre vybrané okresy v tento deň.</p>';
+                }
+            }
+        }
+        window.clearSelection = function() { state.adminSelectedDistricts.clear(); updateAdminUI(); };
+        window.selectAllDistricts = function() {
+            ALL_DISTRICTS.forEach(d => state.adminSelectedDistricts.add(d));
+            updateAdminUI();
+        };
+
+        // --- MODAL ---
+        window.openModal = function(district) {
+            // Use getAllWarningsData so filters don't hide details inside the modal
+            const data = getAllWarningsData(district, state.dayOffset);
+           
+            document.getElementById('detail-modal').classList.remove('hidden');
+            document.getElementById('modal-title').innerText = district;
+            document.getElementById('modal-day').innerText = getDayName(state.dayOffset);
+           
+            const listContainer = document.getElementById('modal-warnings-list');
+            listContainer.innerHTML = '';
+           
+            const topLevel = data.maxLevel;
+            const topSev = SEVERITY_LEVELS.find(l => l.level === topLevel) || SEVERITY_LEVELS[0];
+            document.getElementById('modal-panel').style.borderTopColor = topSev.hex;
+
+            if(data.list.length === 0) {
+                 listContainer.innerHTML = `<div class="text-center text-slate-400 py-4 italic">Pre tento okres nie sú vydané žiadne výstrahy.</div>`;
+            } else {
+                const sorted = [...data.list].sort((a,b) => b.level - a.level);
+               
+                sorted.forEach(w => {
+                    const sev = SEVERITY_LEVELS.find(l => l.level === w.level);
+                    const type = WARNING_TYPES.find(t => t.id === w.type);
+                    const badgeTextClass = w.level === 1 ? "text-black" : "text-white";
+
+                    const item = document.createElement('div');
+                    item.className = "bg-slate-900/50 p-4 rounded-[25px] border border-white/5 flex gap-4";
+                    item.innerHTML = `
+                        <div class="p-3 bg-white/5 rounded-full h-fit">
+                             <i data-lucide="${type.icon}" class="w-6 h-6 ${type.color}"></i>
+                        </div>
+                        <div class="flex-1">
+                             <div class="flex justify-between items-start mb-1">
+                                 <h4 class="font-bold text-white">${type.label}</h4>
+                                 <span class="text-xs font-bold px-2 py-0.5 rounded ${badgeTextClass}" style="background-color: ${sev.hex}">${sev.label}</span>
+                             </div>
+                             <p class="text-xs text-slate-400 mb-2 font-poppins">${w.validity || 'Celý deň'}</p>
+                             <p class="text-sm text-slate-300 italic">"${w.message || 'Bez popisu'}"</p>
+                        </div>
+                    `;
+                    listContainer.appendChild(item);
+                });
+            }
+
+            lucide.createIcons();
+        };
+
+        window.closeModal = function() {
+            document.getElementById('detail-modal').classList.add('hidden');
+        };
+
+        window.switchTab = function(tab) {
+    const vPublic = document.getElementById('view-public');
+    const vAdmin = document.getElementById('view-admin');
+    const btnPublic = document.getElementById('btn-public');
+    const btnAdmin = document.getElementById('btn-admin');
+    
+    if (!vPublic || !vAdmin) return;
+    
+    vPublic.classList.add('hidden');
+    vAdmin.classList.add('hidden');
+    
+    btnPublic.className = btnAdmin.className = "px-6 py-3 rounded-[25px] text-sm font-medium transition-all text-slate-400 hover:text-white";
+    
+    // Dynamický zoom pre prepínanie
+    const isMobile = window.innerWidth < 768;
+    const targetZoom = isMobile ? 6.4 : 8; // ZMENA: Tu nastavujeme 6.8 pre mobil
+    
+    if (tab === 'public') {
+        vPublic.classList.remove('hidden');
+        btnPublic.className = "px-6 py-3 rounded-[25px] text-sm font-medium transition-all text-white bg-slate-700";
+        
+        setTimeout(() => {
+            initMap(false);
+            if (state.publicMap) {
+                state.publicMap.invalidateSize(true);
+                // OPRAVA: Použijeme targetZoom namiesto fixnej osmičky
+                state.publicMap.setView([48.7, 19.7], targetZoom);
+            }
+        }, 100);
+    } else {
+        vAdmin.classList.remove('hidden');
+        btnAdmin.className = "px-6 py-3 rounded-[25px] text-sm font-medium transition-all text-white bg-slate-700";
+        
+        setTimeout(() => {
+            initMap(true);
+            if (state.adminMap) {
+                state.adminMap.invalidateSize(true);
+                // OPRAVA: Aj tu pre admin mapu
+                state.adminMap.setView([48.7, 19.7], targetZoom);
+            }
+        }, 100);
+    }
+};
+
+        init();
+    </script>
+    
+<div class="max-w-7xl mx-auto px-2 mt-12 mb-12">
+    <iframe 
+        src="https://www.meteopocasie.sk/meteoalert/legenda.html" 
+        id="m-legend-iframe"
+        style="width: 100%; height: 200px; border: none; overflow: hidden; background: transparent;"
+        scrolling="no">
+    </iframe>
+    
+    
+</div>
+
+<script>
+    // 1. KOMPLETNÉ DÁTA DEFINÍCIÍ JAVOV
+    const PHENOMENA_DETAILS = {
+        'wind': {
+            l1: `<strong>Popis:</strong> Nárazy vetra 65 - 85 km/h. Môže lámať menšie konáre, sťažuje chôdzu, lietajúce predmety.<br><strong class="text-yellow-400">Riziko:</strong> Nízke.<br><strong class="text-slate-300 block mt-1">Odporúčania:</strong> Zaistite voľné predmety na záhrade a balkónoch.`,
+            l2: `<strong>Popis:</strong> Nárazy vetra 85 - 105 km/h. Láme stromy, poškodzuje strechy, nebezpečenstvo úrazu.<br><strong class="text-orange-400">Riziko:</strong> Vysoké.<br><strong class="text-slate-300 block mt-1">Odporúčania:</strong> Vyhýbajte sa parkom a lesom. Neparkujte pod stromami.`,
+            l3: `<strong>Popis:</strong> Nárazy nad 105 km/h (víchrica/orkán). Rozsiahle škody, výpadky prúdu, ohrozenie života.<br><strong class="text-red-500">Riziko:</strong> Extrémne ohrozenie života.<br><strong class="text-slate-300 block mt-1">Odporúčania:</strong> Zostaňte v bezpečných murovaných budovách.`
+        },
+        'mountain_wind': {
+            l1: `<strong>Popis:</strong> Vietor na hrebeňoch 110 - 135 km/h.<br><strong class="text-yellow-400">Riziko:</strong> Nízke.<br><strong class="text-slate-300 block mt-1">Odporúčania:</strong> Pohyb na horách je sťažený.`,
+            l2: `<strong>Popis:</strong> Vietor na hrebeňoch 135 - 160 km/h.<br><strong class="text-orange-400">Riziko:</strong> Vysoké.<br><strong class="text-slate-300 block mt-1">Odporúčania:</strong> Neodporúča sa vychádzať na hrebene.`,
+            l3: `<strong>Popis:</strong> Orkán nad 160 km/h.<br><strong class="text-red-500">Riziko:</strong> Extrémne ohrozenie života.<br><strong class="text-slate-300 block mt-1">Odporúčania:</strong> Absolútny zákaz vychádzania do vysokohorského terénu.`
+        },
+        'rain': {
+            l1: `<strong>Popis:</strong> Úhrn zrážok 30 - 50 mm. Možné lokálne zatopenie pivníc.<br><strong class="text-yellow-400">Riziko:</strong> Nízke.<br><strong class="text-slate-300 block mt-1">Odporúčania:</strong> Skontrolujte odtoky okolo domu.`,
+            l2: `<strong>Popis:</strong> Úhrn zrážok 50 - 80 mm. Vyliatie menších tokov, zatopenie ciest.<br><strong class="text-orange-400">Riziko:</strong> Vysoké.<br><strong class="text-slate-300 block mt-1">Odporúčania:</strong> Zabezpečte majetok v pivniciach.`,
+            l3: `<strong>Popis:</strong> Úhrn nad 80 mm (alebo intenzívne prívaly). Povodne.<br><strong class="text-red-500">Riziko:</strong> Extrémne ohrozenie života.<br><strong class="text-slate-300 block mt-1">Odporúčania:</strong> Pripravte sa na evakuáciu.`
+        },
+        'storm': {
+            l1: `<strong>Popis:</strong> Búrky s krúpami alebo silným vetrom. Riziko bleskov.<br><strong class="text-yellow-400">Riziko:</strong> Nízke.<br><strong class="text-slate-300 block mt-1">Odporúčania:</strong> Nezdržiavajte sa na otvorených priestranstvách.`,
+            l2: `<strong>Popis:</strong> Silné búrky s prívalovým dažďom (30-50mm) a krúpami.<br><strong class="text-orange-400">Riziko:</strong> Vysoké.<br><strong class="text-slate-300 block mt-1">Odporúčania:</strong> Zaparkujte autá pod prístrešok.`,
+            l3: `<strong>Popis:</strong> Extrémne búrky, supercely. Obrovské krúpy, ničivý vietor.<br><strong class="text-red-500">Riziko:</strong> Extrémne ohrozenie života.<br><strong class="text-slate-300 block mt-1">Odporúčania:</strong> Ukryte sa v pevnej časti budovy.`
+        },
+        'snow': {
+            l1: `<strong>Popis:</strong> Nový sneh 1 - 8 cm. Šmykľavé cesty.<br><strong class="text-yellow-400">Riziko:</strong> Nízke.<br><strong class="text-slate-300 block mt-1">Odporúčania:</strong> Používajte zimné pneumatiky.`,
+            l2: `<strong>Popis:</strong> Nový sneh 10 - 20 cm. Neprejazdné cesty.<br><strong class="text-orange-400">Riziko:</strong> Vysoké.<br><strong class="text-slate-300 block mt-1">Odporúčania:</strong> Obmedzte cestovanie na minimum.`,
+            l3: `<strong>Popis:</strong> Nový sneh nad 30 cm (kalamita).<br><strong class="text-red-500">Riziko:</strong> Extrémne ohrozenie života.<br><strong class="text-slate-300 block mt-1">Odporúčania:</strong> Zostaňte doma. Pripravte si zásoby jedla.`
+        },
+        'ice': {
+            l1: `<strong>Popis:</strong> Miestna tvorba poľadovice. Šmykľavé chodníky.<br><strong class="text-yellow-400">Riziko:</strong> Nízke.<br><strong class="text-slate-300 block mt-1">Odporúčania:</strong> Zvýšená opatrnosť pri chôdzi.`,
+            l2: `<strong>Popis:</strong> Intenzívna poľadovica. Súvislá ľadová vrstva.<br><strong class="text-orange-400">Riziko:</strong> Vysoké.<br><strong class="text-slate-300 block mt-1">Odporúčania:</strong> Cestovanie je veľmi nebezpečné, odložte jazdu.`,
+            l3: `<strong>Popis:</strong> Extrémna poľadovica (hrubá vrstva ľadu).<br><strong class="text-red-500">Riziko:</strong> Extrémne ohrozenie života.<br><strong class="text-slate-300 block mt-1">Odporúčania:</strong> Nevychádzajte von.`
+        },
+        'snow_drifts': {
+            l1: `<strong>Popis:</strong> Tvorba snehových jazykov.<br><strong class="text-yellow-400">Riziko:</strong> Nízke.<br><strong class="text-slate-300 block mt-1">Odporúčania:</strong> Zvýšte pozornosť na otvorených úsekoch ciest.`,
+            l2: `<strong>Popis:</strong> Tvorba závejov. Cesty ťažko prejazdné.<br><strong class="text-orange-400">Riziko:</strong> Vysoké.<br><strong class="text-slate-300 block mt-1">Odporúčania:</strong> Nejazdite bez plnej nádrže a teplého oblečenia.`,
+            l3: `<strong>Popis:</strong> Masívne záveje. Cesty neprejazdné.<br><strong class="text-red-500">Riziko:</strong> Extrémne ohrozenie života.<br><strong class="text-slate-300 block mt-1">Odporúčania:</strong> Hrozí uviaznutie a podchladenie.`
+        },
+        'fog': {
+            l1: `<strong>Popis:</strong> Viditeľnosť 50 - 200 m.<br><strong class="text-yellow-400">Riziko:</strong> Nízke.`,
+            l2: `<strong>Popis:</strong> Viditeľnosť pod 50 m.<br><strong class="text-orange-400">Riziko:</strong> Vysoké.`,
+            l3: `<strong>Popis:</strong> Takmer nulová viditeľnosť.<br><strong class="text-red-500">Riziko:</strong> Extrémne ohrozenie života.`
+        },
+        'hail': {
+            l1: `<strong>Popis:</strong> Krúpy do 1 cm.<br><strong class="text-yellow-400">Riziko:</strong> Nízke.`,
+            l2: `<strong>Popis:</strong> Krúpy 2 - 4 cm. Poškodenie áut a striech.<br><strong class="text-orange-400">Riziko:</strong> Vysoké.`,
+            l3: `<strong>Popis:</strong> Krúpy nad 5 cm. Rozbíjajú čelné sklá.<br><strong class="text-red-500">Riziko:</strong> Extrémne ohrozenie života.`
+        },
+        'heat': {
+            l1: `<strong>Popis:</strong> Teploty 33 - 35 °C.<br><strong class="text-yellow-400">Riziko:</strong> Nízke.`,
+            l2: `<strong>Popis:</strong> Teploty 35 - 38 °C. Riziko kolapsov.<br><strong class="text-orange-400">Riziko:</strong> Vysoké.`,
+            l3: `<strong>Popis:</strong> Teploty nad 38 °C.<br><strong class="text-red-500">Riziko:</strong> Extrémne ohrozenie života.`
+        },
+        'cold': {
+            l1: `<strong>Popis:</strong> Teploty -15 až -20 °C.<br><strong class="text-yellow-400">Riziko:</strong> Nízke.`,
+            l2: `<strong>Popis:</strong> Teploty -20 až -30 °C. Riziko omrzlín.<br><strong class="text-orange-400">Riziko:</strong> Vysoké.`,
+            l3: `<strong>Popis:</strong> Teploty pod -30 °C. Extrémny mráz.<br><strong class="text-red-500">Riziko:</strong> Extrémne ohrozenie života.`
+        },
+        'smog': {
+            l1: `<strong>Popis:</strong> Zhoršená kvalita ovzdušia.<br><strong class="text-yellow-400">Riziko:</strong> Nízke.`,
+            l2: `<strong>Popis:</strong> Smogová situácia.<br><strong class="text-orange-400">Riziko:</strong> Vysoké.`,
+            l3: `<strong>Popis:</strong> Výstraha pred smogom.<br><strong class="text-red-500">Riziko:</strong> Extrémne ohrozenie života.`
+        },
+        'tornado': {
+            l1: `<strong>Popis:</strong> Možnosť výskytu funnel cloudu (lievik).<br><strong class="text-yellow-400">Riziko:</strong> Nízke.`,
+            l2: `<strong>Popis:</strong> Vyššie riziko tornáda (F0-F1).<br><strong class="text-orange-400">Riziko:</strong> Vysoké.`,
+            l3: `<strong>Popis:</strong> Riziko ničivého tornáda.<br><strong class="text-red-500">Riziko:</strong> Extrémne ohrozenie života.`
+        },
+        'pollen': {
+            l1: `<strong>Popis:</strong> Zvýšená koncentrácia peľu.<br><strong class="text-yellow-400">Riziko:</strong> Nízke.`,
+            l2: `<strong>Popis:</strong> Vysoká koncentrácia peľu.<br><strong class="text-orange-400">Riziko:</strong> Vysoké.`,
+            l3: `<strong>Popis:</strong> Extrémna koncentrácia.<br><strong class="text-red-500">Riziko:</strong> Extrémne ohrozenie života.`
+        },
+        'freezing_rain': {
+            l1: `<strong>Popis:</strong> Mrznúci dážď (tenká vrstva ľadu).<br><strong class="text-yellow-400">Riziko:</strong> Nízke.`,
+            l2: `<strong>Popis:</strong> Intenzívny mrznúci dážď.<br><strong class="text-orange-400">Riziko:</strong> Vysoké.`,
+            l3: `<strong>Popis:</strong> Mimoriadna hrúbka ľadu.<br><strong class="text-red-500">Riziko:</strong> Extrémne ohrozenie života.`
+        },
+        'flood': {
+            l1: `<strong>Popis:</strong> 1. stupeň povodňovej aktivity.<br><strong class="text-yellow-400">Riziko:</strong> Nízke.`,
+            l2: `<strong>Popis:</strong> 2. stupeň povodňovej aktivity. Vyliatie z koryta.<br><strong class="text-orange-400">Riziko:</strong> Vysoké.`,
+            l3: `<strong>Popis:</strong> 3. stupeň povodňovej aktivity. Všeobecné ohrozenie.<br><strong class="text-red-500">Riziko:</strong> Extrémne ohrozenie života.`
+        },
+        'fire': {
+            l1: `<strong>Popis:</strong> Zvýšené nebezpečenstvo požiarov.<br><strong class="text-yellow-400">Riziko:</strong> Nízke.`,
+            l2: `<strong>Popis:</strong> Vysoké nebezpečenstvo požiarov.<br><strong class="text-orange-400">Riziko:</strong> Vysoké.`,
+            l3: `<strong>Popis:</strong> Extrémne nebezpečenstvo šírenia.<br><strong class="text-red-500">Riziko:</strong> Extrémne ohrozenie života.`
+        },
+        'ground_frost': {
+            l1: `<strong>Popis:</strong> Prízemný mráz 0 až -2 °C.<br><strong class="text-yellow-400">Riziko:</strong> Nízke.`,
+            l2: `<strong>Popis:</strong> Prízemný mráz -3 až -5 °C.<br><strong class="text-orange-400">Riziko:</strong> Vysoké.`,
+            l3: `<strong>Popis:</strong> Prízemný mráz pod -5 °C.<br><strong class="text-red-500">Riziko:</strong> Extrémne ohrozenie života.`
+        },
+        'snow_storm': {
+            l1: `<strong>Popis:</strong> Ojedinelý výskyt bleskov v snehových prehánkach.<br><strong class="text-yellow-400">Riziko:</strong> Nízke.`,
+            l2: `<strong>Popis:</strong> Výrazná dynamika. Husté sneženie a blesky.<br><strong class="text-orange-400">Riziko:</strong> Vysoké.`,
+            l3: `<strong>Popis:</strong> Extrémne dynamické búrky ("thundersnow").<br><strong class="text-red-500">Riziko:</strong> Extrémne ohrozenie života.`
+        }
+    };
+    
+    const ICONS_SVG_DATA = {
+        'wind': `<path d="M9.59 4.59A2 2 0 1 1 11 8H2m10.59 11.41A2 2 0 1 0 14 16H2m15.73-8.27A2.5 2.5 0 1 1 19.5 12H2"/>`,
+        'mountain_wind': `<path d="M4 20h16l-5-10-5 6-2-4-4 8z"/><path d="M16 6h3"/><path d="M14 9h4"/><path d="M17 3h-2"/>`,
+        'rain': `<path d="M20 16.2A4.5 4.5 0 0 0 20 7h-1.2A5.8 5.8 0 0 0 7.8 8.8C7.5 8.7 7.2 8.7 7 8.7a5 5 0 0 0 0 10h1"/><path d="M11 14v4"/><path d="M15 14v4"/>`,
+        'freezing_rain': `<path d="M12 2C12 2 6 7 6 11s2.7 7 6 7 6-3 6-7-6-9-6-9z"/><path d="M16 16l3 3"/><path d="M19 16l-3 3"/><path d="M17.5 14.5v6"/>`,
+        'storm': `<path d="M19 16a5 5 0 0 0 0-10h-1.3a6 6 0 0 0-11.4 1.8 4.5 4.5 0 0 0 .7 8.2"/><path d="M13 14l-2 4h3l-2 4"/>`,
+        'hail': `<path d="M20 16.2A4.5 4.5 0 0 0 20 7h-1.2A5.8 5.8 0 0 0 7.8 8.8C7.5 8.7 7.2 8.7 7 8.7a5 5 0 0 0 0 10h1"/><circle cx="10" cy="15" r="1" fill="currentColor"/><circle cx="14" cy="15" r="1" fill="currentColor"/><circle cx="12" cy="18" r="1" fill="currentColor"/>`,
+        'tornado': `<path d="M21 4H3"/><path d="M18 8H6"/><path d="M19 12H9"/><path d="M16 16h-6"/><path d="M11 20h2"/>`,
+        'snow_storm': `<path d="M8 5v14"/><path d="M3 12h10"/><path d="M4.5 8.5l7 7"/><path d="M4.5 15.5l7-7"/><path d="M16 2l-3 9h5l-4 9"/>`,
+        'flood': `<path d="M3 20c2 0 2-1 4-1s2 1 4 1 2-1 4-1 2 1 4 1"/><path d="M3 16c2 0 2-1 4-1s2 1 4 1 2-1 4-1 2 1 4 1"/><path d="M12 3L2 12h3v8h6v-6h2v6h6v-8h3L12 3z"/>`,
+        'snow': `<path d="M12 2v20"/><path d="M3.34 7l17.32 10"/><path d="M3.34 17l17.32-10"/><path d="M12 12m-2 0a2 2 0 1 0 4 0a2 2 0 1 0 -4 0"/>`,
+        'snow_drifts': `<path d="M10 12l2-2m-2 2l-2-2m2 2l2 2m-2-2l-2 2"/><circle cx="10" cy="12" r="1"/><path d="M14 6h5a2 2 0 0 1 2 2"/><path d="M4 18h14c2 0 3-2 3-2"/><path d="M2 14h8"/>`,
+        'ice': `<path d="M5 12h14l-2-4h-10z"/><path d="M3 12h18v5h-18z"/><circle cx="6" cy="17" r="2"/><circle cx="18" cy="17" r="2"/><path d="M14 19s2 2 4 2"/><path d="M10 19s2 2 4 2"/><path d="M16 22s2 2 4 2"/>`,
+        'fog': `<path d="M18 15a4.5 4.5 0 0 0-4.5-4.5c-.3 0-.6.1-.9.2a6 6 0 1 0-11.2 1.3"/><path d="M4 19h16"/><path d="M6 22h12"/>`,
+        'heat': `<path d="M10 13v-8a2 2 0 1 1 4 0v8a3 3 0 1 1-4 0"/><path d="M20 5l1-1"/><path d="M20 9l2 1"/><path d="M17 2l1-1"/><path d="M20 2a3 3 0 1 1-3 3"/>`,
+        'fire': `<path d="M12 2c0 0-8 6-8 12 0 5 4 9 8 9s8-4 8-9c0-6-8-12-8-12z"/><path d="M12 14c-1.5 1-2 3-2 3s2 .5 3-2c1.5-2.5-1-6-1-6z"/>`,
+        'cold': `<path d="M6 13v-8a2 2 0 1 1 4 0v8a3 3 0 1 1-4 0"/><path d="M16 9v8"/><path d="M12 13h8"/><path d="M13.5 11l5 4"/><path d="M13.5 15l5-4"/>`,
+        'ground_frost': `<path d="M12 13v-8a2 2 0 1 1 4 0v8a3 3 0 1 1-4 0"/><path d="M4 22h16"/><path d="M8 22l-2-4"/><path d="M16 22l2-4"/>`,
+        'smog': `<path d="M2 22h20"/><path d="M17 22v-8h-4v3h-3v-6h-4v8"/><path d="M6 11v-4c0-2 2-3 4-3"/><path d="M12 7c0-2 2-3 4-3"/>`,
+        'pollen': `<path d="M12 22s-6-4-6-10 6-10 6-10 6 4 6 10-6 10-6 10z"/><path d="M12 8v8"/><path d="M12 12l4-4"/><path d="M12 14l-4-4"/>`,
+    };
+    
+    function closeLegendModal() {
+        document.getElementById('legend-modal').classList.add('hidden');
+    }
+    
+    // Poslucháč správ z iFramu (Legenda)
+    window.addEventListener('message', function(e) {
+        // 1. Nastavenie dynamickej výšky
+        if (e.data.setHeight) {
+            const iframe = document.getElementById('m-legend-iframe');
+            if (iframe) iframe.style.height = e.data.setHeight + "px";
+        }
+        
+        // 2. Otvorenie centrovaného modálneho okna
+        if (e.data.openLegendModal) {
+            const id = e.data.openLegendModal;
+            const details = PHENOMENA_DETAILS[id];
+            
+            document.getElementById('l-modal-title').innerText = e.data.label;
+            document.getElementById('l-modal-icon').innerHTML = `
+                <svg viewBox="0 0 24 24" class="custom-icon w-full h-full text-blue-400" stroke="currentColor">
+                    ${ICONS_SVG_DATA[id]}
+                </svg>`;
+            
+            document.getElementById('l-modal-body').innerHTML = `
+                <div class="bg-yellow-500/10 border border-yellow-500/20 p-4 rounded-[25px]">
+                    <span class="text-[10px] font-bold text-yellow-400 uppercase block mb-1">1. Stupeň</span>
+                    <div class="text-sm text-slate-200">${details?.l1 || 'Popis pripravujeme...'}</div>
+                </div>
+                <div class="bg-orange-500/10 border border-orange-500/20 p-4 rounded-[25px]">
+                    <span class="text-[10px] font-bold text-orange-400 uppercase block mb-1">2. Stupeň</span>
+                    <div class="text-sm text-slate-200">${details?.l2 || 'Popis pripravujeme...'}</div>
+                </div>
+                <div class="bg-red-600/10 border border-red-600/20 p-4 rounded-[25px]">
+                    <span class="text-[10px] font-bold text-red-500 uppercase block mb-1">3. Stupeň</span>
+                    <div class="text-sm text-slate-200">${details?.l3 || 'Popis pripravujeme...'}</div>
+                </div>
+            `;
+            document.getElementById('legend-modal').classList.remove('hidden');
+        }
+    }, false);
+</script>
+
+<div id="legend-modal" class="fixed inset-0 z-[9999] hidden flex items-center justify-center bg-black/85 backdrop-blur-sm p-4">
+    <div class="glass-panel w-full max-w-lg rounded-super relative overflow-hidden flex flex-col modal-enter max-h-[90vh] border border-white/20">
+        <div class="p-6 pb-4 border-b border-white/10 flex justify-between items-start bg-slate-900/50">
+            <div class="flex items-center gap-4">
+                <div id="l-modal-icon" class="w-12 h-12 text-blue-400"></div>
+                <h3 id="l-modal-title" class="text-2xl font-bold text-white"></h3>
+            </div>
+            <button onclick="closeLegendModal()" class="text-slate-400 hover:text-white p-2 text-2xl">✕</button>
+        </div>
+        <div id="l-modal-body" class="p-6 space-y-4 overflow-y-auto">
+        </div>
+        <div class="p-4 text-center bg-slate-900/80 border-t border-white/5">
+            <p class="text-[10px] text-slate-500">Hodnoty sú orientačné a slúžia pre laickú verejnosť.</p>
+        </div>
+    </div>
+</div>
+
+    <!-- ======================= FOOTER ======================= -->
+    <footer class="site-footer">
+        <div class="container">
+            <div class="footer-content">
+
+                <p class="footer-collaboration">Profesionálna predpoveď v spolupráci s poprednými meteorologickými službami.</p>
+                <div class="footer-logos">
+                    <div class="logo-placeholder-footer" style="margin-left: 5%;">
+                        <img src="https://www.meteopocasie.sk/wp-content/uploads/2024/01/Untitled49_20231209213754.png" alt="Logo partnera 1">
+                    </div>
+                    <div class="logo-placeholder-footer">
+                        <img src="https://i.postimg.cc/YqQFwdbj/IMG-6010.png" alt="Logo partnera 2">
+                    </div>
+                </div>
+                <p class="copyright">
+                    V súlade s publikačným kódexom. © 2025 MeteoPočasie.sk. Všetky práva vyhradené.
+                </p>
+                
+                    <a href="https://www.toplist.sk" id="toplistsk1275377" title="TOPlist"><noscript><img src="https://toplist.sk/count.asp?id=1275377&logo=mc&njs=1" border="0"
+alt="TOPlist" width="88" height="60"/></noscript><script language="JavaScript">
+(function(d,e,s) {d.getElementById('toplistsk1275377').innerHTML='<img src="https://toplist.sk/count.asp?id=1275377&logo=mc&http='+
+e(d.referrer)+'&t='+e(d.title)+'&l='+e(d.URL)+'&wi='+e(s.width)+'&he='+e(s.height)+'&cd='+
+e(s.colorDepth)+'" width="88" height="60" border="0" alt="TOPlist" />';
+}(document,encodeURIComponent,window.screen))
+</script></a>
+    
+            </div>
+        </div>
+    </footer>
+    
+    <style>
+        /* --- ZJEDNOTENÝ ŠTÝL TLAČIDIEL (Identický pre oba režimy) --- */
+.day-btn-unified {
+    @apply flex flex-col items-center px-4 py-3 rounded-[20px] transition-all duration-300 min-w-[150px] border;
+    background: rgba(15, 23, 42, 0.6); /* Slate 900/60 */
+    border-color: rgba(255, 255, 255, 0.05);
+    color: #94a3b8; /* Slate 400 */
+}
+
+.day-btn-unified.active {
+    background: #2563eb !important; /* Blue 600 */
+    border-color: #60a5fa !important; /* Blue 400 */
+    color: white !important;
+    box-shadow: 0 10px 15px -3px rgba(37, 99, 235, 0.4);
+    transform: scale(1.02);
+}
+
+/* --- EFEKT DO VYSTRATENA PRE FULLSCREEN --- */
+.fs-scroll-mask {
+    position: relative;
+    width: 100%;
+    overflow: hidden;
+}
+
+/* Ľavý a pravý tieň do modrej #002043 */
+#map-wrapper:fullscreen .fs-scroll-mask::before,
+#map-wrapper:fullscreen .fs-scroll-mask::after {
+    content: "";
+    position: absolute;
+    top: 0;
+    width: 60px;
+    height: 100%;
+    z-index: 1002;
+    pointer-events: none;
+}
+
+#map-wrapper:fullscreen .fs-scroll-mask::before {
+    left: 0;
+    background: linear-gradient(to right, #002043 20%, transparent);
+}
+
+#map-wrapper:fullscreen .fs-scroll-mask::after {
+    right: 0;
+    background: linear-gradient(to left, #002043 20%, transparent);
+}
+
+/* --- FULLSCREEN POZÍCIA --- */
+#map-wrapper:fullscreen #day-selector-fullscreen {
+    display: block !important;
+    position: absolute;
+    bottom: 170px;
+    left: 0;
+    width: 100%;
+    z-index: 1001;
+}
+
+/* Oprava zarovnania: vo fullscreen scrollujeme od okraja */
+#map-wrapper:fullscreen .scroll-container-inner {
+    justify-content: flex-start !important;
+    padding: 0 40px; /* Priestor pre gradienty */
+} 
+    </style>
+    
+</body>
+</html>
