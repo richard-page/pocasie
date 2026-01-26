@@ -7,32 +7,28 @@
     <style>
         .message-container {
             display: none;
-            background-color: #f8d7da;
-            border: 1px solid #f5c6cb;
-            color: #721c24;
+            background-color: #007bff; /* Modré pozadie */
+            color: white;
             padding: 10px;
             margin-top: 10px;
+            border-radius: 5px;
         }
     </style>
 </head>
 <body>
 
-    <input type="text" id="inputText" placeholder="Zadajte text tu...">
-    <button onclick="checkAndShowMessage()">Zobraziť správu</button>
-
-    <div class="message-container" id="messageBox"></div>
+    <div id="messageBox" class="message-container"></div>
 
     <script>
-        function checkAndShowMessage() {
-            const inputText = document.getElementById("inputText").value;
-            const messageBox = document.getElementById("messageBox");
+        // Text, ktorý sa má zobraziť
+        const textToShow = "Od západu sa síce vyjasňuje, no zajtra namiesto slnka sadne hmla.";
 
-            if (inputText.trim() !== "") {
-                messageBox.style.display = "block";
-                messageBox.textContent = inputText;
-            } else {
-                messageBox.style.display = "none";
-            }
+        const messageBox = document.getElementById("messageBox");
+
+        // Skontrolujeme, či je text prítomný, a ak áno, zobrazíme ho
+        if (textToShow.trim() !== "") {
+            messageBox.style.display = "block"; // Zobrazíme box
+            messageBox.textContent = textToShow; // Nastavíme text
         }
     </script>
 
