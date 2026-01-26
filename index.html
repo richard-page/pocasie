@@ -7,31 +7,40 @@
     <style>
         .message-container {
             display: none;
-            background-color: #007bff; /* Modré pozadie */
+            background-color: #003366; /* Tmavomodré pozadie */
             color: white;
-            padding: 10px;
+            padding: 15px;
             margin-top: 10px;
-            border-radius: 5px;
+            border-radius: 8px; /* Zaoblené rohy */
+            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1); /* Jemný tieň pre lepší vzhľad */
+            font-family: Arial, sans-serif;
+        }
+        .message-header {
+            font-weight: bold;
+            font-size: 1.1em;
         }
     </style>
 </head>
 <body>
 
-    <div id="messageBox" class="message-container"></div>
+    <div id="messageBox" class="message-container">
+        <div class="message-header">Výbežok tlakovej výše</div>
+        <p id="messageText"></p>
+    </div>
 
     <script>
         // Text, ktorý sa má zobraziť
-        const textToShow = "";
+        const textToShow = "Od západu sa síce vyjasňuje, no zajtra namiesto slnka sadne hmla.";
 
         const messageBox = document.getElementById("messageBox");
+        const messageText = document.getElementById("messageText");
 
         // Skontrolujeme, či je text prítomný, a ak áno, zobrazíme ho
         if (textToShow.trim() !== "") {
             messageBox.style.display = "block"; // Zobrazíme box
-            messageBox.textContent = textToShow; // Nastavíme text
+            messageText.textContent = textToShow; // Nastavíme text
         }
     </script>
 
 </body>
 </html>
-
