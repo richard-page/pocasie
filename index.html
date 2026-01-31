@@ -3,45 +3,104 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Zobrazenie správy</title>
+    <title>Počasie na Slovensku</title>
     <style>
-        .message-container {
-            display: none;
-            background-color: #007bff; /* Modré pozadie */
-            color: white;
-            padding: 8px 15px;
-            border-radius: 15px; /* Menšie zaoblenie rohov */
-            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1); /* Jemný tieň */
+        body {
             font-family: Arial, sans-serif;
-            max-width: 200px; /* Kratšia šírka */
+            background-color: #e1f7fc;
             text-align: center;
-            font-size: 1em;
-            word-wrap: break-word; /* Zlomenie dlhého textu */
-            margin: 10px auto; /* Vycentrovanie */
+        }
+
+        #mapa {
+            width: 100%;
+            height: 500px;
+            background-color: #a0d8f0;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+        }
+
+        .map-region {
+            fill: #8fbc8f;
+            cursor: pointer;
+            transition: fill 0.3s;
+        }
+
+        .map-region:hover {
+            fill: #5a8e5a;
+        }
+
+        .day-buttons {
+            margin-top: 20px;
+        }
+
+        .day-buttons button {
+            background-color: #4caf50;
+            color: white;
+            padding: 10px 20px;
+            border: none;
+            font-size: 16px;
+            cursor: pointer;
+            margin: 0 10px;
+        }
+
+        .day-buttons button:hover {
+            background-color: #45a049;
+        }
+
+        .warning-text {
+            margin-top: 20px;
+            font-size: 18px;
+            color: #333;
+        }
+
+        .selected-day {
+            font-weight: bold;
+            color: #007b5e;
         }
     </style>
 </head>
 <body>
 
-    <div id="messageBox" class="message-container">
-        <p id="messageText"></p>
+    <h1>Výstrahy na Slovensku</h1>
+    <div id="mapa">
+        <svg viewBox="0 0 2000 1500" xmlns="http://www.w3.org/2000/svg" id="skMap">
+            <!-- Zastupuj sem jednotlivé regióny, každý s ID pre kliknutie -->
+            <path id="region1" class="map-region" d="M100,100 L150,100 L150,150 L100,150 Z" onclick="showWarning('Dnes')"/>
+            <path id="region2" class="map-region" d="M150,100 L200,100 L200,150 L150,150 Z" onclick="showWarning('Zajtra')"/>
+            <!-- ... pridaj ďalšie regióny podľa potreby ... -->
+        </svg>
+    </div>
+
+    <div class="day-buttons">
+        <button onclick="changeDay('Dnes')">Dnes</button>
+        <button onclick="changeDay('Zajtra')">Zajtra</button>
+        <button onclick="changeDay('Pozajtra')">Pozajtra</button>
+    </div>
+
+    <div class="warning-text">
+        <p>Vybraný deň: <span class="selected-day" id="selectedDay">Dnes</span></p>
+        <p id="warningMessage">Výstrahy pre dnešný deň sú aktuálne dostupné pre všetky regióny.</p>
     </div>
 
     <script>
-        // Text, ktorý sa má zobraziť
-        const textToShow = "text";
+        let currentDay = 'Dnes';
 
-        const messageBox = document.getElementById("messageBox");
-        const messageText = document.getElementById("messageText");
+        function changeDay(day) {
+            currentDay = day;
+            document.getElementById('selectedDay').textContent = day;
+            showWarning(day);
+        }
 
-        // Skontrolujeme, či je text prítomný, a ak áno, zobrazíme ho
-        if (textToShow.trim() !== "") {
-            messageBox.style.display = "block"; // Zobrazíme box
-            messageText.textContent = textToShow; // Nastavíme text
+        function showWarning(day) {
+            const warningMessage = {
+                'Dnes': 'Dnešné výstrahy: Zrážky na severe, teplota do -5°C.',
+                'Zajtra': 'Zajtrajšie výstrahy: Mrazivé rána a silný vietor na juhu.',
+                'Pozajtra': 'Pozajtrajšie výstrahy: Slnečné počasie s miernym vetrom.',
+            };
+            document.getElementById('warningMessage').textContent = warningMessage[day];
         }
     </script>
 
 </body>
 </html>
-
-
