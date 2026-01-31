@@ -45,6 +45,16 @@
             font-weight: bold;
             color: #007b5e;
         }
+
+        /* Farba Trnavského regiónu */
+        #SK-TA {
+            fill: #f1c40f; /* Trnavský región na žlto */
+        }
+
+        /* Farba pre regióny pri hover */
+        path:hover {
+            fill: #f39c12; /* Zmena farby pri prechode myšou */
+        }
     </style>
 </head>
 <body>
@@ -53,7 +63,7 @@
 
     <!-- Zobrazenie SVG mapy -->
     <div id="mapa">
-        <embed src="slovakia.svg" type="image/svg+xml" />
+        <embed src="slovakia.svg" type="image/svg+xml" id="svgMap" />
     </div>
 
     <div class="day-buttons">
@@ -76,4 +86,27 @@
             showWarning(day);
         }
 
-        function showW
+        function showWarning(day) {
+            const warningMessage = {
+                'Dnes': 'Dnešné výstrahy: Zrážky na severe, teplota do -5°C.',
+                'Zajtra': 'Zajtrajšie výstrahy: Mrazivé rána a silný vietor na juhu.',
+                'Pozajtra': 'Pozajtrajšie výstrahy: Slnečné počasie s miernym vetrom.',
+            };
+            document.getElementById('warningMessage').textContent = warningMessage[day];
+        }
+
+        // Nastavenie interaktivity na každý región v SVG
+        document.addEventListener('DOMContentLoaded', function() {
+            const svgMap = document.getElementById('svgMap').contentDocument; // Prístup k SVG obsahu
+            const regions = svgMap.querySelectorAll('path'); // Všetky cesty v SVG
+
+            regions.forEach(function(region) {
+                region.addEventListener('click', function() {
+                    region.style.fill = '#f39c12'; // Zmena farby regiónu na kliknutie
+                });
+            });
+        });
+    </script>
+
+</body>
+</html>
