@@ -51,9 +51,9 @@
 
     <h1>Výstrahy na Slovensku</h1>
 
-    <!-- Zobrazenie SVG mapy zo správnej URL -->
+    <!-- Zobrazenie SVG mapy -->
     <div id="mapa">
-        <embed src="https://richard-page.github.io" type="image/svg+xml" />
+        <embed src="slovakia.svg" type="image/svg+xml" />
     </div>
 
     <div class="day-buttons">
@@ -76,17 +76,4 @@
             showWarning(day);
         }
 
-        function showWarning(day) {
-            const warningMessage = {
-                'Dnes': 'Dnešné výstrahy: Zrážky na severe, teplota do -5°C.',
-                'Zajtra': 'Zajtrajšie výstrahy: Mrazivé rána a silný vietor na juhu.',
-                'Pozajtra': 'Pozajtrajšie výstrahy: Slnečné počasie s miernym vetrom.',
-            };
-            document.getElementById('warningMessage').textContent = warningMessage[day];
-        }
-    </script>
-
-</body>
-</html>
-
-
+        function showW
